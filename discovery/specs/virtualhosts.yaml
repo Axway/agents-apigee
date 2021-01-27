@@ -1,0 +1,559 @@
+---
+openapi: "3.0.0"
+servers:
+  - url: "https://api.enterprise.apigee.com/v1"
+info:
+  title: "Virtual hosts API"
+  description:
+    "Manage virtual hosts. Virtual hosts let multiple domain names connect\
+    \ to the same host. A virtual host on Edge defines the domains and ports on which\
+    \ an API proxy is exposed, and, by extension, the URL that apps use to access\
+    \ an API proxy. A virtual host also defines whether the API proxy is accessed\
+    \ by using the HTTP protocol, or by the encrypted HTTPS protocol."
+  version: "1.0"
+security:
+  - Basic: []
+  - OAuth: []
+paths:
+  ? /organizations/{org_name}/environments/{env_name}/virtualhosts/{virtualhost_name}/sslinfo
+  : post:
+      tags:
+        - "Virtual Host"
+      summary: "Update TLS configuration for a virtual host"
+      description:
+        "**DEPRECATED**: This API is being deprecated and will be removed\
+        \ in a future release.\n\nCloud customers can now create and update a virtual\
+        \ host, not just modify the TLS properties of the virtual host. Therefore,\
+        \ this API has been deprecated. Cloud customers can now use the following\
+        \ APIs with virtual hosts:\n* <a href=\"/docs/virtual-hosts/1/routes/organizations/%7Borg_name%7D/environments/%7Benv_name%7D/virtualhosts/%7Bvirtualhost_name%7D/get\"\
+        >Get a virtual host</a>\n* <a href=\"/docs/virtual-hosts/1/routes/organizations/%7Borg_name%7D/environments/%7Benv_name%7D/virtualhosts/%7Bvirtualhost_name%7D/put\"\
+        >Update a virtual host</a>\nSee <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-hosts\"\
+        >About virtual hosts</a> for more.\n\nUpdate the TLS configuration properties\
+        \ for a virtual host for Edge in the Cloud. For example, enable one-way or\
+        \ two-way TLS or specify the keystore/truststore used by the virtual host.\n\
+        \nOnly paid Edge Cloud accounts can make modifications to the TLS configuration\
+        \ of virtual hosts. Edge trial accounts cannot modify the TLS configuration\
+        \ of virtual hosts. Trial accounts must upgrade to a paid account to enable\
+        \ this feature."
+      operationId: "updateTLSConfigVirtualHost"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/env_name"
+        - $ref: "#/components/parameters/virtualhost_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualHost"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "SSL information.\n"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SSLInfo"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/SSLInfo"
+        required: true
+  /organizations/{org_name}/environments/{env_name}/virtualhosts:
+    post:
+      tags:
+        - "Virtual Host"
+      summary: "Create a virtual host"
+      description:
+        "Creates a virtual host.\n\nVirtual hosts let multiple domain names\
+        \ connect to the same host. A virtual host on Edge defines the domains and\
+        \ ports on which an API proxy is exposed, and, by extension, the URL that\
+        \ apps use to access an API proxy. A virtual host also defines whether the\
+        \ API proxy is accessed by using the HTTP protocol, or by the encrypted HTTPS\
+        \ protocol.\n\nThe request body content used to create a virtual host depends\
+        \ on whether you are using Edge for the Cloud or Edge for the Private Cloud.\
+        \ If you are using Edge for the Private Cloud, then it also depends on which\
+        \ version of Edge for the Private Cloud you are using. For a complete list\
+        \ of all options for the request body, see <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-host-property-reference\"\
+        >Virtual host property reference</a>.\n\nFor example, a subset of request\
+        \ body properties are valid only for specific Edge for Private Cloud versions,\
+        \ as follows:\n\n* `ciphers` and `protocols` properties are valid on Edge\
+        \ for Private Cloud version 4.15.07 and earlier\n* `properties` array is valid\
+        \ on Edge for Private Cloud version 4.17.01 and later\n* `baseUrl` property\
+        \ is valid on Edge for Private Cloud version 4.17.05 and later\n* `retryOptions`\
+        \ and `listenOptions` properties are valid on Edge for Private Cloud version\
+        \ 4.18.01 and later\n\n**Note**: As of Edge for Private Cloud version 4.16.01,\
+        \ you must create a host alias when you create a virtual host. Also, the combination\
+        \ of host alias name and port number for the virtual host must be unique for\
+        \ all virtual hosts in the Edge installation.\n\nFor a general introduction\
+        \ to creating virtual hosts, see <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-hosts\"\
+        >About virtual hosts</a>. For information about your specific version of Edge,\
+        \ see:\n* <a href=\"https://docs.apigee.com/api-platform/fundamentals/configuring-virtual-hosts-cloud\"\
+        >Configuring virtual hosts for the Cloud</a>\n* <a href=\"https://docs.apigee.com/api-platform/fundamentals/configuring-virtual-hosts-private-cloud\"\
+        >Configuring virtual hosts for the Private Cloud</a>\nSee <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-host-property-reference\"\
+        >Virtual host property reference</a> for complete information on setting all\
+        \ virtual host values.\n\n**Updating a proxy to use the new virtual host**\n\
+        \nWhen you create a new API proxy, Edge automatically configures its ProxyEndpoint\
+        \ to use all available virtual hosts. If you create a new API proxy that should\
+        \ not be accessible over a particular virtual host, then you must edit the\
+        \ API proxy to remove that virtual host from its ProxyEndpoint.\n\nIf you\
+        \ created any API proxies before requesting the virtual host, then you must\
+        \ edit the API proxy to add the new virtual hosts to its ProxyEndpoint. Otherwise,\
+        \ the API proxy is not accessible by the virtual host.\nSee <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-hosts#configuringanapiproxytouseavirtualhost\"\
+        >Configuring an API proxy to use a virtual host</a>."
+      operationId: "createVirtualHost"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/env_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualHost"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Virtual host information."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VirtualHost"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/VirtualHost"
+        required: true
+    get:
+      tags:
+        - "Virtual Host"
+      summary: "List virtual hosts"
+      description:
+        "Lists all virtual hosts in an environment. By default, two virtual\
+        \ hosts are available for each environment: `default` and `secure`"
+      operationId: "listVirtualHosts"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/env_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+        "400":
+          description: "Bad request"
+  ? /organizations/{org_name}/environments/{env_name}/virtualhosts/{virtualhost_name}
+  : get:
+      tags:
+        - "Virtual Host"
+      summary: "Get virtual host"
+      description:
+        "Gets a virtual host. \n\nEvery environment has at least one virtual\
+        \ host that defines the HTTP settings for connection with the Apigee organization.\
+        \ All API proxies in an environment share the same virtual hosts. By default,\
+        \ two virtual hosts are available for each environment: `default` and `secure`."
+      operationId: "getVirtualHost"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/env_name"
+        - $ref: "#/components/parameters/virtualhost_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualHost"
+        "400":
+          description: "Bad request"
+    put:
+      tags:
+        - "Virtual Host"
+      summary: "Update a virtual host"
+      description:
+        "Updates a virtual host.\n\nYou must specify the complete description\
+        \ of the virtual host in the request body, not just the elements that you\
+        \ want to change. You can get the current virtual host properties, as described\
+        \ in <a href=\"/docs/virtual-hosts/1/routes/organizations/%7Borg_name%7D/environments/%7Benv_name%7D/virtualhosts/%7Bvirtualhost_name%7D/get\"\
+        >Get a virtual host</a>.\n\nThe request body used to create a virtual host\
+        \ depends on whether you are using Edge for the Cloud or Edge for the Private\
+        \ Cloud. If you are using Edge for the Private Cloud, then it also depends\
+        \ on which version of Edge for the Private Cloud you are using. For a complete\
+        \ list of all options for the request body, see <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-host-property-reference\"\
+        >Virtual host property reference</a>.\n\nFor example, a subset of request\
+        \ body properties are valid only for specific Edge for Private Cloud versions,\
+        \ as follows:\n\n* `ciphers` and `protocols` properties are valid on Edge\
+        \ for Private Cloud version 4.15.07 and earlier\n* `properties` array is valid\
+        \ on Edge for Private Cloud version 4.17.01 and later\n* `baseUrl` property\
+        \ is valid on Edge for Private Cloud version 4.17.05 and later\n* `retryOptions`\
+        \ and `listenOptions` properties are valid on Edge for Private Cloud version\
+        \ 4.18.01 and later\n\n**Note**: As of Edge for Private Cloud version 4.16.01,\
+        \ you must create a host alias when you create a virtual host. Also, the combination\
+        \ of host alias name and port number for the virtual host must be unique for\
+        \ all virtual hosts in the Edge installation.\n\nFor a general introduction\
+        \ to creating virtual hosts, see <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-hosts\"\
+        >About virtual hosts</a>. For information about your specific version of Edge,\
+        \ see:\n* <a href=\"https://docs.apigee.com/api-platform/fundamentals/configuring-virtual-hosts-cloud\"\
+        >Configuring virtual hosts for the Cloud</a>\n* <a href=\"https://docs.apigee.com/api-platform/fundamentals/configuring-virtual-hosts-private-cloud\"\
+        >Configuring virtual hosts for the Private Cloud</a>\n\nFor complete information\
+        \ on setting all virtual host values, see <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-host-property-reference\"\
+        >Virtual host property reference</a>."
+      operationId: "updateVirtualHost"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/env_name"
+        - $ref: "#/components/parameters/virtualhost_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualHost"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Virtual host information."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VirtualHost"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/VirtualHost"
+    delete:
+      tags:
+        - "Virtual Host"
+      summary: "Delete a virtual host"
+      description:
+        "Deletes a virtual host.\n\nBefore you can delete a virtual host\
+        \ from an environment, you must update any API proxies that reference the\
+        \ virtual host to remove the reference. See <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-hosts\"\
+        >About virtual hosts</a> for more."
+      operationId: "deleteVirtualHost"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/env_name"
+        - $ref: "#/components/parameters/virtualhost_name"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad request"
+components:
+  securitySchemes:
+    Basic:
+      type: "http"
+      scheme: "basic"
+    OAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      description:
+        "For OAuth, enter the following in the Key field: Bearer %your-token%\
+        \ To get a token, see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens"
+  parameters:
+    org_name:
+      in: "path"
+      name: "org_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Organization name."
+    env_name:
+      in: "path"
+      name: "env_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Environment name."
+    virtualhost_name:
+      in: "path"
+      name: "virtualhost_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Virtual host name."
+  schemas:
+    VirtualHost:
+      type: "object"
+      description:
+        "Virtual host details. See also <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-host-property-reference\"\
+        >Virtual host property reference</a>."
+      properties:
+        hostAliases:
+          type: "array"
+          description:
+            "List of host aliases. \n\nA host alias provides the publicly\
+            \ visible DNS name of the virtual host on the Router and optionally includes\
+            \ the port number. The combination of host alias name and port number\
+            \ for the virtual host must be unique for all virtual hosts in the Edge\
+            \ installation. That means multiple virtual hosts can use the same port\
+            \ number if they have different host aliases.\n\nYou must create a DNS\
+            \ entry and CNAME record that matches the host alias, and the host alias\
+            \ must match the string that the client passes in the `Host` header. \n\
+            \nThe port number in `HostAliases` is optional. If you specify the port\
+            \ as part of the host alias, you must also specify the same port by using\
+            \ the `Port` element. Or, you can specify two `HostAliases` elements,\
+            \ one with the port number and one without.  \n\nYou can have multiple\
+            \ `HostAlias` definitions in the same virtual host definition, corresponding\
+            \ to multiple DNS entries for the virtual host, but not for multiple ports.\
+            \ If you want multiple ports, create multiple virtual host definitions\
+            \ with different ports. \n\nYou can include the `*` wildcard character\
+            \ in the host alias. The `*` wildcard character can only be at the start\
+            \ (preceding the first `.`) of the host alias, and cannot be mixed with\
+            \ other characters. For example `*.example.com`. The TLS cert for the\
+            \ virtual host must have a matching wildcard in the CN name of the cert.\
+            \ For example, `*.example.com`. Using a wildcard in a virtual host alias\
+            \ lets API proxies handle calls addressed to multiple subdomains such\
+            \ as `alpha.example.com`, `beta.example.com`, or `live.example.com`. Using\
+            \ a wildcard alias also helps you use fewer virtual hosts per environment\
+            \ to stay within product limits, since a virtual host with a wild card\
+            \ counts as only one virtual host.\n\n**For Cloud**: If you have an existing\
+            \ virtual host that uses a port other than `443`, you cannot add or remove\
+            \ a host alias. \n\n**For Private Cloud**: If you are setting the host\
+            \ alias by using the IP addresses of your Routers, and not DNS entries,\
+            \ add a separate host alias for each Router, specifying the IP address\
+            \ of each Router and port of the virtual host."
+          items:
+            type: "string"
+        interfaces:
+          type: "array"
+          description:
+            "**Edge for Private Cloud only.** \n\nList of network interfaces\
+            \ that you want the `port` to be bound to. If you omit this element, the\
+            \ `port` is bound on all interfaces."
+          items:
+            type: "string"
+        listenOptions:
+          type: "array"
+          description:
+            "**Private Cloud 4.18.01 and later and for Edge Cloud by contacting\
+            \ <a href=\"https://cloud.google.com/apigee/support\">Apigee Support</a>.**\n\
+            \n  If you use an ELB in TCP pass-thru mode to handle requests to the\
+            \ Edge Routers, the Router treats the IP address of the ELB as the client\
+            \ IP instead of the actual client IP. If the Router requires the true\
+            \ client IP, enable `proxy_protocol` on the ELB so that it passes the\
+            \ client IP in the TCP packet. On the Router, you must also set the `listenOption`\
+            \ on the virtual host to `proxy_protocol`. Because the ELB is in TCP pass-thru\
+            \ mode, you typically terminate TLS on the Router. Therefore, you usually\
+            \ only configure the virtual host to use proxy_protocol when you also\
+            \ configure it to use TLS.\n        \n        \n  The default value for\
+            \ `listenOptions` is an empty string. To later unset `listenOptions`,\
+            \ update the virtual host and omit the `listenOptions` property from the\
+            \ payload."
+          items:
+            type: "string"
+        name:
+          type: "string"
+          description: "Virtual host name. Valid values include: `A-Z0-9._\\-$%`"
+        port:
+          type: "string"
+          description:
+            "Port number used by the virtual host. Ensure that the port\
+            \ is open on the Edge Router.\n\nIf you specify a port in a `hostAliases`\
+            \ element, then the port number specified by `port` must match it.\n\n\
+            **For Cloud**: You must specify port `443` when creating a virtual host.\
+            \ If omitted, by default the port is set to `443`. If you have an existing\
+            \ virtual host that uses a port other than `443`, you cannot change the\
+            \ port.\n\n**For Private Cloud releases 4.16.01 through 4.17.05**: When\
+            \ creating a virtual host, you specify the Router port used by the virtual\
+            \ host. For example, port `9001`. By default, the Router runs as the user\
+            \ `apigee` which does not have access to privileged ports, typically ports\
+            \ `1024` and below. If you want to create a virtual host that binds the\
+            \ Router to a protected port then you have to configure the Router to\
+            \ run as a user with access to those ports. See <a href=\"https://docs.apigee.com/private-cloud/latest/setting-virtual-host\"\
+            >Setting up a virtual host</a> for more.\n\n**For Private Cloud releases\
+            \ prior to 4.16.01**: A Router can listen to only one HTTPS connection\
+            \ per virtual host, on a specific port, with the specified cert. Therefore,\
+            \ multiple virtual hosts cannot use the same port number if TLS termination\
+            \ occurs on the Router at the specified port."
+        baseUrl:
+          type: "string"
+          description:
+            "Base URL that overrides the URL displayed by the Edge UI for\
+            \ an API proxy deployed to the virtual host. Useful when you have an external\
+            \ load balancer in front of the Edge Routers. See <a href=\"https://docs.apigee.com/api-platform/system-administration/creating-virtual-host\"\
+            >Configuring TLS access to an API for the Private Cloud</a> for more.\n\
+            \nThe value of BaseUrl must include the protocol (that is, `http://` or\
+            \ `https://`)."
+        oCSPStapling:
+          type: "string"
+          description:
+            "Flag that specifies whether the OCSP (Online Certificate Status\
+            \ Protocol) client is enabled. The OSCP sends a status request to an OCSP\
+            \ responder to determine if the TLS certificate is valid. The response\
+            \ indicates if the TLS certificate is valid and not revoked.\n\nWhen enabled,\
+            \ OCSP stapling allows Edge, acting as the TLS server for one-way TLS,\
+            \ to query the OCSP responder directly and then cache the response. Edge\
+            \ then returns this response to the TLS client, or staples it, as part\
+            \ of TLS handshaking. See <a href=\"https://www.digicert.com/enabling-ocsp-stapling.htm\"\
+            >Enable OCSP Stapling on Your Server</a> for more.\n\n\n  TLS must be\
+            \ enabled to enable OCSP stapling. Set to `on` to enable. Defaults to\
+            \ `off`."
+        retryOptions:
+          type: "array"
+          description:
+            "**Edge for Public Cloud and Edge for Private Cloud 4.18.01\
+            \ and later**.\nConfiguration that determines how the Router reacts for\
+            \ this virtual host when the Message Processor goes down.\n        \n\
+            \        \nYou can specify multiple values. Valid values include:\n  \
+            \      \n        \n* `off`: Disables retry and the virtual host returns\
+            \ a failure code upon a request.\n    \n* `http_599`(Default): If the\
+            \ Router receives an `HTTP 599` response from the Message Processor, the\
+            \ Router forwards the request to the next Message Processor. `HTTP 599`\
+            \ is a special response code that is generated by a Message Processor\
+            \ when it is being shut down. The Message Processor tries to complete\
+            \ all existing requests, but for any new requests it responds with `HTTP\
+            \ 599` to signal to the Router to retry the request on the next Message\
+            \ Processor.\n    \n* `error`: If an error occurred while establishing\
+            \ a connection with the Message Processor, passing a request to it, or\
+            \ reading the response header from it, the Router forwards the request\
+            \ to the next Message Processor.\n    \n* `timeout`:  If a timeout occurs\
+            \ while establishing a connection with the Message Processor, passing\
+            \ a request to it, or reading the response header from it, the Router\
+            \ forwards the request to the next Message Processor.\n    \n* `invalid_header`:\
+            \  If the Message Processor returned an empty or invalid response, the\
+            \ Router forwards the request to the next Message Processor.\n    \n*\
+            \ `http_XXX`:  If the Message Processor returned a response with HTTP\
+            \ code `XXX`, the Router forwards the request to the next Message Processor.\n\
+            \        \n        \nIf you specify multiple values, the Router uses a\
+            \ logical OR to combine them."
+          items:
+            type: "string"
+        sSLInfo:
+          type: "object"
+          description: "SSL information."
+          items:
+            $ref: "#/components/schemas/SSLInfo"
+        useBuiltInFreeTrailCert:
+          type: "string"
+          description:
+            "**Edge for Public Cloud only.**\n\nFlag that specifies whether\
+            \ to use the Apigee freetrial cert and key. If you have a paid Edge for\
+            \ Cloud account and do not yet have a TLS cert and key, you can create\
+            \ a virtual host that uses the Apigee freetrial cert and key. That means\
+            \ you can create the virtual host without first creating a keystore.\n\
+            \nThe Apigee freetrial cert is defined for a domain of `*.apigee.net`.\
+            \ Therefore, the `HostAlias` of the virtual host must also be in the form\
+            \ `*.apigee.net`.\n\nSee <a href=\"https://docs.apigee.com/api-platform/fundamentals/configuring-virtual-hosts-cloud#creatingavirtualhost\"\
+            >Defining a virtual host that uses the Apigee freetrial cert and key</a>."
+        propagateTLSInformation:
+          type: "object"
+          description: "**Edge for Public Cloud only (Alpha).**"
+          properties:
+            ConnectionProperties:
+              type: "string"
+              description:
+                "Flag that specifies whether to enable the capture of TLS\
+                \ connection information by Edge. This information will be made available\
+                \ as flow variables in an API proxy. See <a href=\"https://docs.apigee.com/api-platform/system-administration/tls-vars\"\
+                >Accessing TLS connection information in an API proxy</a> for more."
+            ClientProperties:
+              type: "string"
+              description:
+                "Flag that specifies whether to enable the capture of client\
+                \ cert details captured by Edge in two-way TLS. This information will\
+                \ be made available as flow variables in an API proxy. See <a href=\"\
+                https://docs.apigee.com/api-platform/system-administration/tls-vars\"\
+                >Accessing TLS connection information in an API proxy</a> for more."
+        properties:
+          type: "object"
+          description:
+            "**Edge Cloud and for Private Cloud 4.17.01 and later.** \n\
+            List of properties."
+          properties:
+            Property:
+              type: "array"
+              description:
+                "Property name and value. For a list of valid properties,\
+                \ see  <a href=\"https://docs.apigee.com/api-platform/fundamentals/virtual-host-property-reference#virtualhostconfigurationproperties\"\
+                >Virtual host configuration properties</a>."
+              items:
+                type: "object"
+                properties:
+                  _name:
+                    type: "string"
+                    description: "Property name."
+                  __text:
+                    type: "string"
+                    description: "Property value."
+    SSLInfo:
+      type: "object"
+      description: "SSL information."
+      properties:
+        ciphers:
+          type: "array"
+          description:
+            "**Edge for Private Cloud version 4.15.07 and earlier only.**\n\
+            \nSpecifies the ciphers supported by the virtual host. If no ciphers are\
+            \ specified, then all ciphers available for the JVM will be permitted.\n\
+            \nTo restrict ciphers, add the following elements: `TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA`\
+            \ and `TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256`"
+          items:
+            type: "string"
+        clientAuthEnabled:
+          type: "string"
+          description:
+            "Flag that specifies whether to enable two-way, or client,\
+            \ TLS between Edge (server) and the app (client) making the request. Enabling\
+            \ two-way TLS requires that you set up a truststore on Edge that contains\
+            \ the cert from the TLS client."
+        enabled:
+          type: "string"
+          description:
+            "Flag that specifies whether to enable one-way TLS/SSL. You\
+            \ must have defined a keystore containing the cert and private key.\n\n\
+            **For Edge for Public Cloud**:\n\n* You must have a cert signed by a trusted\
+            \ entity, such as Symantec or VeriSign. You cannot use a self-signed cert,\
+            \ or leaf certificates signed by a self-signed CA.\n* If your existing\
+            \ virtual host is configured to use a port other than `443`, you cannot\
+            \ change the TLS setting. That means you cannot change the TLS setting\
+            \ from enabled to disabled, or from disabled to enabled."
+        ignoreValidationErrors:
+          type: "string"
+          description:
+            "Flag that specifies whether to ignore TLS certificate errors.\
+            \ This is similar to the `-k` option to curl.\n\nThis option is valid\
+            \ when configuring TLS for Target Servers and Target Endpoints, and when\
+            \ configuring virtual hosts that use 2-way TLS.\n\nWhen used with a target\
+            \ endpoint/target server, if the backend system uses SNI and returns a\
+            \ cert with a subject Distinguished Name (DN) that does not match the\
+            \ hostname, there is no way to ignore the error and the connection fails."
+        keyAlias:
+          type: "string"
+          description:
+            "Alias specified when you uploaded the cert and private key\
+            \ to the keystore. You must specify the alias name literally; you cannot\
+            \ use a reference. See <a href=\"https://docs.apigee.com/api-platform/system-administration/options-configuring-tls\"\
+            >Options for configuring TLS</a> for more."
+        keyStore:
+          type: "string"
+          description:
+            "Name of the keystore on Edge. Apigee recommends that you use\
+            \ a reference to specify the keystore name so that you can change the\
+            \ keystore without having to restart Routers. See <a href=\"https://docs.apigee.com/api-platform/system-administration/options-configuring-tls\"\
+            >Options for configuring TLS</a> for more."
+        protocols:
+          type: "array"
+          description:
+            "**Edge for Private Cloud version 4.15.07 and earlier only.**\n\
+            \nSpecifies the protocols supported by the virtual host. If no protocols\
+            \ are specified, then all protocols available for the JVM will be permitted.\n\
+            \nTo restrict protocols, add the following elements: `TLSv1`, `TLSv1.2`,\
+            \ and `SSLv2Hello`"
+          items:
+            type: "string"
+        trustStore:
+          type: "string"
+          description:
+            "Name of the truststore on Edge that contains the certificate\
+            \ or certificate chain used for two-way TLS. Required if `clientAuthEnabled`\
+            \ is `true`.\n\nApigee recommends that you use a reference to specify\
+            \ the truststore name so that you can change the truststore without having\
+            \ to restart Routers. See <a href=\"https://docs.apigee.com/api-platform/system-administration/options-configuring-tls\"\
+            >Options for configuring TLS</a> for more."

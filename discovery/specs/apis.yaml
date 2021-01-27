@@ -1,0 +1,880 @@
+---
+openapi: "3.0.0"
+servers:
+  - url: "https://api.enterprise.apigee.com/v1"
+info:
+  title: "API Proxies API"
+  description:
+    "Manage API proxies.\nYou expose APIs on Apigee Edge by implementing\
+    \ API proxies.  API proxies decouple the app-facing API from your backend services,\
+    \ shielding those apps from backend code changes. As you make backend changes\
+    \ to your services, apps continue to call the same API without any interruption.\n\
+    For more information, see <a href=\"https://docs.apigee.com/api-platform/fundamentals/understanding-apis-and-api-proxies\"\
+    >Understanding APIs and API proxies</a>."
+  version: "1.0"
+security:
+  - Basic: []
+  - OAuth: []
+paths:
+  /organizations/{org_name}/apis:
+    post:
+      tags:
+        - "API Proxy"
+      summary: "Create an API proxy"
+      description:
+        "Creates an API Proxy using one of the methods described below.\
+        \ The API proxy created will not be accessible at runtime until it is deployed\
+        \ to an environment.\n* Create an API proxy by setting the `name` field to\
+        \ the name of an API proxy in the request body. Typically, you\n  then download\
+        \ the API proxy configuration bundle to your local machine for development,\
+        \ as described in <a href=\"/docs/api-proxies/1/routes/organizations/%7Borg_name%7D/apis/%7Bapi_name%7D/revisions/%7Brevision_number%7D/get\"\
+        >Get an API proxy revision</a>, and import the updated API proxy configuration\
+        \ bundle.\n\n* Import an API proxy configuration bundle stored as a zip file\
+        \ on your local machine to your organization on Edge by doing the following:\n\
+        \n   * Set the `action` query parameter to `import`.\n   * Set the `Content-Type`\
+        \ header to `multipart/form-data`.\n   * Pass as a file the name of the API\
+        \ proxy configuration bundle stored in zip format on your local machine.\n\
+        \   \n   \n**Note**: **Currently, you cannot import an API proxy configuration\
+        \ bundle using the Try this API pane.** \n   \n   \nFor example, the following\
+        \ curl call imports an API proxy configuration bundle:\n\n``` curl \"https://api.enterprise.apigee.com/v1/organizations/{org-name}/apis?action=import&name=example\"\
+        \ \\\n  -X POST \\\n  -H Content-Type=\"multipart/form-data\"\n  -F \"file=@apiproxy.zip\"\
+        \ \\\n  -u email:password \n  \n```\n\nWhen importing an API proxy:\n* If\
+        \ the API proxy does not exist, it will be created. If the API proxy exists,\
+        \ then a new revision is created.\n* To validate the API proxy configuration\
+        \ bundle before importing, set the `validate` query parameter to `true`.\n\
+        * To validate the API proxy configuration bundle only without importing it,\
+        \ set the `action` query parameter to `validate`.\nInvalid API proxy configurations\
+        \ are rejected, and a list of validation errors is returned to the client."
+      operationId: "createAPIProxy"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyRevision"
+              example:
+                basepaths:
+                  - "/mock-target-api"
+                configurationVersion:
+                  majorVersion: 4
+                  minorVersion: 0
+                contextInfo:
+                  "Revision 1 of application Mock-Target-API, in organization\
+                  \ docs"
+                createdAt: 1472699641914
+                createdBy: "ahamilton@example.com"
+                description:
+                  "OpenAPI Specification for the Apigee mock target service\
+                  \ endpoint."
+                displayName: "Mock-Target-API"
+                entityMetaDataAsProperties:
+                  bundle_type: "zip"
+                  lastModifiedBy: "ahamilton@example.com"
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: "1560888800458"
+                  subType: "null"
+                  createdAt: "1472699641914"
+                lastModifiedAt: 1560888800458
+                lastModifiedBy: "ahamilton@example.com"
+                manifestVersion: "SHA-512:a52ece20111x12xjajke1i34"
+                name: "Mock-Target-API"
+                policies:
+                  - "Assign-Message-1"
+                  - "Extract-Variables-1"
+                  - "Verify-API-Key-1"
+                proxies:
+                  - "default"
+                proxyEndpoints:
+                  - "default"
+                resourceFiles:
+                  resourceFile:
+                    - name: "association.json"
+                      type: "openapi"
+                resources:
+                  - "openapi://association.json"
+                revision: "1"
+                sharedFlows: []
+                spec: "https://raw.githubusercontent.com/apigee/api-platform-samples/master/default-proxies/helloworld/openapi/mocktarget.yaml"
+                targetEndpoints:
+                  - "default"
+                targetServers: []
+                targets:
+                  - "default"
+                type: "Application"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "API proxy configuration."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/APIProxyRequest"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    get:
+      tags:
+        - "API Proxy"
+      summary: "List API proxies"
+      description:
+        "Lists the names of all API proxies in an organization. The names\
+        \ returned correspond to the names defined in the configuration files for\
+        \ each API proxy.\n\nPaginate the results using the `count` and `startKey`\
+        \ query parameters. \n\nFor example, the first call includes `count` to specify\
+        \ the number of elements to return:\n\n```\ncurl 'https://api.enterprise.apigee.com/v1/organizations/{org_name}/apis?count=5'\
+        \ \\\n  -X GET \\\n  -u email:password \n```\nIn this example, the call returns\
+        \ an array containing the first five APIs defined in the organization:\n\n\
+        ``` [ \"API_1\", \"API_2\", \"API_3\", \"API_4\", \"API_5\" ] ```\n\nThen,\
+        \ call the API again and specify both `count` and `startKey`, where `startKey`\
+        \ specifies the last array element from the previous call:\n\n```\ncurl \"\
+        https://api.enterprise.apigee.com/v1/organizations/{org_name}/apis?count=5&startKey=API_5\"\
+        \ \\\n  -X GET \\\n  -u email:password\n```\n\nThis call returns an array\
+        \ containing the next five APIs defined in the organization, starting with\
+        \ `API_5`:\n\n``` [ \"API_5\", \"API_6\", \"API_7\", \"API_8\", \"API_9\"\
+        \ ] ```"
+      operationId: "listAPIProxies"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/count"
+        - $ref: "#/components/parameters/startKey"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+                  description: "API proxy name."
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/apis/{api_name}:
+    delete:
+      tags:
+        - "API Proxy"
+      summary: "Delete API proxy"
+      description:
+        "Deletes an API proxy and all associated endpoints, policies, resources,\
+        \ and revisions. The API proxy must be undeployed before you can delete it."
+      operationId: "deleteAPIProxy"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyRevision"
+              example:
+                basepaths:
+                  - "/mock-target-api"
+                configurationVersion:
+                  majorVersion: 4
+                  minorVersion: 0
+                contextInfo:
+                  "Revision 1 of application Mock-Target-API, in organization\
+                  \ docs"
+                createdAt: 1472699641914
+                createdBy: "ahamilton@example.com"
+                description:
+                  "OpenAPI Specification for the Apigee mock target service\
+                  \ endpoint."
+                displayName: "Mock-Target-API"
+                entityMetaDataAsProperties:
+                  bundle_type: "zip"
+                  lastModifiedBy: "ahamilton@example.com"
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: "1560888800458"
+                  subType: "null"
+                  createdAt: "1472699641914"
+                lastModifiedAt: 1560888800458
+                lastModifiedBy: "ahamilton@example.com"
+                manifestVersion: "SHA-512:a52ece20111x12xjajke1i34"
+                name: "Mock-Target-API"
+                policies:
+                  - "Assign-Message-1"
+                  - "Extract-Variables-1"
+                  - "Verify-API-Key-1"
+                proxies:
+                  - "default"
+                proxyEndpoints:
+                  - "default"
+                resourceFiles:
+                  resourceFile:
+                    - name: "association.json"
+                      type: "openapi"
+                resources:
+                  - "openapi://association.json"
+                revision: "1"
+                sharedFlows: []
+                spec: "https://raw.githubusercontent.com/apigee/api-platform-samples/master/default-proxies/helloworld/openapi/mocktarget.yaml"
+                targetEndpoints:
+                  - "default"
+                targetServers: []
+                targets:
+                  - "default"
+                type: "Application"
+        "400":
+          description: "Bad request"
+    get:
+      tags:
+        - "API Proxy"
+      summary: "Get API proxy"
+      description: "Gets an API proxy including a list of existing revisions."
+      operationId: "getAPIProxy"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxy"
+              example:
+                metaData:
+                  createdAt: 1472699641914
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: 1560950346500
+                  lastModifiedBy: "ahamilton@example.com"
+                  subType: "null"
+                name: "Mock-Target-API"
+                revision:
+                  - "1"
+                  - "2"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/apis/{api_name}/revisions:
+    get:
+      tags:
+        - "API Proxy"
+      summary: "List API proxy revisions"
+      description: "List all revisions for an API proxy."
+      operationId: "listAPIProxyRevisions"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+                  description: "API proxy revision."
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/apis/{api_name}/revisions/{revision_number}:
+    get:
+      tags:
+        - "API Proxy"
+      summary: "Get an API proxy revision"
+      description:
+        "Gets the API proxy revision.\n\nTo download the API proxy configuration\
+        \ for the specified revision as a zip file, set the `format` query parameter\
+        \ to `bundle`. If you are using curl, specify `-o filename.zip` to save the\
+        \ output to a file; otherwise, it displays to `stdout`. Then, develop the\
+        \ API proxy configuration locally and upload the updated API proxy configuration\
+        \ revision."
+      operationId: "getAPIProxyRevision"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+        - $ref: "#/components/parameters/revision_number"
+        - $ref: "#/components/parameters/format"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyRevision"
+              example:
+                basepaths:
+                  - "/mock-target-api"
+                configurationVersion:
+                  majorVersion: 4
+                  minorVersion: 0
+                contextInfo:
+                  "Revision 1 of application Mock-Target-API, in organization\
+                  \ docs"
+                createdAt: 1472699641914
+                createdBy: "ahamilton@example.com"
+                description:
+                  "OpenAPI Specification for the Apigee mock target service\
+                  \ endpoint."
+                displayName: "Mock-Target-API"
+                entityMetaDataAsProperties:
+                  bundle_type: "zip"
+                  lastModifiedBy: "ahamilton@example.com"
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: "1560888800458"
+                  subType: "null"
+                  createdAt: "1472699641914"
+                lastModifiedAt: 1560888800458
+                lastModifiedBy: "ahamilton@example.com"
+                manifestVersion: "SHA-512:a52ece20111x12xjajke1i34"
+                name: "Mock-Target-API"
+                policies:
+                  - "Assign-Message-1"
+                  - "Extract-Variables-1"
+                  - "Verify-API-Key-1"
+                proxies:
+                  - "default"
+                proxyEndpoints:
+                  - "default"
+                resourceFiles:
+                  resourceFile:
+                    - name: "association.json"
+                      type: "openapi"
+                resources:
+                  - "openapi://association.json"
+                revision: "1"
+                sharedFlows: []
+                spec: "https://raw.githubusercontent.com/apigee/api-platform-samples/master/default-proxies/helloworld/openapi/mocktarget.yaml"
+                targetEndpoints:
+                  - "default"
+                targetServers: []
+                targets:
+                  - "default"
+                type: "Application"
+            application/octet-stream:
+              schema:
+                type: "string"
+                format: "binary"
+        "400":
+          description: "Bad request"
+    post:
+      tags:
+        - "API Proxy"
+      summary: "Update API proxy revision"
+      description:
+        "Updates an existing revison of an API proxy by uploading an API\
+        \ proxy configuration bundle as a zip file from your local machine.\n\n**Note**:\
+        \ **Currently, you cannot execute this API using the Try this API panel**.\
+        \ \n\n\n**If the API proxy revision is deployed**, the API undeploys the revision,\
+        \ updates it, and then redeploys it. **If the API proxy revision is not deployed**,\
+        \ the API updates the revision but does not deploy it.\n\n**CAUTION**: The\
+        \ API proxy is immediately updated in all environments where it is deployed.\n\
+        \nFor example, the following example updates revision 3 of the hotels API\
+        \ proxy:\n\n```\ncurl \"https://api.enterprise.apigee.com/v1/organizations/apigeedocs/apis/hotels/revisions/3\"\
+        \ \\\n  -X POST \\\n  -H \"Content-Type: multipart/form-data\" \\\n  -F \"\
+        file=@file_name.zip\" \\\n  -u email:password \n```"
+      operationId: "updateAPIProxyRevision"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+        - $ref: "#/components/parameters/revision_number"
+        - $ref: "#/components/parameters/validate"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "API proxy configuration (zip file)."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+              format: "binary"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    delete:
+      tags:
+        - "API Proxy"
+      summary: "Delete API proxy revision"
+      description:
+        "Deletes an API proxy revision and all policies, resources, endpoints,\
+        \ and revisions associated with it. The API proxy revision must be undeployed\
+        \ before you can delete it."
+      operationId: "deleteAPIProxyRevision"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+        - $ref: "#/components/parameters/revision_number"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyRevision"
+              example:
+                basepaths:
+                  - "/mock-target-api"
+                configurationVersion:
+                  majorVersion: 4
+                  minorVersion: 0
+                contextInfo:
+                  "Revision 1 of application Mock-Target-API, in organization\
+                  \ docs"
+                createdAt: 1472699641914
+                createdBy: "ahamilton@example.com"
+                description:
+                  "OpenAPI Specification for the Apigee mock target service\
+                  \ endpoint."
+                displayName: "Mock-Target-API"
+                entityMetaDataAsProperties:
+                  bundle_type: "zip"
+                  lastModifiedBy: "ahamilton@example.com"
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: "1560888800458"
+                  subType: "null"
+                  createdAt: "1472699641914"
+                lastModifiedAt: 1560888800458
+                lastModifiedBy: "ahamilton@example.com"
+                manifestVersion: "SHA-512:a52ece20111x12xjajke1i34"
+                name: "Mock-Target-API"
+                policies:
+                  - "Assign-Message-1"
+                  - "Extract-Variables-1"
+                  - "Verify-API-Key-1"
+                proxies:
+                  - "default"
+                proxyEndpoints:
+                  - "default"
+                resourceFiles:
+                  resourceFile:
+                    - name: "association.json"
+                      type: "openapi"
+                resources:
+                  - "openapi://association.json"
+                revision: "1"
+                sharedFlows: []
+                spec: "https://raw.githubusercontent.com/apigee/api-platform-samples/master/default-proxies/helloworld/openapi/mocktarget.yaml"
+                targetEndpoints:
+                  - "default"
+                targetServers: []
+                targets:
+                  - "default"
+                type: "Application"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/apis/{api_name}/revisions/{revision_number}/npm:
+    get:
+      tags:
+        - "API Proxy"
+      summary: "Lists npm dependencies for an API proxy."
+      description: "Gets npm dependencies for an API proxy."
+      operationId: "listAPIProxynpmDependencies"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+        - $ref: "#/components/parameters/revision_number"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad request"
+    post:
+      tags:
+        - "API Proxy"
+      summary: "Manage Node packaged modules"
+      description:
+        "**Note**: **Currently, you cannot execute this API using the Try\
+        \ this API panel**.\n\nRuns the specified npm command for an API proxy deployed\
+        \ on Apigee Edge. Calling this API is equivalent to executing an npm command\
+        \ in the `resources/node` directory of the API proxy.\n\nValid npm commands\
+        \ that you can execute with this API are:\n* `install`\n* `update`\n* `outdated`\n\
+        * `dedupe`\n* `prune`\n* `verbose` (directs npm to produce more output)\n\
+        * `ls` (default if no query param is specified)\n\nPass npm commands in the\
+        \ request body using the following format: `command={npm-command}`. For example,\
+        \ enter the following command to install known dependencies for the API's\
+        \ package directory (`resources/node`): `command=install`.\n\nDo not specify\
+        \ an arbitrary published Node.js package name with this API. For example,\
+        \ this command will fail: `command=install async`\n\nWith the exception of\
+        \ `ls` and `outdated`, the commands replace `node_modules.zip` and any other\
+        \ zip file with the prefix `node_modules` in the `resources/node` directory\
+        \ with new files that contains the updated dependencies.\n\nFor more information\
+        \ about the individual npm commands, see the <a href=\"https://docs.npmjs.com/cli\"\
+        >npm documentation</a>.\n\nNote the following:\n\n* When you are installing\
+        \ modules that are used from JavaScript within an API proxy, you must deploy\
+        \ (or re-deploy) the API proxy after the modules are installed. Otherwise,\
+        \ JavaScript code in the API proxy might not be able to find the required\
+        \ modules.\n\n* By default, this API does not install dependencies in `package.json`\
+        \ that are listed as `devDependencies`. Node.js module authors use `devDependencies`\
+        \ to denote modules that are required for testing and development but not\
+        \ to run the module. You can override the default behavior by passing the\
+        \ `production=false` parameter. \n\nThe following command installs all dependencies\
+        \ for the `resources/node` directory and sets `production=false`.\n\n```\n\
+        curl http://host:port/v1/organizations/ORG/apis/API/revisions/REV/npm -d 'command=install&production=false'\n\
+        ```\n\n\nThe following command returns a list of Node.js dependencies.\n\n\
+        ```\ncurl http://host:port/v1/organizations/ORG/apis/API/revisions/REV/npm\
+        \ -d 'command=ls'\n```"
+      operationId: "managedNodePackagedModules"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/api_name"
+        - $ref: "#/components/parameters/revision_number"
+        - $ref: "#/components/parameters/verbose"
+      requestBody:
+        description: "npm commands to execute."
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: "string"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad request"
+components:
+  securitySchemes:
+    Basic:
+      type: "http"
+      scheme: "basic"
+      description: "Multi-factor authentication is not supported."
+    OAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      description:
+        "For OAuth, enter the following in the Key field: Bearer %your-token%\
+        \ (see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens)"
+  parameters:
+    org_name:
+      in: "path"
+      name: "org_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Organization name."
+    api_name:
+      in: "path"
+      name: "api_name"
+      required: true
+      schema:
+        type: "string"
+      description: "API proxy name."
+    revision_number:
+      in: "path"
+      name: "revision_number"
+      required: true
+      schema:
+        type: "string"
+      description: "Revision number."
+    action:
+      in: "query"
+      name: "action"
+      required: false
+      schema:
+        type: "string"
+      description:
+        "Action to perform when importing an API proxy configuration. Set\
+        \ this parameter to one of the following values:\n* `import` to import the\
+        \ API proxy configuration.\n* `validate` to validate the API proxy configuration\
+        \ without importing it."
+    name:
+      in: "query"
+      name: "name"
+      required: true
+      schema:
+        type: "string"
+      description:
+        "Name of the API proxy for which you are importing the API proxy\
+        \ configuration."
+    validate:
+      in: "query"
+      name: "validate"
+      required: false
+      schema:
+        type: "string"
+      description:
+        "Flag that specifies whether to validate the API proxy configuration\
+        \ before importing it. Apigee recommends that you set this value to `true`."
+    count:
+      in: "query"
+      name: "count"
+      required: false
+      schema:
+        type: "integer"
+      description:
+        "Number of API proxies to return in the API call. The limit is\
+        \ 100. Required if you specify `startKey`."
+    startKey:
+      in: "query"
+      name: "startKey"
+      required: false
+      schema:
+        type: "string"
+      description:
+        "Name of the API proxy from which to start displaying the list\
+        \ of API proxies. For example, if you are returning 50 API proxies at a time\
+        \ (using the count query parameter), you can view API proxies 50-99 by entering\
+        \ the name of the 50th API proxy. The API proxy name is case sensitive."
+    format:
+      in: "query"
+      name: "format"
+      required: false
+      schema:
+        type: "string"
+      description:
+        "Format used when downloading the API proxy configuration revision.\
+        \ Set to `bundle` to download the API proxy configuration revision as a zip\
+        \ file."
+    verbose:
+      in: "query"
+      name: "verbose"
+      required: false
+      schema:
+        type: "boolean"
+        default: false
+      description:
+        "Flag that specifies whether the output will include additional\
+        \ information from npm on which API calls were made to the registry. Set to\
+        \ `true` to include additional information."
+    Accept:
+      in: "header"
+      name: "Accept"
+      required: false
+      schema:
+        type: "string"
+        default: "application/xml"
+      description:
+        "Format used to get the API proxy configuration revision details.\
+        \ Valid values include: `application/xml` or `application/json`"
+    Content-Type:
+      in: "header"
+      name: "Content-Type"
+      required: false
+      schema:
+        type: "string"
+      description:
+        "Request content type. When creating an API proxy, set to `application/json`.\
+        \ When importing an API proxy configuration, set to `multipart/form-data`."
+  schemas:
+    APIProxyRequest:
+      description: "API proxy request."
+      type: "object"
+      required:
+        - "name"
+      properties:
+        name:
+          description: "Name of the API proxy. Restrict the characters used to: `A-Za-z0-9._-`"
+          type: "string"
+    APIProxyRevision:
+      description: "API proxy revision."
+      type: "object"
+      required:
+        - "name"
+      properties:
+        basepaths:
+          description: "Base URL of the API proxy."
+          type: "string"
+        configurationVersion:
+          description:
+            "Version of the API proxy configuration schema to which this\
+            \ API proxy conforms. This setting may be used in the future to track\
+            \ the evolution of the API proxy format."
+          type: "object"
+          properties:
+            majorVersion:
+              description:
+                "Major version of the API proxy configuration schema. The\
+                \ only supported value is '4'."
+              type: "integer"
+            minorVersion:
+              description:
+                "Minor version of the API proxy configuration schema. The\
+                \ only supported value is '0'."
+              type: "integer"
+        contextInfo:
+          type: "string"
+          description: "Revision number, app name, and organization for the API proxy."
+        createdAt:
+          description:
+            "Time when the API proxy revision was created in milliseconds\
+            \ since epoch."
+          type: "integer"
+        createdBy:
+          description: "Email address of developer that created the API proxy revision."
+          type: "string"
+        description:
+          description: "Description of the API proxy revision."
+          type: "string"
+        displayName:
+          description: "Human-readable name of the API proxy."
+          type: "string"
+        entityMetaDataAsProperties:
+          description: "Kev-value map of metadata describing the API proxy revision."
+          type: "object"
+          properties:
+            bundle_type:
+              description: "Type of bundle. Set to `zip`."
+              type: "string"
+            createdAt:
+              description:
+                "Time when the API proxy revision was created in milliseconds\
+                \ since epoch."
+              type: "string"
+            createdBy:
+              description: "Email address of developer that created the API proxy."
+              type: "string"
+            lastModifiedAt:
+              description:
+                "Time when the API proxy version was last modified in milliseconds\
+                \ since epoch."
+              type: "string"
+            lastModifiedBy:
+              description:
+                "Email address of developer that last modified the API\
+                \ proxy."
+              type: "string"
+            subType:
+              description: "Set to `null`."
+              type: "string"
+        lastModifiedAt:
+          description:
+            "Time when the API proxy version was last modified in millisenconds\
+            \ since epoch."
+          type: "integer"
+        lastModifiedBy:
+          description: "Email address of developer that last modified the API proxy."
+          type: "string"
+        manifestVersion:
+          description: "Manifest version."
+          type: "string"
+        name:
+          description: "Name of the API proxy."
+          type: "string"
+        policies:
+          description: "List of policies included in the API proxy revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "Policy name."
+        proxies:
+          description: "List of API proxy names included in the API proxy revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "API proxy name."
+        proxyEndpoints:
+          description:
+            "List of the ProxyEndpoints in the `/proxies` directory. Typically,\
+            \ this element is included only when the API proxy was created using the\
+            \ Edge UI. This is a 'manifest' setting designed to provide visibility\
+            \ into the contents of the API proxy."
+          type: "array"
+          items:
+            type: "string"
+            description: "ProxyEndpoint name."
+        resourceFiles:
+          description: "Resource files included with the API proxy revision."
+          type: "object"
+          properties:
+            resourceFile:
+              description: "Resource files included with the API proxy revision."
+              type: "array"
+              items:
+                description: "Resource filename."
+                type: "object"
+                properties:
+                  name:
+                    description: "Name of the resource file."
+                    type: "string"
+                  type:
+                    description: "Type of resource file."
+                    type: "string"
+        resources:
+          description:
+            "List of resources included in the API proxy revision, formatted\
+            \ as `{type}://{name}`."
+          type: "array"
+          items:
+            type: "string"
+            description: "Resource name."
+        revision:
+          description: "Revison of the API proxy."
+          type: "string"
+        sharedFlows:
+          description: "List of shared flows included in the API proxy revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "Shared flow name."
+        spec:
+          description:
+            "OpenAPI Specification that is associated with the API proxy.\
+            \ This value may be a URL or to a path in the spec store or on GitHub,\
+            \ for example."
+        targetEndpoints:
+          description:
+            "List of TargetEndpoints in the `/targets` directory of the\
+            \ API proxy. Typically, this element is included only when the API proxy\
+            \ was created using the Edge  UI. This is a 'manifest' setting designed\
+            \ to provide visibility into the contents of the API proxy."
+          type: "array"
+          items:
+            type: "string"
+            description: "TargetEndpoint name."
+        targetServers:
+          description:
+            "List of TargetServers referenced in any TargetEndpoints of\
+            \ the API proxy. Typically, this element is included only when the API\
+            \ proxy was created using the Edge  UI. This is a 'manifest' setting designed\
+            \ to provide visibility into the contents of the API proxy."
+          type: "array"
+          items:
+            type: "string"
+            description: "TargetServer name."
+        targets:
+          description: "List of targets included in the API proxy revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "Target name."
+        type:
+          description: "Set to `Application`."
+          type: "string"
+    APIProxy:
+      description: "API proxy metadata and revisions."
+      type: "object"
+      properties:
+        metaData:
+          description: "API proxy metadata."
+          type: "object"
+          properties:
+            createdAt:
+              description:
+                "Time when the API proxy was created in milliseconds since\
+                \ epoch."
+              type: "integer"
+            createdBy:
+              type: "string"
+              description: "Email address of developer that created the API proxy."
+            lastModifiedAt:
+              description:
+                "Time when the API proxy was last modified in milliseconds\
+                \ since epoch."
+              type: "integer"
+            lastModifiedBy:
+              description:
+                "Email address of developer that last modified the API\
+                \ proxy."
+              type: "string"
+            subType:
+              description: "Set to `null`."
+              type: "string"
+        name:
+          description: "Name of the API proxy."
+          type: "string"
+        revision:
+          description: "Revisions defined for the API proxy."
+          type: "array"
+          items:
+            type: "string"
+            description: "Revision number."

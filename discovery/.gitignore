@@ -1,0 +1,7 @@
+bin/
+.vscode/
+logs/
+vendor/
+
+env_vars
+apigee_discovery_agent.yml
