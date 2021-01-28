@@ -9,8 +9,8 @@ import (
 	"github.com/elastic/beats/v7/libbeat/common"
 	"github.com/elastic/beats/v7/libbeat/logp"
 
-	"github.com/someorg/samples/apic_traceability_agent/pkg/config"
-	"github.com/someorg/samples/apic_traceability_agent/pkg/gateway"
+	"github.com/Axway/agents-apigee/traceability/pkg/config"
+	"github.com/Axway/agents-apigee/traceability/pkg/gateway"
 )
 
 // customLogBeater configuration.

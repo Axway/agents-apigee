@@ -68,14 +68,14 @@ func (p *EventProcessor) Process(events []publisher.Event) []publisher.Event {
 
 // ProcessRaw - process the received log entry and returns the event to be published to AMPLIFY ingestion service
 func (p *EventProcessor) ProcessRaw(rawEventData []byte) []beat.Event {
-	var gatewayTrafficLogEntry GwTrafficLogEntry
-	err := json.Unmarshal(rawEventData, &gatewayTrafficLogEntry)
+	var apigeeLogEntry ApigeeLogEntry
+	err := json.Unmarshal(rawEventData, &apigeeLogEntry)
 	if err != nil {
 		log.Error(err.Error())
 		return nil
 	}
 	// Map the log entry to log event structure expected by AMPLIFY Central Observer
-	logEvents, err := p.eventMapper.processMapping(gatewayTrafficLogEntry)
+	logEvents, err := p.eventMapper.processMapping(apigeeLogEntry)
 	if err != nil {
 		log.Error(err.Error())
 		return nil

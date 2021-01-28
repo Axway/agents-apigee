@@ -5,8 +5,8 @@ package gateway
 // Headers - Type for request/response headers
 type Headers map[string]string
 
-// GwTransaction - Type for gateway transaction detail
-type GwTransaction struct {
+// ApigeeLogEntry - apigee transaction detail
+type ApigeeLogEntry struct {
 	ID              string  `json:"id"`
 	SourceHost      string  `json:"srcHost"`
 	SourcePort      int     `json:"srcPort"`
@@ -21,8 +21,8 @@ type GwTransaction struct {
 	ResponseBytes   int     `json:"responseByte"`
 }
 
-// GwTrafficLogEntry - Represents the structure of log entry the agent will receive
-type GwTrafficLogEntry struct {
+// LogEntry - Represents the structure of log entry the agent will receive
+type LogEntry struct {
 	TraceID             string        `json:"traceId"`
 	APIName             string        `json:"apiName"`
 	InboundTransaction  GwTransaction `json:"inbound"`

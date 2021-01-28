@@ -15,27 +15,27 @@ import (
 type EventMapper struct {
 }
 
-func (m *EventMapper) processMapping(gatewayTrafficLogEntry GwTrafficLogEntry) ([]*transaction.LogEvent, error) {
+func (m *EventMapper) processMapping(apigeeLogEntry ApigeeLogEntry) ([]*transaction.LogEvent, error) {
 	centralCfg := agent.GetCentralConfig()
 
 	eventTime := time.Now().Unix()
-	txID := gatewayTrafficLogEntry.TraceID
-	txEventID := gatewayTrafficLogEntry.InboundTransaction.ID
-	txDetails := gatewayTrafficLogEntry.InboundTransaction
+	txID := apigeeLogEntry.TraceID
+	txEventID := apigeeLogEntry.InboundTransaction.ID
+	txDetails := apigeeLogEntry.InboundTransaction
 	transInboundLogEventLeg, err := m.createTransactionEvent(eventTime, txID, txDetails, txEventID, "", "Inbound")
 	if err != nil {
 		return nil, err
 	}
 
-	txEventID = gatewayTrafficLogEntry.OutboundTransaction.ID
-	txParentEventID := gatewayTrafficLogEntry.InboundTransaction.ID
-	txDetails = gatewayTrafficLogEntry.OutboundTransaction
+	txEventID = apigeeLogEntry.OutboundTransaction.ID
+	txParentEventID := apigeeLogEntry.InboundTransaction.ID
+	txDetails = apigeeLogEntry.OutboundTransaction
 	transOutboundLogEventLeg, err := m.createTransactionEvent(eventTime, txID, txDetails, txEventID, txParentEventID, "Outbound")
 	if err != nil {
 		return nil, err
 	}
 
-	transSummaryLogEvent, err := m.createSummaryEvent(eventTime, txID, gatewayTrafficLogEntry, centralCfg.GetTeamID())
+	transSummaryLogEvent, err := m.createSummaryEvent(eventTime, txID, apigeeLogEntry, centralCfg.GetTeamID())
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +103,11 @@ func (m *EventMapper) createTransactionEvent(eventTime int64, txID string, txDet
 		Build()
 }
 
-func (m *EventMapper) createSummaryEvent(eventTime int64, txID string, gatewayTrafficLogEntry GwTrafficLogEntry, teamID string) (*transaction.LogEvent, error) {
-	statusCode := gatewayTrafficLogEntry.InboundTransaction.StatusCode
-	method := gatewayTrafficLogEntry.InboundTransaction.Method
-	uri := gatewayTrafficLogEntry.InboundTransaction.URI
-	host := gatewayTrafficLogEntry.InboundTransaction.SourceHost
+func (m *EventMapper) createSummaryEvent(eventTime int64, txID string, apigeeLogEntry ApigeeLogEntry, teamID string) (*transaction.LogEvent, error) {
+	statusCode := apigeeLogEntry.InboundTransaction.StatusCode
+	method := apigeeLogEntry.InboundTransaction.Method
+	uri := apigeeLogEntry.InboundTransaction.URI
+	host := apigeeLogEntry.InboundTransaction.SourceHost
 
 	return transaction.NewTransactionSummaryBuilder().
 		SetTimestamp(eventTime).
