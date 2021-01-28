@@ -1,0 +1,45 @@
+apigee_traceability_agent:
+ central:
+  organizationID: "<AMPLIFY_ORG_ID>"
+  environment: <AMPLIFY_CENTRAL_ENVIRONMENT_NAME>
+  auth:
+    clientID: <AMPLIFY_CENTRAL_DOSA_CLIENT_ID>
+    privateKey: <AMPLIFY_CENTRAL_DOSA_PRIVATE_KEY_PATH>
+    publicKey: <AMPLIFY_CENTRAL_DOSA_PUBLIC_KEY_PATH>
+
+  gateway-section:
+    logFile: ./logs/traffic.log
+    processOnInput: false
+    config_key_1: "value-1"
+    config_key_3: "value-2"
+    config_key_2: "value-3"
+
+# Condor Ingestion service
+output.traceability:
+  enabled: true
+  hosts:
+   - ${TRACEABILITY_HOST:"ingestion-lumberjack.datasearch.axway.com:453"}
+  protocol: ${TRACEABILITY_PROTOCOL:"tcp"}
+  compression_level: ${TRACEABILITY_COMPRESSIONLEVEL:3}
+  ssl:
+    enabled: true
+    verification_mode: none
+    cipher_suites:
+      - "ECDHE-ECDSA-AES-128-GCM-SHA256"
+      - "ECDHE-ECDSA-AES-256-GCM-SHA384"
+      - "ECDHE-ECDSA-CHACHA20-POLY1305"
+      - "ECDHE-RSA-AES-128-CBC-SHA256"
+      - "ECDHE-RSA-AES-128-GCM-SHA256"
+      - "ECDHE-RSA-AES-256-GCM-SHA384"
+      - "ECDHE-RSA-CHACHA20-POLY1205"
+  worker: 1
+  pipelining: 0
+  proxy_url: ${TRACEABILITY_PROXYURL:""}
+
+logging:
+  metrics:
+    enabled: false
+  # Send all logging output to stderr
+  to_stderr: true
+  # Set log level
+  level: ${LOG_LEVEL:"info"}
