@@ -9,21 +9,21 @@ import (
 	"github.com/elastic/beats/v7/libbeat/common"
 	"github.com/elastic/beats/v7/libbeat/logp"
 
+	"github.com/Axway/agents-apigee/traceability/pkg/apigee"
 	"github.com/Axway/agents-apigee/traceability/pkg/config"
-	"github.com/Axway/agents-apigee/traceability/pkg/gateway"
 )
 
 // customLogBeater configuration.
 type customLogBeater struct {
 	done           chan struct{}
-	logReader      *gateway.LogReader
-	eventProcessor *gateway.EventProcessor
+	logReader      *apigee.LogReader
+	eventProcessor *apigee.EventProcessor
 	client         beat.Client
 	eventChannel   chan string
 }
 
 var bt *customLogBeater
-var gatewayConfig *config.GatewayConfig
+var gatewayConfig *config.ApigeeConfig
 
 // New creates an instance of aws_apigw_traceability_agent.
 func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
@@ -33,8 +33,8 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	}
 
 	var err error
-	bt.logReader, err = gateway.NewLogReader(gatewayConfig, bt.eventChannel)
-	bt.eventProcessor = gateway.NewEventProcessor(gatewayConfig)
+	bt.logReader, err = apigee.NewLogReader(gatewayConfig, bt.eventChannel)
+	bt.eventProcessor = apigee.NewEventProcessor(gatewayConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -52,13 +52,13 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 }
 
 // SetGatewayConfig - set parsed gateway config
-func SetGatewayConfig(gatewayCfg *config.GatewayConfig) {
+func SetGatewayConfig(gatewayCfg *config.ApigeeConfig) {
 	gatewayConfig = gatewayCfg
 }
 
 // Run starts awsApigwTraceabilityAgent.
 func (bt *customLogBeater) Run(b *beat.Beat) error {
-	logp.Info("apic_traceability_agent is running! Hit CTRL-C to stop it.")
+	logp.Info("apigee_traceability_agent is running! Hit CTRL-C to stop it.")
 
 	var err error
 	bt.client, err = b.Publisher.Connect()
@@ -66,6 +66,7 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		return err
 	}
 
+	// TODO - shane... change this to whatever the bt needs to connect to in apigee
 	bt.logReader.Start()
 
 	for {

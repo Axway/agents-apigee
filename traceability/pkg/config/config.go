@@ -9,11 +9,11 @@ import (
 // AgentConfig - represents the config for agent
 type AgentConfig struct {
 	CentralCfg corecfg.CentralConfig `config:"central"`
-	GatewayCfg *GatewayConfig        `config:"gateway-section"`
+	GatewayCfg *ApigeeConfig         `config:"gateway-section"`
 }
 
-// GatewayConfig - represents the config for gateway
-type GatewayConfig struct {
+// ApigeeConfig - represents the config for gateway
+type ApigeeConfig struct {
 	corecfg.IConfigValidator
 	LogFile        string `config:"logFile"`
 	ProcessOnInput bool   `config:"processOnInput"`
@@ -23,7 +23,7 @@ type GatewayConfig struct {
 }
 
 // ValidateCfg - Validates the gateway config
-func (c *GatewayConfig) ValidateCfg() (err error) {
+func (c *ApigeeConfig) ValidateCfg() (err error) {
 	if c.LogFile == "" {
 		return errors.New("Invalid gateway configuration: logFile is not configured")
 	}

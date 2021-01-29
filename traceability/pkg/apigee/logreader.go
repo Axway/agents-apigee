@@ -1,4 +1,4 @@
-package gateway
+package apigee
 
 import (
 	"github.com/Axway/agents-apigee/traceability/pkg/config"
@@ -7,12 +7,12 @@ import (
 
 // LogReader - Represents the Gateway client
 type LogReader struct {
-	cfg          *config.GatewayConfig
+	cfg          *config.ApigeeConfig
 	eventChannel chan string
 }
 
 // NewLogReader - Creates a new Gateway Client
-func NewLogReader(gatewayCfg *config.GatewayConfig, eventChannel chan string) (*LogReader, error) {
+func NewLogReader(gatewayCfg *config.ApigeeConfig, eventChannel chan string) (*LogReader, error) {
 	return &LogReader{
 		cfg:          gatewayCfg,
 		eventChannel: eventChannel,

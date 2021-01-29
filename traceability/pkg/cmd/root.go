@@ -16,7 +16,7 @@ var RootCmd corecmd.AgentRootCmd
 var beatCmd *libcmd.BeatsRootCmd
 
 func init() {
-	name := "apic_traceability_agent"
+	name := "apigee_traceability_agent"
 	settings := instance.Settings{
 		Name:          name,
 		HasDashboards: true,
@@ -30,7 +30,7 @@ func init() {
 	RootCmd = corecmd.NewCmd(
 		&cmd,
 		name,                        // Name of the agent and yaml config file
-		"Sample Traceability Agent", // Agent description
+		"Apigee Traceability Agent", // Agent description
 		initConfig,                  // Callback for initializing the agent config
 		run,                         // Callback for executing the agent
 		corecfg.TraceabilityAgent,   // Agent Type (Discovery or Traceability)
@@ -56,7 +56,7 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
-	gatewayConfig := &config.GatewayConfig{
+	gatewayConfig := &config.ApigeeConfig{
 		LogFile:        rootProps.StringPropertyValue("gateway-section.logFile"),
 		ProcessOnInput: rootProps.BoolPropertyValue("gateway-section.processOnInput"),
 		ConfigKey1:     rootProps.StringPropertyValue("gateway-section.config_key_1"),

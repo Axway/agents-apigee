@@ -1,4 +1,4 @@
-package gateway
+package apigee
 
 import (
 	"encoding/json"
@@ -23,13 +23,13 @@ import (
 // log entry and performs the mapping to structure expected for AMPLIFY Central Observer. The method returns the converted Events to
 // transport publisher which then produces the events over the transport.
 type EventProcessor struct {
-	cfg            *config.GatewayConfig
+	cfg            *config.ApigeeConfig
 	eventGenerator transaction.EventGenerator
 	eventMapper    *EventMapper
 }
 
 // NewEventProcessor - return a new EventProcessor
-func NewEventProcessor(gateway *config.GatewayConfig) *EventProcessor {
+func NewEventProcessor(gateway *config.ApigeeConfig) *EventProcessor {
 	ep := &EventProcessor{
 		cfg:            gateway,
 		eventGenerator: transaction.NewEventGenerator(),
@@ -68,26 +68,28 @@ func (p *EventProcessor) Process(events []publisher.Event) []publisher.Event {
 
 // ProcessRaw - process the received log entry and returns the event to be published to AMPLIFY ingestion service
 func (p *EventProcessor) ProcessRaw(rawEventData []byte) []beat.Event {
-	var apigeeLogEntry ApigeeLogEntry
-	err := json.Unmarshal(rawEventData, &apigeeLogEntry)
+	var eventApigeeEntry EventApigeeEntry
+
+	err := json.Unmarshal(rawEventData, &eventApigeeEntry)
 	if err != nil {
-		log.Error(err.Error())
-		return nil
-	}
-	// Map the log entry to log event structure expected by AMPLIFY Central Observer
-	logEvents, err := p.eventMapper.processMapping(apigeeLogEntry)
-	if err != nil {
-		log.Error(err.Error())
 		return nil
 	}
 	events := make([]beat.Event, 0)
-	for _, logEvent := range logEvents {
-		// Generates the beat.Event with attributes by AMPLIFY ingestion service
-		event, err := p.eventGenerator.CreateEvent(*logEvent, time.Now(), nil, nil, nil)
+	for _, apigeeLogEntry := range eventApigeeEntry.Records {
+		// Map the log entry to log event structure expected by AMPLIFY Central Observer
+		logEvents, err := p.eventMapper.processMapping(apigeeLogEntry)
 		if err != nil {
 			log.Error(err.Error())
 		} else {
-			events = append(events, event)
+			for _, logEvent := range logEvents {
+				// Generates the beat.Event with attributes by AMPLIFY ingestion service
+				event, err := p.eventGenerator.CreateEvent(logEvent, time.Now(), nil, nil, nil)
+				if err != nil {
+					log.Error(err.Error())
+				} else {
+					events = append(events, event)
+				}
+			}
 		}
 	}
 	return events
