@@ -69,3 +69,50 @@ const (
 func (g grantType) String() string {
 	return [...]string{"password", "refresh_token"}[g]
 }
+
+// apiProxies
+type apiProxies []string
+
+// apigeeLogs - apigee logs
+type apigeeLogs struct {
+	fubar []apigeeLog `json:"logs"`
+}
+
+type apigeeLog struct {
+	FaultCode        string  `json:"fault_code"`
+	FaultFlow        string  `json:"fault_flow"`
+	FaultPolicy      string  `json:"fault_policy"`
+	FaultProxy       string  `json:"fault_proxy"`
+	FaultSource      string  `json:"fault_source"`
+	Request          string  `json:"request"`
+	RequestLength    int64   `json:"request_length"`
+	RequestMessageID string  `json:"request_message_id"`
+	ResponseSize     int64   `json:"response_size"`
+	ResponseStatus   string  `json:"response_status"`
+	ResponseTime     float64 `json:"response_time"`
+	Timestamp        string  `json:"timestamp"`
+	VirtualHost      string  `json:"virtual_host"`
+}
+
+// events
+type apigeeEvents struct {
+	fubar []apigeeEvent `json:"events"`
+}
+
+type apigeeEvent struct {
+	ID                   string `json:"id"`
+	SharedID             string `json:"shared_id"`
+	EntityKey            string `json:"entity_key"`
+	EntityValue          string `json:"entity_value"`
+	DependentEntityValue string `json:"dependent_entity_string"`
+	Component            string `json:"component"`
+	Pod                  string `json:"pod"`
+	Region               string `json:"region"`
+	Organization         string `json:organization"`
+	Environment          string `json:environment"`
+	Name                 string `json:"name"`
+	Type                 string `json:"type"`
+	Source               string `json:"source"`
+	RawPayload           string `json:"raw_payload"` //TODO shane
+	Time                 string `json:"time"`
+}

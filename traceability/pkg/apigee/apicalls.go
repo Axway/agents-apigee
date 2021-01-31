@@ -2,6 +2,7 @@ package apigee
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
@@ -41,4 +42,52 @@ func (a *GatewayClient) getRequest(url string) (*coreapi.Response, error) {
 
 	// return the api response
 	return a.apiClient.Send(request)
+}
+
+// logs: (token) => ({
+// 	method: 'GET',
+//	url: `https://apimonitoring.enterprise.apigee.com/logs?org={organizationId}`,
+// 	headers: { Authorization: `Basic ${token}`, Accept: 'application/json' }
+// }),
+func (a *GatewayClient) getLogs() apigeeLogs {
+
+	// Get the initial authentication token
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"logs?org=%s", a.cfg.Organization))
+	log.Debugf("getLogs: %s", string(response.Body))
+	apigeeLogs := apigeeLogs{}
+	json.Unmarshal(response.Body, &apigeeLogs)
+
+	return apigeeLogs
+}
+
+// apiproxies: (token) => ({
+// 	method: 'GET',
+//	url: `https://apimonitoring.enterprise.apigee.com/logs/apiproxies?org={organizationId}`,
+// 	headers: { Authorization: `Basic ${token}`, Accept: 'application/json' }
+// }),
+func (a *GatewayClient) getAPIProxies() apiProxies {
+
+	// Get the initial authentication token
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"logs/apiproxies?org=%s", a.cfg.Organization))
+	log.Debugf("getAPIProxies: %s", string(response.Body))
+	apiProxies := apiProxies{}
+	json.Unmarshal(response.Body, &apiProxies)
+
+	return apiProxies
+}
+
+// apiproxies: (token) => ({
+// 	method: 'GET',
+//	url: `https://apimonitoring.enterprise.apigee.com/metrics/events?org={organizationId}`,
+// 	headers: { Authorization: `Basic ${token}`, Accept: 'application/json' }
+// }),
+func (a *GatewayClient) getEvents() apigeeEvents {
+
+	// Get the initial authentication token
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"metrics/events?org=%s", a.cfg.Organization))
+	log.Debugf("getEvents: %s", string(response.Body))
+	apigeeEvents := apigeeEvents{}
+	json.Unmarshal(response.Body, &apigeeEvents)
+
+	return apigeeEvents
 }

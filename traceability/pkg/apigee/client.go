@@ -12,7 +12,7 @@ import (
 const (
 	apigeeAuthURL   = "https://login.apigee.com/oauth/token"
 	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
-	orgURL          = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	orgURL          = "hhttps://apimonitoring.enterprise.apigee.com/"
 )
 
 // GatewayClient - Represents the Gateway client
