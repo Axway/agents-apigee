@@ -1,7 +1,7 @@
 package apigee
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/url"
 	"time"
 
@@ -131,9 +131,15 @@ func (a *GatewayClient) DiscoverAPIs() error {
 					}
 				}
 
-				specPath := a.getRevisionSpec(proxy, revision.Name, path)
+				if path != "" {
+					resourceFileData := a.getRevisionSpec(proxy, revision.Name, path)
+					// retrieve the spec
+					var association specAssociationFile
+					json.Unmarshal(resourceFileData, &association)
+					spec := a.getSwagger(association.URL)
 
-				fmt.Println(specPath)
+					log.Debugf(spec)
+				}
 			}
 		}
 

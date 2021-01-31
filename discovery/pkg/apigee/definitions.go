@@ -38,3 +38,8 @@ type environmentRevision struct {
 	Name      string
 	Revisions []models.DeploymentDetailsRevision
 }
+
+//specAssociationFile -
+type specAssociationFile struct {
+	URL string `json:"url"`
+}

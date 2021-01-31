@@ -114,13 +114,13 @@ func (a *GatewayClient) getResourceFiles(apiName, revisionNumber string) models.
 // 	url: `https://api.enterprise.apigee.com/v1/organizations/${organizationId}/apis/${apiName}/revisions/${revisionNumber}/resourcefiles/openapi/${specFile}`,
 // 	headers: { Authorization: `Basic ${token}` }
 // }),
-func (a *GatewayClient) getRevisionSpec(apiName, revisionNumber, specFile string) string {
+func (a *GatewayClient) getRevisionSpec(apiName, revisionNumber, specFile string) []byte {
 
 	// Get the initial authentication token
 	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile))
 	log.Debugf("getRevisionSpec: %s", string(response.Body))
 
-	return string(response.Body)
+	return response.Body
 }
 
 // deployments: (apiName, token) => ({
