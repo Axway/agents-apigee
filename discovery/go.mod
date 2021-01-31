@@ -4,6 +4,9 @@ go 1.13
 
 require (
 	github.com/Axway/agent-sdk v0.0.19-0.20210114143039-a7d9040b242f
+	github.com/getkin/kin-openapi v0.9.0
+	github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/sys v0.0.0-20201201145000-ef89a241ccb3 // indirect
 	golang.org/x/text v0.3.4 // indirect
 )

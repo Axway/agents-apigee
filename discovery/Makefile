@@ -13,6 +13,10 @@ dep:
 	@go mod vendor
 	@echo "Package dependencies completed"
 
+test:
+	@go vet ${GO_PKG_LIST}
+	@go test -short -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST}
+	
 update-sdk:
 	@echo "Updating SDK dependencies"
 	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@main"
