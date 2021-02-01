@@ -6,13 +6,14 @@ on:
   pull_request:
     branches: [ main, bootstrap ]
 
-env:
-  GOPATH: ${{ github.workspace }}/discovery
-  GOBIN: ${{ github.workspace }}/discovery/bin
-
 jobs:
-
   build:
+    env:
+      GOPATH: ${{ github.workspace }}
+      GOBIN: ${{ github.workspace }}/bin
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/discovery
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
