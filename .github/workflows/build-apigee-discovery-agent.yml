@@ -9,6 +9,8 @@ on:
 jobs:
 
   build:
+    env:
+      workingDirectory: 'discovery'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -19,7 +21,7 @@ jobs:
         go-version: 1.15
 
     - name: Build
-      run: go build -v ./discovery/...
+      run: go build -v ./...
 
     - name: Test
-      run: go test -v ./discovery/...
+      run: go test -v ./...
