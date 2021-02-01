@@ -7,8 +7,8 @@ on:
     branches: [ main, bootstrap ]
 
 env:
-  GOPATH: ${{ github.workspace }}
-  GOBIN: ${{ github.workspace }}/bin
+  GOPATH: ${{ github.workspace }}/discovery
+  GOBIN: ${{ github.workspace }}/discovery/bin
 
 jobs:
 
