@@ -5,7 +5,7 @@ apigee_traceability_agent:
   apigee:
     organization: sbolosan-eval
     auth:
-      username: sbolosan@axway.com
+      username: CHANGME
       password: CHANGEME
   # Defines how often an event is sent to the output
   central:
