@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, bootstrap ]
 
+env:
+  GOPATH: ${{ github.workspace }}
+  GOBIN: ${{ github.workspace }}/bin
+
 jobs:
 
   build:
