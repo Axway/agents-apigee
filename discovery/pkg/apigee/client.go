@@ -1,34 +1,47 @@
 package apigee
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/url"
 	"time"
 
+	"github.com/Axway/agent-sdk/pkg/agent"
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
+	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/getkin/kin-openapi/openapi3"
+
+	"github.com/Axway/agents-apigee/discovery/pkg/apigee/generatespec"
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
 	"github.com/Axway/agents-apigee/discovery/pkg/config"
+	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
 
 const (
 	apigeeAuthURL   = "https://login.apigee.com/oauth/token"
 	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
 	orgURL          = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	openapi         = "openapi"
 )
 
 // GatewayClient - Represents the Gateway client
 type GatewayClient struct {
-	cfg         *config.ApigeeConfig
-	apiClient   coreapi.Client
-	accessToken string
+	cfg          *config.ApigeeConfig
+	apiClient    coreapi.Client
+	accessToken  string
+	pollInterval time.Duration
 }
 
 // NewClient - Creates a new Gateway Client
 func NewClient(apigeeCfg *config.ApigeeConfig) (*GatewayClient, error) {
 	gatewayClient := &GatewayClient{
-		apiClient: coreapi.NewClient(nil, ""),
-		cfg:       apigeeCfg,
+		apiClient:    coreapi.NewClient(nil, ""),
+		cfg:          apigeeCfg,
+		pollInterval: apigeeCfg.GetPollInterval(),
 	}
 
 	// Start the authentication
@@ -67,134 +80,150 @@ func (a *GatewayClient) Authenticate() error {
 	return nil
 }
 
-// ExternalAPI - Sample struct representing the API definition in API gateway
-type ExternalAPI struct {
-	swaggerSpec   []byte
-	id            string
-	name          string
-	description   string
-	version       string
-	url           string
-	documentation []byte
-}
-
 // DiscoverAPIs - Process the API discovery
-func (a *GatewayClient) DiscoverAPIs() error {
-	// Gateway specific implementation to get the details for discovered API goes here
-	// Set the service definition
-	// As sample the implementation reads the swagger for musical-instrument from local directory
+func (a *GatewayClient) DiscoverAPIs() {
 
-	hostsPerEnv := map[string][]models.VirtualHost{}
-	// Get all virtual host details
-	environments := a.getEnvironments()
-	// Loop all enviornments
-	for _, env := range environments {
-		hosts := a.getVirtualHosts(env)
-		hostsPerEnv[env] = []models.VirtualHost{}
-		// loop all hosts in each environment
-		for _, host := range hosts {
-			hostsPerEnv[env] = append(hostsPerEnv[env], a.getVirtualHost(env, host))
-		}
-	}
-
-	apiProxies := a.getAPIs()
-	// Get all deployments in all api proxies
-	for _, proxy := range apiProxies {
-		deployments := a.getDeployments(proxy)
-
-		// Get an array of deployed revisions only
-		deployedRevisions := []environmentRevision{}
-		for _, depEnv := range deployments.Environment {
-			envRev := environmentRevision{
-				Name:      depEnv.Name,
-				Revisions: []models.DeploymentDetailsRevision{},
+	for {
+		hostsPerEnv := map[string][]models.VirtualHost{}
+		// Get all virtual host details
+		environments := a.getEnvironments()
+		// Loop all environments
+		for _, env := range environments {
+			hosts := a.getVirtualHosts(env)
+			hostsPerEnv[env] = []models.VirtualHost{}
+			// loop all hosts in each environment
+			for _, host := range hosts {
+				hostsPerEnv[env] = append(hostsPerEnv[env], a.getVirtualHost(env, host))
 			}
-			for _, revision := range depEnv.Revision {
-				if revision.State == "deployed" {
-					envRev.Revisions = append(envRev.Revisions, revision)
+		}
+
+		apiProxies := a.getAPIs()
+		// Get all deployments in all api proxies
+		for _, proxy := range apiProxies {
+			proxyDetails := a.getAPI(proxy)
+			deployments := a.getDeployments(proxy)
+
+			// Get an array of deployed revisions only
+			deployedRevisions := []environmentRevision{}
+			for _, depEnv := range deployments.Environment {
+				envRev := environmentRevision{
+					Name:      depEnv.Name,
+					Revisions: []models.DeploymentDetailsRevision{},
 				}
-			}
-			deployedRevisions = append(deployedRevisions, envRev)
-		}
-
-		for _, depRev := range deployedRevisions {
-			for _, revision := range depRev.Revisions {
-				resourceFiles := a.getResourceFiles(proxy, revision.Name)
-				// revisionDetails := a.getRevisionsDetails(proxy, revision.Name)
-
-				// find spec path
-				var path string
-				for _, file := range resourceFiles.ResourceFile {
-					if file.Type == "openapi" {
-						path = file.Name
-						break
+				for _, revision := range depEnv.Revision {
+					if revision.State == "deployed" {
+						envRev.Revisions = append(envRev.Revisions, revision)
 					}
 				}
+				deployedRevisions = append(deployedRevisions, envRev)
+			}
 
-				if path != "" {
-					resourceFileData := a.getRevisionSpec(proxy, revision.Name, path)
-					// retrieve the spec
-					var association specAssociationFile
-					json.Unmarshal(resourceFileData, &association)
-					spec := a.getSwagger(association.URL)
+			for _, depRev := range deployedRevisions {
+				for _, revision := range depRev.Revisions {
+					revisionDetails := a.getRevisionsDetails(proxy, revision.Name)
+					spec := a.retrieveOrBuildSpec(proxyDetails, revision.Name, revisionDetails)
 
-					log.Debugf(spec)
+					serviceBody, _ := apic.NewServiceBodyBuilder().
+						SetID(proxyDetails.Name).
+						SetAPIName(proxyDetails.Name).
+						SetDescription(revisionDetails.Description).
+						SetAPISpec(spec).
+						SetStage(depRev.Name).
+						SetVersion(fmt.Sprintf("%d.%d", revisionDetails.ConfigurationVersion.MajorVersion, revisionDetails.ConfigurationVersion.MinorVersion)).
+						SetAuthPolicy(apic.Passthrough).
+						SetTitle(revisionDetails.DisplayName).
+						Build()
+
+					agent.PublishAPI(serviceBody)
+					log.Info("Published API " + serviceBody.APIName + " to AMPLIFY Central")
 				}
 			}
 		}
+		time.Sleep(a.pollInterval)
+		return
+	}
+}
 
-		log.Debug("end")
+//retrieveOrBuildSpec - attempts to retrieve a spec or genrerates a spec if one is not found
+func (a *GatewayClient) retrieveOrBuildSpec(proxy models.ApiProxy, revisionName string, revisionDetails models.ApiProxyRevision) []byte {
+	// Check the revisionDetails for a value in spec
+	specString := revisionDetails.Spec.(string)
+	if revisionDetails.Spec != "" {
+		// The revision has a spec value
+		if util.IsValidURL(specString) {
+			// the spec value is a full url, lets attempt a request to get it
+			response, _ := a.getRequest(specString)
+			return response.Body
+		}
+		// the spec value is not a full url, must be a path in the spec store
+		return a.getSwagger(specString)
 	}
 
-	return nil
-	// swaggerSpec, err := a.getSpec()
-	// if err != nil {
-	// 	log.Infof("Failed to load sample API specification from %s: %s ", a.cfg.SpecPath, err.Error())
-	// }
+	// Check the resource files on the revision for a spec link
+	resourceFiles := a.getResourceFiles(proxy.Name, revisionName)
 
-	// externalAPI := ExternalAPI{
-	// 	id:            "65c79285-f550-4617-bf6e-003e617841f2",
-	// 	name:          "Musical-Instrument-Sample",
-	// 	description:   "Sample for API discovery agent",
-	// 	version:       "1.0.0",
-	// 	url:           "",
-	// 	documentation: []byte("\"Sample documentation for API discovery agent\""),
-	// 	swaggerSpec:   swaggerSpec,
-	// }
+	// find spec path
+	var path string
+	for _, file := range resourceFiles.ResourceFile {
+		if file.Type == openapi {
+			path = file.Name
+			break
+		}
+	}
 
-	// serviceBody, err := a.buildServiceBody(externalAPI)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = agent.PublishAPI(serviceBody)
-	// if err != nil {
-	// 	return err
-	// }
-	// log.Info("Published API " + serviceBody.APIName + "to AMPLIFY Central")
-	// return err
+	if path != "" {
+		resourceFileData := a.getRevisionSpec(proxy.Name, revisionName, path)
+		// retrieve the spec
+		var association specAssociationFile
+		json.Unmarshal(resourceFileData, &association)
+		return a.getSwagger(association.URL)
+	}
+
+	// Build the spec as a last resort
+	return a.generateSpecFile(a.getRevisionDefinitionBundle(proxy.Name, revisionName), revisionDetails)
 }
 
-/*
-// buildServiceBody - creates the service definition
-func (a *GatewayClient) buildServiceBody(externalAPI ExternalAPI) (apic.ServiceBody, error) {
-	return apic.NewServiceBodyBuilder().
-		SetID(externalAPI.id).
-		SetTitle(externalAPI.name).
-		SetURL(externalAPI.url).
-		SetDescription(externalAPI.description).
-		SetAPISpec(externalAPI.swaggerSpec).
-		SetVersion(externalAPI.version).
-		SetAuthPolicy(apic.Passthrough).
-		SetDocumentation(externalAPI.documentation).
-		SetResourceType(apic.Oas2).
-		Build()
+func (a *GatewayClient) generateSpecFile(data []byte, revisionDetails models.ApiProxyRevision) []byte {
+	// data is the byte array of the zip archive
+	spec := openapi3.Swagger{
+		OpenAPI: "3.0.1",
+		Info: &openapi3.Info{
+			Title:       revisionDetails.DisplayName,
+			Description: revisionDetails.Description,
+			Version:     fmt.Sprintf("%v.%v", revisionDetails.ConfigurationVersion.MajorVersion, revisionDetails.ConfigurationVersion.MinorVersion),
+		},
+		Paths: openapi3.Paths{},
+	}
+
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		log.Error(err)
+	}
+
+	// Read all the files from zip archive
+	for _, zipFile := range zipReader.File {
+		for _, proxyFile := range revisionDetails.Proxies {
+			if zipFile.Name == fmt.Sprintf("apiproxy/proxies/%s.xml", proxyFile) {
+				fileBytes, err := readZipFile(zipFile)
+				if err != nil {
+					log.Error(err)
+					break
+				}
+				generatespec.GenerateEndpoints(&spec, fileBytes)
+				break
+			}
+		}
+	}
+
+	specBytes, _ := json.Marshal(spec)
+	return specBytes
 }
 
-func (a *GatewayClient) getSpec() ([]byte, error) {
-	bytes, err := ioutil.ReadFile(a.cfg.SpecPath)
+func readZipFile(zf *zip.File) ([]byte, error) {
+	f, err := zf.Open()
 	if err != nil {
 		return nil, err
 	}
-	return bytes, nil
+	defer f.Close()
+	return ioutil.ReadAll(f)
 }
-*/
