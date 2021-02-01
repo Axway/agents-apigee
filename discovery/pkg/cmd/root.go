@@ -33,7 +33,9 @@ func init() {
 // Callback that agent will call to process the execution
 func run() error {
 	apigeeClient, err := apigee.NewClient(apigeeConfig)
-	err = apigeeClient.DiscoverAPIs()
+	if err == nil {
+		apigeeClient.DiscoverAPIs()
+	}
 	return err
 }
 

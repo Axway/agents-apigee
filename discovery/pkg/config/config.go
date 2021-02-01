@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"time"
 
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 )
@@ -15,8 +16,9 @@ type AgentConfig struct {
 // ApigeeConfig - represents the config for gateway
 type ApigeeConfig struct {
 	corecfg.IConfigValidator
-	Organization string      `config:"organization"`
-	Auth         *AuthConfig `config:"auth"`
+	Organization string        `config:"organization"`
+	Auth         *AuthConfig   `config:"auth"`
+	PollInterval time.Duration `config:"pollInterval"`
 }
 
 // ValidateCfg - Validates the gateway config
@@ -35,4 +37,9 @@ func (a *ApigeeConfig) ValidateCfg() (err error) {
 // GetAuth - Returns the Auth Config
 func (a *ApigeeConfig) GetAuth() *AuthConfig {
 	return a.Auth
+}
+
+// GetPollInterval - Returns the Poll Interval
+func (a *ApigeeConfig) GetPollInterval() time.Duration {
+	return a.PollInterval
 }
