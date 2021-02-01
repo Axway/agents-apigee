@@ -70,6 +70,9 @@ func (g grantType) String() string {
 	return [...]string{"password", "refresh_token"}[g]
 }
 
+//Environments
+type environments []string
+
 // apiProxies
 type apiProxies []string
 

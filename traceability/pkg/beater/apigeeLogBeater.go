@@ -17,6 +17,7 @@ import (
 type customLogBeater struct {
 	done           chan struct{}
 	logReader      *apigee.LogReader
+	apigeeClient   *apigee.GatewayClient
 	eventProcessor *apigee.EventProcessor
 	client         beat.Client
 	eventChannel   chan string
@@ -34,6 +35,7 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 
 	var err error
 	bt.logReader, err = apigee.NewLogReader(gatewayConfig, bt.eventChannel)
+	bt.apigeeClient, err = apigee.NewClient(gatewayConfig, bt.eventChannel)
 	bt.eventProcessor = apigee.NewEventProcessor(gatewayConfig)
 	if err != nil {
 		return nil, err
@@ -56,7 +58,7 @@ func SetGatewayConfig(gatewayCfg *config.ApigeeConfig) {
 	gatewayConfig = gatewayCfg
 }
 
-// Run starts awsApigwTraceabilityAgent.
+// Run starts ApigeeTraceabilityAgent.
 func (bt *customLogBeater) Run(b *beat.Beat) error {
 	logp.Info("apigee_traceability_agent is running! Hit CTRL-C to stop it.")
 
@@ -66,8 +68,7 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		return err
 	}
 
-	// TODO - shane... change this to whatever the bt needs to connect to in apigee
-	bt.logReader.Start()
+	bt.apigeeClient.Start()
 
 	for {
 		select {

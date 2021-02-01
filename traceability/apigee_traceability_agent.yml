@@ -1,24 +1,107 @@
 apigee_traceability_agent:
- central:
-  organizationID: "<AMPLIFY_ORG_ID>"
-  environment: <AMPLIFY_CENTRAL_ENVIRONMENT_NAME>
-  auth:
-    clientID: <AMPLIFY_CENTRAL_DOSA_CLIENT_ID>
-    privateKey: <AMPLIFY_CENTRAL_DOSA_PRIVATE_KEY_PATH>
-    publicKey: <AMPLIFY_CENTRAL_DOSA_PUBLIC_KEY_PATH>
+  #
+  # Apigee API Management service connectivity
+  #
+  apigee:
+    organization: sbolosan-eval
+    auth:
+      username: sbolosan@axway.com
+      password: CHANGEME
+  # Defines how often an event is sent to the output
+  central:
+    deployment: "${CENTRAL_DEPLOYMENT:teams}"
+    url: https://sbolosan.dev.ampc.axwaytest.net
+    platformURL: https://platform.axwaytest.net
+    team: "Default Team"
+    organizationId: 732373823941016
+    environment: covid19
+    apiServerVersion: v1alpha1
+    mode: publishToEnvironmentAndCatalog
+    pollInterval: 20s
+    additionalTags: ignoreMe
+    auth:
+      url: https://login-preprod.axway.com/auth
+      realm: Broker
+      clientId: DOSA_e49386fb949a4d8ba2207a3acb7ab650
+      privateKey: /home/sbolosan/go/src/keys/private_key.pem
+      publicKey: /home/sbolosan/go/src/keys/public_key.pem
+      keyPassword:
+      timeout: 20s
+    subscriptions:
+      # approval:
+      #   mode: webhook
+      #   webhook:
+      #     url: https://staging.cloud-elements.com/elements/api-v2/notify
+      #     headers: Header=contentType,Value=application/json, Header=SendTo,Value=dfeldick@axway.com, Header=CentralUrl,Value=https://dfeldick.dev.ampc.axwaytest.net, Header=Elements-Formula-Instance-Id,Value=448571, Header=Authorization,Value=User Nq5TY+HFQuYNL7SYfG2G7wS8F6SHOOtCfTFv6WevIm4=, Organization a1713018bbde8f54f4f55ff8c3bd8bfe
+      #     authSecret:
+      notifications:
+          webhook:
+            url: https://staging.cloud-elements.com/elements/api-v2/notify
+            headers: Header=contentType,Value=application/json, Header=Elements-Formula-Instance-Id,Value=440878, Header=Authorization,Value=User F+rYQSfu0w5yIa5q7uNs2MKYcIok8pYpgAUwJtXFnzc=, Organization a1713018bbde8f54f4f55ff8c3bd8bfe
+          smtp:
+            # host: lmail1.lab.phx.axway.int
+            # port: 25
+            # fromAddress: sbolosan@axway.com
+            # authtype: LOGIN
+            host: smtp.gmail.com
+            port: 587
+            fromAddress: shane.bolosan@gmail.com
+            username: shane.bolosan@gmail.com
+            password: peetdrwffiexdbpd
+            # authtype: PLAIN
+            # host: smtp.mail.yahoo.com
+            # port: 587
+            # fromAddress: sabolosan@yahoo.com
+            # username: sabolosan@yahoo.com
+            # password: pqgnbezftydpfmzn
+            # authtype: PLAIN
+            # host: smtp.office365.com
+            # port: 587
+            # fromAddress: sbolosan@axway.com
+            # username: sbolosan@axway.com
+            # password: putinyourrealofficepassword
+            # authtype: LOGIN
+            subscribe:
+              subject: Subscription Notification
+              body: |
+                Subscription created for Catalog Item:  <a href= ${catalogItemUrl}> ${catalogItemName} </a> <br/>
+                ${authtemplate}<br/>
+              oauth: Your API is secured using OAuth token. You can obtain your token using grant_type=client_credentials with the following client_id=<b>${clientID}</b> and client_secret=<b>${clientSecret}</b>
+              apikeys: Your API is secured using an APIKey credential:header:<b>${keyHeaderName}</b>/value:<b>${key}</b>
+            unsubscribe:
+              subject: Subscription Removal Notification
+              body: |
+                Subscription for Catalog Item: <a href= ${catalogItemUrl}> ${catalogItemName} </a> has been unsubscribed
+            subscribeFailed:
+              subject: Subscription Failed Notification
+              body: |
+                Could not subscribe to Catalog Item: <a href= ${catalogItemUrl}> ${catalogItemName} </a> <br/>
+                ${reasonfailed}<br/>
+            unsubscribeFailed:
+              subject: Subscription Removal Failed Notification
+              body: |
+                Could not unsubscribe to Catalog Item: <a href= ${catalogItemUrl}> ${catalogItemName} </a>
 
-  gateway-section:
-    logFile: ./logs/traffic.log
-    processOnInput: false
-    config_key_1: "value-1"
-    config_key_3: "value-2"
-    config_key_2: "value-3"
+log:
+  level: debug
+  format: json
+  output: stderr
+  path: logs
+  maskedValues: 
+
+logging:
+  metrics:
+    enabled: false
+  # Send all logging output to stderr
+  to_stderr: true
+  # Set log level
+  level: ${LOG_LEVEL:debug}
 
 # Condor Ingestion service
 output.traceability:
   enabled: true
   hosts:
-   - ${TRACEABILITY_HOST:"ingestion-lumberjack.datasearch.axway.com:453"}
+    - ${TRACEABILITY_HOST:"ingestion-lumberjack.condor.staging.axwaytest.net:453"}
   protocol: ${TRACEABILITY_PROTOCOL:"tcp"}
   compression_level: ${TRACEABILITY_COMPRESSIONLEVEL:3}
   ssl:
@@ -35,11 +118,3 @@ output.traceability:
   worker: 1
   pipelining: 0
   proxy_url: ${TRACEABILITY_PROXYURL:""}
-
-logging:
-  metrics:
-    enabled: false
-  # Send all logging output to stderr
-  to_stderr: true
-  # Set log level
-  level: ${LOG_LEVEL:"info"}

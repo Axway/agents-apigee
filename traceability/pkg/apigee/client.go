@@ -12,7 +12,8 @@ import (
 const (
 	apigeeAuthURL   = "https://login.apigee.com/oauth/token"
 	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
-	orgURL          = "hhttps://apimonitoring.enterprise.apigee.com/"
+	traceURL        = "https://apimonitoring.enterprise.apigee.com/"
+	discoURL        = "https://api.enterprise.apigee.com/v1/organizations/%s/"
 )
 
 // GatewayClient - Represents the Gateway client
@@ -25,10 +26,12 @@ type GatewayClient struct {
 }
 
 // NewClient - Creates a new Gateway Client
-func NewClient(apigeeCfg *config.ApigeeConfig) (*GatewayClient, error) {
+func NewClient(apigeeCfg *config.ApigeeConfig, eventChannel chan string) (*GatewayClient, error) {
 	gatewayClient := &GatewayClient{
-		apiClient: coreapi.NewClient(nil, ""),
-		cfg:       apigeeCfg,
+		apiClient:    coreapi.NewClient(nil, ""),
+		cfg:          apigeeCfg,
+		eventChannel: eventChannel,
+		stopChannel:  make(chan bool),
 	}
 
 	// Start the authentication
@@ -69,29 +72,25 @@ func (a *GatewayClient) Authenticate() error {
 
 // Start - Starts reading log file
 func (a *GatewayClient) Start() {
-	// ctx := context.Background()
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-a.stopChannel:
-	// 			// a.hub.Close(ctx)
-	// 			return
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		for {
+			select {
+			case <-a.stopChannel:
+				return
+			}
+		}
+	}()
 
-	// runtimeInfo, err := a.hub.GetRuntimeInformation(ctx)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-
-	// for _, partitionID := range runtimeInfo.PartitionIDs {
-	// 	_, err := c.hub.Receive(ctx, partitionID, c.eventHandler, eventhub.ReceiveWithLatestOffset())
-	// 	if err != nil {
-	// 		fmt.Println("Error: ", err)
-	// 	}
-	// }
+	environments := a.getEnvironments()
+	// Loop all enviornments
+	for _, env := range environments {
+		// Make api call to get apigeeLogs
+		apigeeLogs := a.getApigeeLogs(env)
+		// Loop all logs
+		for _, apigeeLog := range apigeeLogs.fubar {
+			log.Debug(apigeeLog.VirtualHost)
+		}
+	}
 }
 
 // Stop - Stop processing subscriptions
