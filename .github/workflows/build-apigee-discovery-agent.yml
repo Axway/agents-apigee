@@ -10,7 +10,6 @@ jobs:
   buildDiscoveryAgent:
     env:
       GOPATH: ${{ github.workspace }}
-      GOBIN: ${{ github.workspace }}/bin
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/discovery
