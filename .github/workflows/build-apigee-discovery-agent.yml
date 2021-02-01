@@ -13,8 +13,6 @@ env:
 jobs:
 
   build:
-    env:
-      workingDirectory: 'discovery'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
