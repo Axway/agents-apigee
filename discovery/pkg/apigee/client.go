@@ -5,15 +5,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"strings"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3"
+
 	"github.com/Axway/agent-sdk/pkg/agent"
+	coreagent "github.com/Axway/agent-sdk/pkg/agent"
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	"github.com/Axway/agent-sdk/pkg/apic"
+	"github.com/Axway/agent-sdk/pkg/cache"
+	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
-	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/generatespec"
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
@@ -22,32 +26,37 @@ import (
 )
 
 const (
-	apigeeAuthURL   = "https://login.apigee.com/oauth/token"
-	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
-	orgURL          = "https://api.enterprise.apigee.com/v1/organizations/%s/"
-	openapi         = "openapi"
+	apigeeAuthURL      = "https://login.apigee.com/oauth/token"
+	apigeeAuthToken    = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
+	orgURL             = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	openapi            = "openapi"
+	gatewayType        = "APIGEE"
+	newProxyTopic      = "newProxy"
+	existingProxyTopic = "existingProxy"
+	topicErr           = "Error creating topic %v: %v"
 )
 
 // GatewayClient - Represents the Gateway client
 type GatewayClient struct {
-	cfg          *config.ApigeeConfig
-	apiClient    coreapi.Client
-	accessToken  string
-	pollInterval time.Duration
+	cfg               *config.ApigeeConfig
+	apiClient         coreapi.Client
+	accessToken       string
+	pollInterval      time.Duration
+	virtualHostsToEnv map[string][]models.VirtualHost
 }
 
 // NewClient - Creates a new Gateway Client
 func NewClient(apigeeCfg *config.ApigeeConfig) (*GatewayClient, error) {
-	gatewayClient := &GatewayClient{
+	client := &GatewayClient{
 		apiClient:    coreapi.NewClient(nil, ""),
 		cfg:          apigeeCfg,
 		pollInterval: apigeeCfg.GetPollInterval(),
 	}
 
 	// Start the authentication
-	gatewayClient.Authenticate()
+	client.Authenticate()
 
-	return gatewayClient, nil
+	return client, nil
 }
 
 // Authenticate - handles the initial authentication then starts a go routine to refresh the token
@@ -82,85 +91,135 @@ func (a *GatewayClient) Authenticate() error {
 
 // DiscoverAPIs - Process the API discovery
 func (a *GatewayClient) DiscoverAPIs() {
-
 	for {
-		hostsPerEnv := map[string][]models.VirtualHost{}
-		// Get all virtual host details
-		environments := a.getEnvironments()
-		// Loop all environments
-		for _, env := range environments {
-			hosts := a.getVirtualHosts(env)
-			hostsPerEnv[env] = []models.VirtualHost{}
-			// loop all hosts in each environment
-			for _, host := range hosts {
-				hostsPerEnv[env] = append(hostsPerEnv[env], a.getVirtualHost(env, host))
-			}
-		}
+		// Update the virtual host to environment mapping
+		a.updateVirtualHosts()
 
-		apiProxies := a.getAPIs()
+		// Loop all the api proxies
+		apiProxies := a.getAPIsWithData()
 		// Get all deployments in all api proxies
 		for _, proxy := range apiProxies {
-			proxyDetails := a.getAPI(proxy)
-			deployments := a.getDeployments(proxy)
+			deployments := a.getDeployments(proxy.Name)
 
-			// Get an array of deployed revisions only
-			deployedRevisions := []environmentRevision{}
 			for _, depEnv := range deployments.Environment {
-				envRev := environmentRevision{
-					Name:      depEnv.Name,
-					Revisions: []models.DeploymentDetailsRevision{},
-				}
 				for _, revision := range depEnv.Revision {
 					if revision.State == "deployed" {
-						envRev.Revisions = append(envRev.Revisions, revision)
+						apigeeProxy := apigeeProxyDetails{
+							Proxy:       proxy,
+							Revision:    revision,
+							Environment: depEnv.Name,
+						}
+						go a.handleDeployedRevision(apigeeProxy)
 					}
-				}
-				deployedRevisions = append(deployedRevisions, envRev)
-			}
-
-			for _, depRev := range deployedRevisions {
-				for _, revision := range depRev.Revisions {
-					revisionDetails := a.getRevisionsDetails(proxy, revision.Name)
-					spec := a.retrieveOrBuildSpec(proxyDetails, revision.Name, revisionDetails)
-
-					serviceBody, _ := apic.NewServiceBodyBuilder().
-						SetID(proxyDetails.Name).
-						SetAPIName(proxyDetails.Name).
-						SetDescription(revisionDetails.Description).
-						SetAPISpec(spec).
-						SetStage(depRev.Name).
-						SetVersion(fmt.Sprintf("%d.%d", revisionDetails.ConfigurationVersion.MajorVersion, revisionDetails.ConfigurationVersion.MinorVersion)).
-						SetAuthPolicy(apic.Passthrough).
-						SetTitle(revisionDetails.DisplayName).
-						Build()
-
-					agent.PublishAPI(serviceBody)
-					log.Info("Published API " + serviceBody.APIName + " to AMPLIFY Central")
 				}
 			}
 		}
 		time.Sleep(a.pollInterval)
-		return
 	}
 }
 
+// handleDeployedRevision - this is called with each deployed revision
+func (a *GatewayClient) handleDeployedRevision(apigeeProxy apigeeProxyDetails) {
+	apigeeProxy.APIRevision = a.getRevisionsDetails(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name)
+	a.retrieveOrBuildSpec(&apigeeProxy)
+
+	cacheHash, _ := cache.GetCache().Get(apigeeProxy.GetCacheKey())
+	if cacheHash != nil {
+		go a.handleExistingProxy(apigeeProxy)
+	} else {
+		go a.handleNewProxy(apigeeProxy)
+	}
+}
+
+func (a *GatewayClient) updateVirtualHosts() {
+	virtualHostsToEnv := map[string][]models.VirtualHost{}
+	// Get all virtual host details
+	environments := a.getEnvironments()
+	// Loop all environments
+	for _, env := range environments {
+		hosts := a.getVirtualHosts(env)
+		virtualHostsToEnv[env] = []models.VirtualHost{}
+		// loop all hosts in each environment
+		for _, host := range hosts {
+			virtualHostsToEnv[env] = append(virtualHostsToEnv[env], a.getVirtualHost(env, host))
+		}
+	}
+	a.virtualHostsToEnv = virtualHostsToEnv
+}
+
+func (a *GatewayClient) serviceBodyBuilder(apigeeProxy apigeeProxyDetails) (apic.ServiceBody, error) {
+	// Create the service body
+	return apic.NewServiceBodyBuilder().
+		SetID(apigeeProxy.Proxy.Name).
+		SetAPIName(apigeeProxy.Proxy.Name).
+		SetDescription(apigeeProxy.APIRevision.Description).
+		SetAPISpec(apigeeProxy.Spec).
+		SetStage(apigeeProxy.Environment).
+		SetVersion(apigeeProxy.GetVersion()).
+		SetAuthPolicy(apic.Passthrough).
+		SetTitle(apigeeProxy.APIRevision.DisplayName).
+		Build()
+}
+
+// handleExistingProxy - the details on the proxy that has not yet been added to the cache
+func (a *GatewayClient) handleExistingProxy(data interface{}) {
+	apigeeProxy := data.(apigeeProxyDetails)
+	serviceBody, _ := a.serviceBodyBuilder(apigeeProxy)
+	serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)
+	cacheHash, _ := cache.GetCache().Get(apigeeProxy.GetCacheKey())
+	if serviceBodyHash != cacheHash.(uint64) {
+		serviceBody.APIUpdateSeverity = "MINOR"
+		agent.PublishAPI(serviceBody)
+		cache.GetCache().Set(apigeeProxy.GetCacheKey(), serviceBodyHash)
+	} else {
+		log.Debug("Current API revision already exists")
+	}
+}
+
+//handleNewProxy - the details on the proxy that has not yet been added to the cache
+func (a *GatewayClient) handleNewProxy(data interface{}) {
+	apigeeProxy := data.(apigeeProxyDetails)
+	serviceBody, _ := a.serviceBodyBuilder(apigeeProxy)
+	serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)
+
+	if coreagent.IsAPIPublished(serviceBody.RestAPIID) {
+		publishedMajorHash := util.ConvertStringToUint(agent.GetAttributeOnPublishedAPI(serviceBody.RestAPIID, apigeeProxy.Environment+"Hash"))
+		if publishedMajorHash == serviceBodyHash {
+			log.Debugf("No changes detected for API %s in environment %s", serviceBody.APIName, apigeeProxy.Environment)
+			cache.GetCache().Set(apigeeProxy.GetCacheKey(), serviceBodyHash)
+			return
+		}
+	} else {
+		log.Infof("Create new API service in AMPLIFY Central for API %s in environment %s", serviceBody.APIName, apigeeProxy.Environment)
+	}
+
+	log.Infof("Published API %s in environment %s to AMPLIFY Central", serviceBody.APIName, apigeeProxy.Environment)
+	serviceBody.ServiceAttributes[apigeeProxy.Environment+"Hash"] = util.ConvertUnitToString(serviceBodyHash)
+	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
+	agent.PublishAPI(serviceBody)
+	currentHash, _ := coreutil.ComputeHash(serviceBody)
+	cache.GetCache().Set(apigeeProxy.GetCacheKey(), currentHash)
+}
+
 //retrieveOrBuildSpec - attempts to retrieve a spec or genrerates a spec if one is not found
-func (a *GatewayClient) retrieveOrBuildSpec(proxy models.ApiProxy, revisionName string, revisionDetails models.ApiProxyRevision) []byte {
+func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) {
 	// Check the revisionDetails for a value in spec
-	specString := revisionDetails.Spec.(string)
-	if revisionDetails.Spec != "" {
+	specString := apigeeProxy.APIRevision.Spec.(string)
+	if specString != "" {
 		// The revision has a spec value
 		if util.IsValidURL(specString) {
 			// the spec value is a full url, lets attempt a request to get it
 			response, _ := a.getRequest(specString)
-			return response.Body
+			apigeeProxy.Spec = response.Body
+			return
 		}
 		// the spec value is not a full url, must be a path in the spec store
-		return a.getSwagger(specString)
+		apigeeProxy.Spec = a.getSwagger(specString)
+		return
 	}
 
 	// Check the resource files on the revision for a spec link
-	resourceFiles := a.getResourceFiles(proxy.Name, revisionName)
+	resourceFiles := a.getResourceFiles(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name)
 
 	// find spec path
 	var path string
@@ -172,15 +231,16 @@ func (a *GatewayClient) retrieveOrBuildSpec(proxy models.ApiProxy, revisionName 
 	}
 
 	if path != "" {
-		resourceFileData := a.getRevisionSpec(proxy.Name, revisionName, path)
+		resourceFileData := a.getRevisionSpec(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name, path)
 		// retrieve the spec
 		var association specAssociationFile
 		json.Unmarshal(resourceFileData, &association)
-		return a.getSwagger(association.URL)
+		apigeeProxy.Spec = a.getSwagger(association.URL)
+		return
 	}
 
 	// Build the spec as a last resort
-	return a.generateSpecFile(a.getRevisionDefinitionBundle(proxy.Name, revisionName), revisionDetails)
+	apigeeProxy.Spec = a.generateSpecFile(a.getRevisionDefinitionBundle(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name), apigeeProxy.APIRevision)
 }
 
 func (a *GatewayClient) generateSpecFile(data []byte, revisionDetails models.ApiProxyRevision) []byte {
@@ -202,28 +262,17 @@ func (a *GatewayClient) generateSpecFile(data []byte, revisionDetails models.Api
 
 	// Read all the files from zip archive
 	for _, zipFile := range zipReader.File {
-		for _, proxyFile := range revisionDetails.Proxies {
-			if zipFile.Name == fmt.Sprintf("apiproxy/proxies/%s.xml", proxyFile) {
-				fileBytes, err := readZipFile(zipFile)
-				if err != nil {
-					log.Error(err)
-					break
-				}
-				generatespec.GenerateEndpoints(&spec, fileBytes)
-				break
+		// we only care about the files in proxies
+		if strings.HasPrefix(zipFile.Name, "apiproxy/proxies/") && strings.HasSuffix(zipFile.Name, ".xml") {
+			fileBytes, err := util.ReadZipFile(zipFile)
+			if err != nil {
+				log.Error(err)
+				continue
 			}
+			generatespec.GenerateEndpoints(&spec, fileBytes)
 		}
 	}
 
 	specBytes, _ := json.Marshal(spec)
 	return specBytes
-}
-
-func readZipFile(zf *zip.File) ([]byte, error) {
-	f, err := zf.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	return ioutil.ReadAll(f)
 }

@@ -1,6 +1,11 @@
 package apigee
 
-import "github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
+import (
+	"fmt"
+
+	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/discovery/pkg/util"
+)
 
 // grantType values
 type grantType int
@@ -24,6 +29,23 @@ type AuthResponse struct {
 	JTI          string `json:"jti"`
 }
 
+// apigeeProxyDetails- APIGEE Proxy Details
+type apigeeProxyDetails struct {
+	Proxy       models.ApiProxy
+	Revision    models.DeploymentDetailsRevision
+	APIRevision models.ApiProxyRevision
+	Environment string
+	Spec        []byte
+}
+
+func (a *apigeeProxyDetails) GetVersion() string {
+	return fmt.Sprintf("%d.%d", a.APIRevision.ConfigurationVersion.MajorVersion, a.APIRevision.ConfigurationVersion.MinorVersion)
+}
+
+func (a *apigeeProxyDetails) GetCacheKey() string {
+	return util.FormatRemoteAPIID(a.Proxy.Name, a.Environment, a.Revision.Name)
+}
+
 //Environments
 type environments []string
 
@@ -35,8 +57,8 @@ type apis []string
 
 //EnvironmentRevisions
 type environmentRevision struct {
-	Name      string
-	Revisions []models.DeploymentDetailsRevision
+	EnvironmentName string
+	Revisions       []models.DeploymentDetailsRevision
 }
 
 //specAssociationFile -
