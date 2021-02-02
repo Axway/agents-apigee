@@ -71,6 +71,21 @@ func (a *GatewayClient) getAPIs() apis {
 	return apiProxies
 }
 
+//getAPIsWithData - get the list of apis for the org
+func (a *GatewayClient) getAPIsWithData() []models.ApiProxy {
+	queryParams := map[string]string{
+		"includeRevisions": "true",
+		"includeMetaData":  "true",
+	}
+
+	// Get the apis
+	response, _ := a.getRequestWithQuery(fmt.Sprintf(orgURL+"apis", a.cfg.Organization), queryParams)
+	apiProxies := []models.ApiProxy{}
+	json.Unmarshal(response.Body, &apiProxies)
+
+	return apiProxies
+}
+
 //getAPI - get details of the api
 func (a *GatewayClient) getAPI(apiName string) models.ApiProxy {
 

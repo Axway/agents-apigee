@@ -1,7 +1,9 @@
 package util
 
 import (
+	"archive/zip"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"strconv"
 )
@@ -32,4 +34,13 @@ func ConvertUnitToString(val uint64) string {
 
 func FormatRemoteAPIID(proxyName, deployedEnvName, revisionName string) string {
 	return fmt.Sprintf("%v-%v-%v", proxyName, deployedEnvName, revisionName)
+}
+
+func ReadZipFile(zf *zip.File) ([]byte, error) {
+	f, err := zf.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return ioutil.ReadAll(f)
 }
