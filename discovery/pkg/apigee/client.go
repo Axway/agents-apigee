@@ -9,11 +9,15 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3"
+
 	"github.com/Axway/agent-sdk/pkg/agent"
+	coreagent "github.com/Axway/agent-sdk/pkg/agent"
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	"github.com/Axway/agent-sdk/pkg/apic"
+	"github.com/Axway/agent-sdk/pkg/cache"
+	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
-	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/generatespec"
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
@@ -26,6 +30,7 @@ const (
 	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
 	orgURL          = "https://api.enterprise.apigee.com/v1/organizations/%s/"
 	openapi         = "openapi"
+	gatewayType     = "APIGEE"
 )
 
 // GatewayClient - Represents the Gateway client
@@ -107,8 +112,8 @@ func (a *GatewayClient) DiscoverAPIs() {
 			deployedRevisions := []environmentRevision{}
 			for _, depEnv := range deployments.Environment {
 				envRev := environmentRevision{
-					Name:      depEnv.Name,
-					Revisions: []models.DeploymentDetailsRevision{},
+					EnvironmentName: depEnv.Name,
+					Revisions:       []models.DeploymentDetailsRevision{},
 				}
 				for _, revision := range depEnv.Revision {
 					if revision.State == "deployed" {
@@ -118,29 +123,60 @@ func (a *GatewayClient) DiscoverAPIs() {
 				deployedRevisions = append(deployedRevisions, envRev)
 			}
 
-			for _, depRev := range deployedRevisions {
-				for _, revision := range depRev.Revisions {
+			for _, deployedRevision := range deployedRevisions {
+				for _, revision := range deployedRevision.Revisions {
 					revisionDetails := a.getRevisionsDetails(proxy, revision.Name)
+
 					spec := a.retrieveOrBuildSpec(proxyDetails, revision.Name, revisionDetails)
 
+					// Build the API Service body
 					serviceBody, _ := apic.NewServiceBodyBuilder().
 						SetID(proxyDetails.Name).
 						SetAPIName(proxyDetails.Name).
 						SetDescription(revisionDetails.Description).
 						SetAPISpec(spec).
-						SetStage(depRev.Name).
+						SetStage(deployedRevision.EnvironmentName).
 						SetVersion(fmt.Sprintf("%d.%d", revisionDetails.ConfigurationVersion.MajorVersion, revisionDetails.ConfigurationVersion.MinorVersion)).
 						SetAuthPolicy(apic.Passthrough).
 						SetTitle(revisionDetails.DisplayName).
 						Build()
 
-					agent.PublishAPI(serviceBody)
-					log.Info("Published API " + serviceBody.APIName + " to AMPLIFY Central")
+					cacheKey := util.FormatRemoteAPIID(proxyDetails.Name, deployedRevision.EnvironmentName, revision.Name)
+					serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)
+					cacheHash, _ := cache.GetCache().Get(cacheKey)
+					if cacheHash != nil {
+						if serviceBodyHash != cacheHash.(uint64) {
+							serviceBody.APIUpdateSeverity = "MINOR"
+							agent.PublishAPI(serviceBody)
+							cache.GetCache().Set(cacheKey, serviceBodyHash)
+						} else {
+							log.Debug("Current API revision already exists")
+						}
+					} else {
+
+						if coreagent.IsAPIPublished(serviceBody.RestAPIID) {
+							publishedMajorHash := util.ConvertStringToUint(agent.GetAttributeOnPublishedAPI(serviceBody.RestAPIID, deployedRevision.EnvironmentName+"Hash"))
+							if publishedMajorHash == serviceBodyHash {
+								log.Debugf("No changes detected in the API %s", serviceBody.APIName)
+								cache.GetCache().Set(cacheKey, serviceBodyHash)
+								continue
+							}
+
+						} else {
+							log.Infof("Create new API service in AMPLIFY Central for API %s", serviceBody.APIName)
+						}
+
+						log.Info("Published API " + serviceBody.APIName + " to AMPLIFY Central")
+						serviceBody.ServiceAttributes[deployedRevision.EnvironmentName+"Hash"] = util.ConvertUnitToString(serviceBodyHash)
+						serviceBody.ServiceAttributes["GatewayType"] = gatewayType
+						agent.PublishAPI(serviceBody)
+						currentHash, _ := coreutil.ComputeHash(serviceBody)
+						cache.GetCache().Set(cacheKey, currentHash)
+					}
 				}
 			}
 		}
 		time.Sleep(a.pollInterval)
-		return
 	}
 }
 
