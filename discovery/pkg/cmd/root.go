@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	corecmd "github.com/Axway/agent-sdk/pkg/cmd"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 
@@ -28,6 +30,7 @@ func init() {
 	rootProps.AddStringProperty("apigee.organization", "", "APIGEE Organization")
 	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
+	rootProps.AddDurationProperty("apigee.pollInterval", 30*time.Second, "The time interval between checking for new APIGEE resources")
 }
 
 // Callback that agent will call to process the execution
@@ -46,6 +49,7 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	// Parse the config from bound properties and setup gateway config
 	apigeeConfig = &config.ApigeeConfig{
 		Organization: rootProps.StringPropertyValue("apigee.organization"),
+		PollInterval: rootProps.DurationPropertyValue("apigee.pollInterval"),
 		Auth: &config.AuthConfig{
 			Username: rootProps.StringPropertyValue("apigee.auth.username"),
 			Password: rootProps.StringPropertyValue("apigee.auth.password"),
