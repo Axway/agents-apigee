@@ -35,8 +35,8 @@ type apis []string
 
 //EnvironmentRevisions
 type environmentRevision struct {
-	Name      string
-	Revisions []models.DeploymentDetailsRevision
+	EnvironmentName string
+	Revisions       []models.DeploymentDetailsRevision
 }
 
 //specAssociationFile -
