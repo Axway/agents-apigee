@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -157,16 +158,15 @@ func (a *GatewayClient) DiscoverAPIs() {
 						if coreagent.IsAPIPublished(serviceBody.RestAPIID) {
 							publishedMajorHash := util.ConvertStringToUint(agent.GetAttributeOnPublishedAPI(serviceBody.RestAPIID, deployedRevision.EnvironmentName+"Hash"))
 							if publishedMajorHash == serviceBodyHash {
-								log.Debugf("No changes detected in the API %s", serviceBody.APIName)
+								log.Debugf("No changes detected for API %s in environment %s", serviceBody.APIName, deployedRevision.EnvironmentName)
 								cache.GetCache().Set(cacheKey, serviceBodyHash)
 								continue
 							}
-
 						} else {
-							log.Infof("Create new API service in AMPLIFY Central for API %s", serviceBody.APIName)
+							log.Infof("Create new API service in AMPLIFY Central for API %s in environment %s", serviceBody.APIName, deployedRevision.EnvironmentName)
 						}
 
-						log.Info("Published API " + serviceBody.APIName + " to AMPLIFY Central")
+						log.Infof("Published API %s in environment %s to AMPLIFY Central", serviceBody.APIName, deployedRevision.EnvironmentName)
 						serviceBody.ServiceAttributes[deployedRevision.EnvironmentName+"Hash"] = util.ConvertUnitToString(serviceBodyHash)
 						serviceBody.ServiceAttributes["GatewayType"] = gatewayType
 						agent.PublishAPI(serviceBody)
@@ -238,16 +238,14 @@ func (a *GatewayClient) generateSpecFile(data []byte, revisionDetails models.Api
 
 	// Read all the files from zip archive
 	for _, zipFile := range zipReader.File {
-		for _, proxyFile := range revisionDetails.Proxies {
-			if zipFile.Name == fmt.Sprintf("apiproxy/proxies/%s.xml", proxyFile) {
-				fileBytes, err := readZipFile(zipFile)
-				if err != nil {
-					log.Error(err)
-					break
-				}
-				generatespec.GenerateEndpoints(&spec, fileBytes)
-				break
+		// we only care about the files in proxies
+		if strings.HasPrefix(zipFile.Name, "apiproxy/proxies/") && strings.HasSuffix(zipFile.Name, ".xml") {
+			fileBytes, err := readZipFile(zipFile)
+			if err != nil {
+				log.Error(err)
+				continue
 			}
+			generatespec.GenerateEndpoints(&spec, fileBytes)
 		}
 	}
 
