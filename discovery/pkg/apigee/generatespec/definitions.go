@@ -10,7 +10,7 @@ import (
 
 // APIGEE XML structures
 // APIProxy - APIGEE API Proxy definition
-type apiProxy struct {
+type APIProxy struct {
 	Basepaths       string               `xml:"Basepaths"`
 	Version         configurationVersion `xml:"ConfigurationVersion"`
 	CreatedAt       int                  `xml:"CreatedAt"`

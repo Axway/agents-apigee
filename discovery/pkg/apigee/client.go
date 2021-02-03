@@ -4,12 +4,11 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	coreagent "github.com/Axway/agent-sdk/pkg/agent"
@@ -20,29 +19,24 @@ import (
 	"github.com/Axway/agent-sdk/pkg/util/log"
 
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/generatespec"
-	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
 	"github.com/Axway/agents-apigee/discovery/pkg/config"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
 
 const (
-	apigeeAuthURL      = "https://login.apigee.com/oauth/token"
-	apigeeAuthToken    = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
-	orgURL             = "https://api.enterprise.apigee.com/v1/organizations/%s/"
-	openapi            = "openapi"
-	gatewayType        = "APIGEE"
-	newProxyTopic      = "newProxy"
-	existingProxyTopic = "existingProxy"
-	topicErr           = "Error creating topic %v: %v"
+	apigeeAuthURL   = "https://login.apigee.com/oauth/token"
+	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
+	openapi         = "openapi"
+	gatewayType     = "APIGEE"
 )
 
 // GatewayClient - Represents the Gateway client
 type GatewayClient struct {
-	cfg               *config.ApigeeConfig
-	apiClient         coreapi.Client
-	accessToken       string
-	pollInterval      time.Duration
-	virtualHostsToEnv map[string][]models.VirtualHost
+	cfg          *config.ApigeeConfig
+	apiClient    coreapi.Client
+	accessToken  string
+	pollInterval time.Duration
+	envToURLs    map[string][]string
 }
 
 // NewClient - Creates a new Gateway Client
@@ -109,7 +103,7 @@ func (a *GatewayClient) DiscoverAPIs() {
 							Revision:    revision,
 							Environment: depEnv.Name,
 						}
-						go a.handleDeployedRevision(apigeeProxy)
+						a.handleDeployedRevision(apigeeProxy)
 					}
 				}
 			}
@@ -121,39 +115,55 @@ func (a *GatewayClient) DiscoverAPIs() {
 // handleDeployedRevision - this is called with each deployed revision
 func (a *GatewayClient) handleDeployedRevision(apigeeProxy apigeeProxyDetails) {
 	apigeeProxy.APIRevision = a.getRevisionsDetails(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name)
-	a.retrieveOrBuildSpec(&apigeeProxy)
 
 	cacheHash, _ := cache.GetCache().Get(apigeeProxy.GetCacheKey())
 	if cacheHash != nil {
-		go a.handleExistingProxy(apigeeProxy)
+		a.handleExistingProxy(apigeeProxy)
 	} else {
-		go a.handleNewProxy(apigeeProxy)
+		a.handleNewProxy(apigeeProxy)
 	}
 }
 
 func (a *GatewayClient) updateVirtualHosts() {
-	virtualHostsToEnv := map[string][]models.VirtualHost{}
+	envToURLs := map[string][]string{}
 	// Get all virtual host details
 	environments := a.getEnvironments()
 	// Loop all environments
 	for _, env := range environments {
 		hosts := a.getVirtualHosts(env)
-		virtualHostsToEnv[env] = []models.VirtualHost{}
+		envToURLs[env] = []string{}
 		// loop all hosts in each environment
 		for _, host := range hosts {
-			virtualHostsToEnv[env] = append(virtualHostsToEnv[env], a.getVirtualHost(env, host))
+			vHost := a.getVirtualHost(env, host)
+			for _, alias := range vHost.HostAliases {
+				basePath := ""
+				if len(vHost.BaseUrl) > 0 {
+					basePath = vHost.BaseUrl
+				}
+				url := url.URL{
+					Scheme: "http",
+					Host:   fmt.Sprintf("%v:%v", alias, vHost.Port),
+					Path:   basePath,
+				}
+				if vHost.SSLInfo.Enabled == "true" {
+					url.Scheme = "https"
+				}
+				envToURLs[env] = append(envToURLs[env], url.String())
+			}
 		}
 	}
-	a.virtualHostsToEnv = virtualHostsToEnv
+	a.envToURLs = envToURLs
 }
 
 func (a *GatewayClient) serviceBodyBuilder(apigeeProxy apigeeProxyDetails) (apic.ServiceBody, error) {
 	// Create the service body
+	spec := a.retrieveOrBuildSpec(&apigeeProxy)
+
 	return apic.NewServiceBodyBuilder().
 		SetID(apigeeProxy.Proxy.Name).
 		SetAPIName(apigeeProxy.Proxy.Name).
 		SetDescription(apigeeProxy.APIRevision.Description).
-		SetAPISpec(apigeeProxy.Spec).
+		SetAPISpec(spec).
 		SetStage(apigeeProxy.Environment).
 		SetVersion(apigeeProxy.GetVersion()).
 		SetAuthPolicy(apic.Passthrough).
@@ -202,7 +212,29 @@ func (a *GatewayClient) handleNewProxy(data interface{}) {
 }
 
 //retrieveOrBuildSpec - attempts to retrieve a spec or genrerates a spec if one is not found
-func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) {
+func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []byte {
+	zipBundle := a.getRevisionDefinitionBundle(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name)
+	// Open the proxy definition file to get the basepath and security policy
+
+	// Read all the files from zip archive
+	zipReader, err := zip.NewReader(bytes.NewReader(zipBundle), int64(len(zipBundle)))
+	if err != nil {
+		log.Error(err)
+	}
+	xmlProxyDetails := generatespec.APIProxy{}
+	for _, zipFile := range zipReader.File {
+		// we only care about the files in proxies
+		if strings.HasPrefix(zipFile.Name, "apiproxy/"+apigeeProxy.Proxy.Name+".xml") {
+			fileBytes, err := util.ReadZipFile(zipFile)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			xml.Unmarshal(fileBytes, &xmlProxyDetails)
+			break
+		}
+	}
+
 	// Check the revisionDetails for a value in spec
 	specString := apigeeProxy.APIRevision.Spec.(string)
 	if specString != "" {
@@ -210,12 +242,10 @@ func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) {
 		if util.IsValidURL(specString) {
 			// the spec value is a full url, lets attempt a request to get it
 			response, _ := a.getRequest(specString)
-			apigeeProxy.Spec = response.Body
-			return
+			return response.Body
 		}
 		// the spec value is not a full url, must be a path in the spec store
-		apigeeProxy.Spec = a.getSwagger(specString)
-		return
+		return a.getSwagger(specString)
 	}
 
 	// Check the resource files on the revision for a spec link
@@ -235,44 +265,10 @@ func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) {
 		// retrieve the spec
 		var association specAssociationFile
 		json.Unmarshal(resourceFileData, &association)
-		apigeeProxy.Spec = a.getSwagger(association.URL)
-		return
+		return a.getSwagger(association.URL)
+
 	}
 
 	// Build the spec as a last resort
-	apigeeProxy.Spec = a.generateSpecFile(a.getRevisionDefinitionBundle(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name), apigeeProxy.APIRevision)
-}
-
-func (a *GatewayClient) generateSpecFile(data []byte, revisionDetails models.ApiProxyRevision) []byte {
-	// data is the byte array of the zip archive
-	spec := openapi3.Swagger{
-		OpenAPI: "3.0.1",
-		Info: &openapi3.Info{
-			Title:       revisionDetails.DisplayName,
-			Description: revisionDetails.Description,
-			Version:     fmt.Sprintf("%v.%v", revisionDetails.ConfigurationVersion.MajorVersion, revisionDetails.ConfigurationVersion.MinorVersion),
-		},
-		Paths: openapi3.Paths{},
-	}
-
-	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		log.Error(err)
-	}
-
-	// Read all the files from zip archive
-	for _, zipFile := range zipReader.File {
-		// we only care about the files in proxies
-		if strings.HasPrefix(zipFile.Name, "apiproxy/proxies/") && strings.HasSuffix(zipFile.Name, ".xml") {
-			fileBytes, err := util.ReadZipFile(zipFile)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			generatespec.GenerateEndpoints(&spec, fileBytes)
-		}
-	}
-
-	specBytes, _ := json.Marshal(spec)
-	return specBytes
+	return generatespec.Generate(zipBundle, apigeeProxy.APIRevision, a.envToURLs[apigeeProxy.Environment], xmlProxyDetails.Basepaths)
 }

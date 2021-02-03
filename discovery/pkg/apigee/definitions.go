@@ -35,7 +35,6 @@ type apigeeProxyDetails struct {
 	Revision    models.DeploymentDetailsRevision
 	APIRevision models.ApiProxyRevision
 	Environment string
-	Spec        []byte
 }
 
 func (a *apigeeProxyDetails) GetVersion() string {
