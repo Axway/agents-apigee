@@ -1,4 +1,4 @@
-package generatespec
+package apigeebundle
 
 import (
 	"encoding/xml"
@@ -26,7 +26,6 @@ type APIProxy struct {
 	Spec            string               `xml:"Spec"`
 	TargetServers   string               `xml:"TargetServers"`
 	TargetEndpoints string               `xml:"TargetEndpoints"`
-	parsedEndpoints []proxyEndpoint
 }
 
 // configurationVersion - APIGEE API Proxy version
@@ -90,7 +89,8 @@ type flow struct {
 
 // conditions - array of conditions
 type conditions struct {
-	Condition []condition
+	Condition       []condition
+	ConditionString string
 }
 
 // condition - parsed representation of APIGEE condition
@@ -111,6 +111,7 @@ func (c *conditions) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 	if el == "null" {
 		return nil
 	}
+	c.ConditionString = el
 
 	// Split all conditions
 	re := regexp.MustCompile("\\).*\\(")
@@ -131,6 +132,45 @@ func (c *conditions) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 			Operator: strings.Trim(matches["op"], "\""),
 			Value:    strings.Trim(matches["val"], "\""),
 		})
+	}
+
+	return nil
+}
+
+// apiKeyPolicy - APIGEE apikey policy
+type apiKeyPolicy struct {
+	Name        string `xml:"name,attr"`
+	Enabled     string `xml:"enabled,attr"`
+	DisplayName string `xml:"DisplayName"`
+	APIKey      apiKey `xml:"APIKey"`
+}
+
+type apiKey struct {
+	Reference string `xml:"ref,attr"`
+	Location  string
+	Key       string
+}
+
+//UnmarshalXML - custom XML unmarshall to parse APIGEE flow conditions
+func (a *apiKey) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	apigeeToSwaggerLocation := map[string]string{
+		"header":      "header",
+		"queryParams": "query",
+	}
+
+	var el string
+
+	if err := d.DecodeElement(&el, &start); err != nil {
+		return err
+	}
+
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "ref" {
+			a.Reference = attr.Value
+			values := strings.Split(attr.Value, ".")
+			a.Location = apigeeToSwaggerLocation[values[1]]
+			a.Key = values[2]
+		}
 	}
 
 	return nil
