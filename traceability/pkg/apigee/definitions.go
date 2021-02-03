@@ -78,7 +78,7 @@ type apiProxies []string
 
 // apigeeLogs - apigee logs
 type apigeeLogs struct {
-	fubar []apigeeLog `json:"logs"`
+	Log []apigeeLog `json:"logs"`
 }
 
 type apigeeLog struct {
@@ -99,7 +99,7 @@ type apigeeLog struct {
 
 // events
 type apigeeEvents struct {
-	fubar []apigeeEvent `json:"events"`
+	Event []apigeeEvent `json:"events"`
 }
 
 type apigeeEvent struct {

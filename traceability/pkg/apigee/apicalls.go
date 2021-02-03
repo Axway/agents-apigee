@@ -107,10 +107,15 @@ func (a *GatewayClient) getAPIProxies() apiProxies {
 //	url: `https://apimonitoring.enterprise.apigee.com/metrics/events?org={organizationId}`,
 // 	headers: { Authorization: `Basic ${token}`, Accept: 'application/json' }
 // }),
-func (a *GatewayClient) getEvents() apigeeEvents {
+func (a *GatewayClient) getEvents(environment string) apigeeEvents {
 
+	queryParams := map[string]string{
+		"org": a.cfg.Organization,
+		"env": environment,
+	}
 	// Get the initial authentication token
-	response, _ := a.getRequest(fmt.Sprintf(traceURL+"metrics/events?org=%s", a.cfg.Organization))
+	response, _ := a.getRequestWithQuery(fmt.Sprintf(traceURL+"metrics/events"), queryParams)
+
 	log.Debugf("getEvents: %s", string(response.Body))
 	apigeeEvents := apigeeEvents{}
 	json.Unmarshal(response.Body, &apigeeEvents)

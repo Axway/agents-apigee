@@ -84,11 +84,18 @@ func (a *GatewayClient) Start() {
 	environments := a.getEnvironments()
 	// Loop all enviornments
 	for _, env := range environments {
+
 		// Make api call to get apigeeLogs
 		apigeeLogs := a.getApigeeLogs(env)
-		// Loop all logs
-		for _, apigeeLog := range apigeeLogs.fubar {
-			log.Debug(apigeeLog.VirtualHost)
+		for _, apigeeLog := range apigeeLogs.Log {
+			// get apigeeLog fields here
+			log.Debug(apigeeLog)
+		}
+
+		apigeeEvents := a.getEvents(env)
+		for _, apigeeEvent := range apigeeEvents.Event {
+			// get apigeeEvent fields here
+			log.Debug(apigeeEvent)
 		}
 	}
 }
