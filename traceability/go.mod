@@ -12,7 +12,6 @@ require (
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/hpcloud/tail v1.0.0
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect

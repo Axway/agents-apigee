@@ -14,7 +14,7 @@ import (
 // RootCmd - Agent root command
 var RootCmd corecmd.AgentRootCmd
 var beatCmd *libcmd.BeatsRootCmd
-var apigeeConfig *config.ApigeeConfig
+var logglyConfig *config.LogglyConfig
 
 func init() {
 	name := "apigee_traceability_agent"
@@ -39,11 +39,8 @@ func init() {
 
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
-	rootProps.AddStringProperty("gateway-section.logFile", "./logs/traffic.log", "Sample log file with traffic event from gateway")
-	rootProps.AddBoolProperty("gateway-section.processOnInput", true, "Flag to process received event on input or by output before publishing the event by transport")
-	rootProps.AddStringProperty("apigee.organization", "", "APIGEE Organization")
-	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
-	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
+	rootProps.AddStringProperty("loggly.organization", "", "Loggly Organization")
+	rootProps.AddStringProperty("loggly.token", "", "API Token to use to authenticate to Loggly")
 
 }
 
@@ -57,26 +54,17 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
-	apigeeConfig := &config.ApigeeConfig{
-		LogFile:        rootProps.StringPropertyValue("gateway-section.logFile"),
-		ProcessOnInput: rootProps.BoolPropertyValue("gateway-section.processOnInput"),
-		Organization:   rootProps.StringPropertyValue("apigee.organization"),
-		Auth: &config.AuthConfig{
-			Username: rootProps.StringPropertyValue("apigee.auth.username"),
-			Password: rootProps.StringPropertyValue("apigee.auth.password"),
-		},
+	logglyConfig := &config.LogglyConfig{
+		Organization: rootProps.StringPropertyValue("loggly.organization"),
+		APIToken:     rootProps.StringPropertyValue("loggly.token"),
 	}
 
 	agentConfig := &config.AgentConfig{
-		CentralCfg: centralConfig,
-		GatewayCfg: apigeeConfig,
+		CentralCfg:   centralConfig,
+		LogglyConfig: logglyConfig,
 	}
-	beater.SetGatewayConfig(apigeeConfig)
+
+	beater.SetLogglyConfig(logglyConfig)
 
 	return agentConfig, nil
-}
-
-// GetAgentConfig - Returns the agent config
-func GetAgentConfig() *config.ApigeeConfig {
-	return apigeeConfig
 }

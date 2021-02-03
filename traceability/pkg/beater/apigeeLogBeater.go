@@ -1,7 +1,8 @@
 package beater
 
 import (
-	"github.com/Axway/agent-sdk/pkg/traceability"
+	"fmt"
+
 	agenterrors "github.com/Axway/agent-sdk/pkg/util/errors"
 	hc "github.com/Axway/agent-sdk/pkg/util/healthcheck"
 
@@ -16,33 +17,28 @@ import (
 // customLogBeater configuration.
 type customLogBeater struct {
 	done           chan struct{}
-	logReader      *apigee.LogReader
-	apigeeClient   *apigee.GatewayClient
+	logglyClient   *apigee.LogglyClient
 	eventProcessor *apigee.EventProcessor
 	client         beat.Client
-	eventChannel   chan string
+	eventChannel   chan []byte
 }
 
 var bt *customLogBeater
-var gatewayConfig *config.ApigeeConfig
+var logglyConfig *config.LogglyConfig
 
 // New creates an instance of aws_apigw_traceability_agent.
 func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	bt := &customLogBeater{
 		done:         make(chan struct{}),
-		eventChannel: make(chan string),
+		eventChannel: make(chan []byte),
 	}
 
 	var err error
-	bt.logReader, err = apigee.NewLogReader(gatewayConfig, bt.eventChannel)
-	bt.apigeeClient, err = apigee.NewClient(gatewayConfig, bt.eventChannel)
-	bt.eventProcessor = apigee.NewEventProcessor(gatewayConfig)
+
+	bt.logglyClient, err = apigee.NewLogglyClient(logglyConfig, bt.eventChannel)
+	bt.eventProcessor = apigee.NewEventProcessor(logglyConfig)
 	if err != nil {
 		return nil, err
-	}
-
-	if !gatewayConfig.ProcessOnInput {
-		traceability.SetOutputEventProcessor(bt.eventProcessor)
 	}
 
 	// Validate that all necessary services are up and running. If not, return error
@@ -53,9 +49,9 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	return bt, nil
 }
 
-// SetGatewayConfig - set parsed gateway config
-func SetGatewayConfig(gatewayCfg *config.ApigeeConfig) {
-	gatewayConfig = gatewayCfg
+// SetLogglyConfig - set parsed gateway config
+func SetLogglyConfig(logglyCfg *config.LogglyConfig) {
+	logglyConfig = logglyCfg
 }
 
 // Run starts ApigeeTraceabilityAgent.
@@ -68,26 +64,20 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		return err
 	}
 
-	bt.apigeeClient.Start()
+	bt.logglyClient.Start()
 
 	for {
 		select {
 		case <-bt.done:
 			return nil
 		case eventData := <-bt.eventChannel:
-			if gatewayConfig.ProcessOnInput {
-				eventsToPublish := bt.eventProcessor.ProcessRaw([]byte(eventData))
-				if eventsToPublish != nil {
-					bt.client.PublishAll(eventsToPublish)
-				}
-			} else {
-				eventToPublish := beat.Event{
-					Fields: common.MapStr{
-						"message": eventData,
-					},
-				}
-				bt.client.Publish(eventToPublish)
-			}
+			fmt.Println("EVENT TO PROCESS : " + string(eventData))
+
+			// Todo : Uncomment
+			// eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
+			// if eventsToPublish != nil {
+			// 	bt.client.PublishAll(eventsToPublish)
+			// }
 		}
 	}
 }

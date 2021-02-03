@@ -8,36 +8,25 @@ import (
 
 // AgentConfig - represents the config for agent
 type AgentConfig struct {
-	CentralCfg corecfg.CentralConfig `config:"central"`
-	GatewayCfg *ApigeeConfig         `config:"apigee"`
+	CentralCfg   corecfg.CentralConfig `config:"central"`
+	LogglyConfig *LogglyConfig         `config:"loggly"`
 }
 
-// ApigeeConfig - represents the config for gateway
-type ApigeeConfig struct {
+// LogglyConfig - represents the config for gateway
+type LogglyConfig struct {
 	corecfg.IConfigValidator
-	LogFile        string      `config:"logFile"`
-	ProcessOnInput bool        `config:"processOnInput"`
-	Organization   string      `config:"organization"`
-	Auth           *AuthConfig `config:"auth"`
+	Organization string `config:"organization"`
+	APIToken     string `config:"token"`
 }
 
 // ValidateCfg - Validates the gateway config
-func (a *ApigeeConfig) ValidateCfg() (err error) {
-	if a.LogFile == "" {
-		return errors.New("Invalid gateway configuration: logFile is not configured")
+func (a *LogglyConfig) ValidateCfg() (err error) {
+	if a.Organization == "" {
+		return errors.New("Invalid gateway configuration: organization is not configured")
 	}
 
-	if a.Auth.Username == "" {
-		return errors.New("Invalid gateway configuration: username is not configured")
-	}
-
-	if a.Auth.Password == "" {
-		return errors.New("Invalid gateway configuration: password is not configured")
+	if a.APIToken == "" {
+		return errors.New("Invalid gateway configuration: apitoken is not configured")
 	}
 	return
-}
-
-// GetAuth - Returns the Auth Config
-func (a *ApigeeConfig) GetAuth() *AuthConfig {
-	return a.Auth
 }

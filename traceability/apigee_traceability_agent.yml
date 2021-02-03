@@ -1,12 +1,8 @@
 apigee_traceability_agent:
-  #
-  # Apigee API Management service connectivity
-  #
-  apigee:
-    organization: sbolosan-eval
-    auth:
-      username: CHANGME
-      password: CHANGEME
+  loggly:
+      organization: sbolosan
+      token: 7fa9ef24-0fba-407f-af34-103ce8872124
+  
   # Defines how often an event is sent to the output
   central:
     deployment: "${CENTRAL_DEPLOYMENT:teams}"
@@ -82,12 +78,12 @@ apigee_traceability_agent:
               body: |
                 Could not unsubscribe to Catalog Item: <a href= ${catalogItemUrl}> ${catalogItemName} </a>
 
-log:
-  level: debug
-  format: json
-  output: stderr
-  path: logs
-  maskedValues: 
+  log:
+    level: debug
+    format: json
+    output: stdout
+    path: logs
+    maskedValues: 
 
 logging:
   metrics:
