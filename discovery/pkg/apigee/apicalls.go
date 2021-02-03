@@ -6,7 +6,12 @@ import (
 	"net/url"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
+	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
+)
+
+const (
+	orgURL = "https://api.enterprise.apigee.com/v1/organizations/%s/"
 )
 
 func (a *GatewayClient) postAuth(authData url.Values) AuthResponse {
@@ -21,7 +26,10 @@ func (a *GatewayClient) postAuth(authData url.Values) AuthResponse {
 	}
 
 	// Get the initial authentication token
-	response, _ := a.apiClient.Send(request)
+	response, err := a.apiClient.Send(request)
+	if err != nil {
+		log.Errorf(err.Error())
+	}
 	authResponse := AuthResponse{}
 	json.Unmarshal(response.Body, &authResponse)
 

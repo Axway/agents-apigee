@@ -17,7 +17,7 @@ func TestGenerateEndpointsGet(t *testing.T) {
 	spec := openapi3.Swagger{}
 	byteValue, _ := ioutil.ReadAll(endpointFile)
 	endpointFile.Close()
-	GenerateEndpoints(&spec, byteValue)
+	generateEndpoints(&spec, byteValue)
 
 	// Validations
 	assert.Equal(t, 1, len(spec.Paths), "Only 1 path was expected")
