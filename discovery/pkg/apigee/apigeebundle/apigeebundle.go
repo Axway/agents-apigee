@@ -5,12 +5,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"net/url"
 	"strings"
 
+	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/tidwall/gjson"
 
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
+)
+
+const (
+	apiKeyName = "ApiKeyAuth"
 )
 
 //APIGEEBundle -
@@ -18,6 +25,7 @@ type APIGEEBundle struct {
 	Name            string
 	ProxyDefinition APIProxy
 	Proxies         map[string]proxyEndpoint
+	VerifyAPIKey    apiKeyPolicy
 	URLs            []string
 }
 
@@ -69,22 +77,68 @@ func (a *APIGEEBundle) parseAll(data []byte) {
 			}
 			xml.Unmarshal(fileBytes, &endpoint)
 			a.Proxies[zipFile.Name] = endpoint
+		case strings.HasPrefix(zipFile.Name, "apiproxy/policies/verify-api-key.xml"):
+			// APIKey policy definition
+			fileBytes, err := util.ReadZipFile(zipFile)
+			if err != nil {
+				log.Error(err)
+			}
+			xml.Unmarshal(fileBytes, &a.VerifyAPIKey)
 		default:
 			log.Warnf("Skipped parsing %s", zipFile.Name)
 		}
 	}
 }
 
-//Generate - generate a spec file
-func (a *APIGEEBundle) Generate(name, description, version string) []byte {
-	// Create the serves array
+//UpdateSpec - updates the URLS in the spec
+func (a *APIGEEBundle) UpdateSpec(spec []byte) []byte {
+	version := gjson.GetBytes(spec, "swagger").String()
+	if version != "" {
+		return a.updateOAS2Spec(spec)
+	}
+	return a.updateOAS3Spec(spec)
+}
+
+func (a *APIGEEBundle) updateOAS2Spec(spec []byte) []byte {
+	//OAS2
+
+	// Update the host
+	oas2Spec := openapi2.Swagger{}
+	json.Unmarshal(spec, &oas2Spec)
+	oas2Spec.Schemes = []string{"http"}
+	for _, urlString := range a.URLs {
+		urlDetails, _ := url.Parse(urlString)
+		oas2Spec.Host = urlDetails.Host
+		oas2Spec.BasePath = urlDetails.Path
+		if urlDetails.Scheme == "https" {
+			oas2Spec.Schemes = []string{urlDetails.Scheme}
+		}
+	}
+
+	newSpec, _ := json.Marshal(oas2Spec)
+	return newSpec
+}
+
+func (a *APIGEEBundle) updateOAS3Spec(spec []byte) []byte {
+	//OAS3
+
+	// Update the servers array
 	servers := []*openapi3.Server{}
 	for _, url := range a.URLs {
 		servers = append(servers, &openapi3.Server{
 			URL: url,
 		})
 	}
+	oas3Spec := openapi3.Swagger{}
+	json.Unmarshal(spec, &oas3Spec)
+	oas3Spec.Servers = servers
 
+	newSpec, _ := json.Marshal(oas3Spec)
+	return newSpec
+}
+
+//Generate - generate a spec file
+func (a *APIGEEBundle) Generate(name, description, version string) []byte {
 	// data is the byte array of the zip archive
 	spec := openapi3.Swagger{
 		OpenAPI: "3.0.1",
@@ -93,8 +147,26 @@ func (a *APIGEEBundle) Generate(name, description, version string) []byte {
 			Description: description,
 			Version:     version,
 		},
-		Paths:   openapi3.Paths{},
-		Servers: servers,
+		Paths: openapi3.Paths{},
+	}
+
+	// Update the security policy
+	if a.VerifyAPIKey.Enabled == "true" {
+		// Update the security scheme
+		securityScheme := openapi3.SecurityScheme{
+			Name: a.VerifyAPIKey.APIKey.Key,
+			In:   a.VerifyAPIKey.APIKey.Location,
+			Type: "apiKey",
+		}
+		securitySchemeRef := openapi3.SecuritySchemeRef{
+			Value: &securityScheme,
+		}
+		spec.Components.SecuritySchemes = openapi3.SecuritySchemes{apiKeyName: &securitySchemeRef}
+
+		// Add the scheme to security
+		spec.Security = []openapi3.SecurityRequirement{
+			{apiKeyName: []string{}},
+		}
 	}
 
 	for _, proxy := range a.Proxies {

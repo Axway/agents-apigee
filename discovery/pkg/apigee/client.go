@@ -155,6 +155,14 @@ func (a *GatewayClient) serviceBodyBuilder(apigeeProxy apigeeProxyDetails) (apic
 	// Create the service body
 	spec := a.retrieveOrBuildSpec(&apigeeProxy)
 
+	// update spec
+	spec = apigeeProxy.Bundle.UpdateSpec(spec)
+
+	authPolicy := apic.Passthrough
+	if apigeeProxy.Bundle.VerifyAPIKey.Enabled == "true" {
+		authPolicy = apic.Apikey
+	}
+
 	return apic.NewServiceBodyBuilder().
 		SetID(apigeeProxy.Proxy.Name).
 		SetAPIName(apigeeProxy.Proxy.Name).
@@ -162,7 +170,7 @@ func (a *GatewayClient) serviceBodyBuilder(apigeeProxy apigeeProxyDetails) (apic
 		SetAPISpec(spec).
 		SetStage(apigeeProxy.Environment).
 		SetVersion(apigeeProxy.GetVersion()).
-		SetAuthPolicy(apic.Passthrough).
+		SetAuthPolicy(authPolicy).
 		SetTitle(apigeeProxy.APIRevision.DisplayName).
 		Build()
 }
@@ -210,8 +218,8 @@ func (a *GatewayClient) handleNewProxy(data interface{}) {
 //retrieveOrBuildSpec - attempts to retrieve a spec or genrerates a spec if one is not found
 func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []byte {
 	zipBundle := a.getRevisionDefinitionBundle(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name)
-	// Open the proxy definition file to get the basepath and security policy
-	b := apigeebundle.NewAPIGEEBundle(zipBundle, apigeeProxy.Proxy.Name, a.envToURLs[apigeeProxy.Environment])
+	// generate apigeebundle from zip file
+	apigeeProxy.Bundle = apigeebundle.NewAPIGEEBundle(zipBundle, apigeeProxy.Proxy.Name, a.envToURLs[apigeeProxy.Environment])
 
 	// Check the revisionDetails for a value in spec
 	specString := apigeeProxy.APIRevision.Spec.(string)
@@ -248,5 +256,5 @@ func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []b
 	}
 
 	// Build the spec as a last resort
-	return b.Generate(apigeeProxy.APIRevision.DisplayName, apigeeProxy.APIRevision.Description, apigeeProxy.GetVersion())
+	return apigeeProxy.Bundle.Generate(apigeeProxy.APIRevision.DisplayName, apigeeProxy.APIRevision.Description, apigeeProxy.GetVersion())
 }
