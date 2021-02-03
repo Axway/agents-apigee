@@ -89,7 +89,8 @@ type flow struct {
 
 // conditions - array of conditions
 type conditions struct {
-	Condition []condition
+	Condition       []condition
+	ConditionString string
 }
 
 // condition - parsed representation of APIGEE condition
@@ -110,6 +111,7 @@ func (c *conditions) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 	if el == "null" {
 		return nil
 	}
+	c.ConditionString = el
 
 	// Split all conditions
 	re := regexp.MustCompile("\\).*\\(")

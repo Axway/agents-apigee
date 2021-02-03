@@ -1,13 +1,9 @@
 package apigee
 
 import (
-	"archive/zip"
-	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -215,25 +211,7 @@ func (a *GatewayClient) handleNewProxy(data interface{}) {
 func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []byte {
 	zipBundle := a.getRevisionDefinitionBundle(apigeeProxy.Proxy.Name, apigeeProxy.Revision.Name)
 	// Open the proxy definition file to get the basepath and security policy
-
-	// Read all the files from zip archive
-	zipReader, err := zip.NewReader(bytes.NewReader(zipBundle), int64(len(zipBundle)))
-	if err != nil {
-		log.Error(err)
-	}
-	xmlProxyDetails := apigeebundle.APIProxy{}
-	for _, zipFile := range zipReader.File {
-		// we only care about the files in proxies
-		if strings.HasPrefix(zipFile.Name, "apiproxy/"+apigeeProxy.Proxy.Name+".xml") {
-			fileBytes, err := util.ReadZipFile(zipFile)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			xml.Unmarshal(fileBytes, &xmlProxyDetails)
-			break
-		}
-	}
+	b := apigeebundle.NewAPIGEEBundle(zipBundle, apigeeProxy.Proxy.Name, a.envToURLs[apigeeProxy.Environment])
 
 	// Check the revisionDetails for a value in spec
 	specString := apigeeProxy.APIRevision.Spec.(string)
@@ -270,6 +248,5 @@ func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []b
 	}
 
 	// Build the spec as a last resort
-	b := apigeebundle.NewAPIGEEBundle(zipBundle, apigeeProxy.Proxy.Name)
-	return b.Generate(apigeeProxy.APIRevision, a.envToURLs[apigeeProxy.Environment], xmlProxyDetails.Basepaths)
+	return b.Generate(apigeeProxy.APIRevision.DisplayName, apigeeProxy.APIRevision.Description, apigeeProxy.GetVersion())
 }
