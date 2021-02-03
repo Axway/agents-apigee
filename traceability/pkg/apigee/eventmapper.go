@@ -2,9 +2,13 @@ package apigee
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/transaction"
+	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 )
 
@@ -13,88 +17,92 @@ type EventMapper struct {
 }
 
 func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.LogEvent, error) {
-	// centralCfg := agent.GetCentralConfig()
-	// inboundReqHeaders := m.buildHeaders(apigeeLogEntry.Properties.RequestHeaders)
-	// intboundResHeaders := m.buildHeaders(apigeeLogEntry.Properties.ResponseHeaders)
-	// inboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
-	// 	SetURI(apigeeLogEntry.Properties.URL).
-	// 	SetMethod(apigeeLogEntry.Properties.Method).
-	// 	SetStatus(apigeeLogEntry.Properties.ResponseCode, http.StatusText(apigeeLogEntry.Properties.ResponseCode)).
-	// 	SetHost(apigeeLogEntry.Location).
-	// 	SetHeaders(inboundReqHeaders, intboundResHeaders).
-	// 	SetByteLength(apigeeLogEntry.Properties.RequestSize, apigeeLogEntry.Properties.ResponseSize).
-	// 	SetRemoteAddress("", apigeeLogEntry.Location, 443).
-	// 	SetLocalAddress("", 0).
-	// 	Build()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// txEventStatus := transaction.TxEventStatusFail
-	// if apigeeLogEntry.Properties.ResponseCode < 400 {
-	// 	txEventStatus = transaction.TxEventStatusPass
-	// }
+	centralCfg := agent.GetCentralConfig()
+	inboundReqHeaders := m.buildHeaders(apigeeLogEntry.RequestHeaders)  //TODO
+	inboundResHeaders := m.buildHeaders(apigeeLogEntry.ResponseHeaders) //TODO
+	inboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
+		SetURI(buildURI(apigeeLogEntry)).
+		SetMethod(apigeeLogEntry.Verb).
+		SetStatus(apigeeLogEntry.StatusCode, http.StatusText(apigeeLogEntry.StatusCode)).
+		SetHost(apigeeLogEntry.RequestHost).
+		SetHeaders(inboundReqHeaders, inboundResHeaders).
+		SetByteLength(apigeeLogEntry.BytesSent, apigeeLogEntry.BytesReceived).
+		SetRemoteAddress("", apigeeLogEntry.RequestHost, 443).
+		SetLocalAddress("", 0).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	txEventStatus := transaction.TxEventStatusFail
+	if apigeeLogEntry.StatusCode < 400 {
+		txEventStatus = transaction.TxEventStatusPass
+	}
 
-	// transInboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
-	// 	SetTimestamp(makeTimestamp(apigeeLogEntry.Time)).
-	// 	SetDuration(apigeeLogEntry.DurationMs).
-	// 	SetTransactionID(apigeeLogEntry.CorrelationID).
-	// 	SetID(apigeeLogEntry.Properties.OperationID + "-leg0").
-	// 	SetSource("client").
-	// 	SetDestination(util.GetURLHostName(apigeeLogEntry.Properties.URL)).
-	// 	SetDirection("Inbound").
-	// 	SetStatus(txEventStatus).
-	// 	SetProtocolDetail(inboundHTTPProtocol).
-	// 	Build()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	transInboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
+		SetTimestamp(int64(apigeeLogEntry.ClientStartTimeStamp)).
+		SetDuration(apigeeLogEntry.ClientStartTimeStamp - apigeeLogEntry.ClientEndTimeStamp).
+		SetTransactionID(apigeeLogEntry.MessageID).
+		SetID(apigeeLogEntry.MessageID + "-leg0").
+		// TODO :
+		// TransactionID and ID : SetID(apigeeLogEntry.Properties.OperationID + "-leg0").
+		SetSource("client").
+		SetDestination(util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		SetDirection("Inbound").
+		SetStatus(txEventStatus).
+		SetProtocolDetail(inboundHTTPProtocol).
+		Build()
+	if err != nil {
+		return nil, err
+	}
 
-	// outboundReqHeaders := m.buildHeaders((apigeeLogEntry.Properties.BackendRequestHeaders))
-	// outboundResHeaders := m.buildHeaders((apigeeLogEntry.Properties.BackendResponseHeaders))
-	// outboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
-	// 	SetURI(apigeeLogEntry.Properties.BackendURL).
-	// 	SetMethod(apigeeLogEntry.Properties.BackendMethod).
-	// 	SetStatus(apigeeLogEntry.Properties.BackendResponseCode, http.StatusText(apigeeLogEntry.Properties.BackendResponseCode)).
-	// 	SetHost(apigeeLogEntry.Properties.BackendURL).
-	// 	SetHeaders(outboundReqHeaders, outboundResHeaders).
-	// 	SetByteLength(apigeeLogEntry.Properties.RequestSize, apigeeLogEntry.Properties.ResponseSize).
-	// 	SetRemoteAddress("", apigeeLogEntry.Properties.BackendURL, 443).
-	// 	SetLocalAddress("", 0). // Need to populate this
-	// 	Build()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// txEventStatus = transaction.TxEventStatusFail
-	// if apigeeLogEntry.Properties.BackendResponseCode < 400 {
-	// 	txEventStatus = transaction.TxEventStatusPass
-	// }
+	outboundReqHeaders := m.buildHeaders((apigeeLogEntry.RequestHeaders))  //TODO
+	outboundResHeaders := m.buildHeaders((apigeeLogEntry.ResponseHeaders)) //TODO
+	//TODO - all outbound leg is same as inbound leg
+	outboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
+		SetURI(buildURI(apigeeLogEntry)).
+		SetMethod(apigeeLogEntry.Verb).
+		SetStatus(apigeeLogEntry.StatusCode, http.StatusText(apigeeLogEntry.StatusCode)).
+		SetHost(apigeeLogEntry.RequestHost).
+		SetHeaders(outboundReqHeaders, outboundResHeaders).
+		SetByteLength(apigeeLogEntry.BytesSent, apigeeLogEntry.BytesReceived).
+		SetRemoteAddress("", apigeeLogEntry.RequestHost, 443).
+		SetLocalAddress("", 0).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	txEventStatus = transaction.TxEventStatusFail
+	if apigeeLogEntry.StatusCode < 400 {
+		txEventStatus = transaction.TxEventStatusPass
+	}
 
-	// transOutboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
-	// 	SetTimestamp(makeTimestamp(apigeeLogEntry.Time)).
-	// 	SetDuration(apigeeLogEntry.DurationMs).
-	// 	SetTransactionID(apigeeLogEntry.CorrelationID).
-	// 	SetID(apigeeLogEntry.Properties.OperationID + "-leg1").
-	// 	SetParentID(apigeeLogEntry.Properties.OperationID + "-leg0").
-	// 	SetSource(util.GetURLHostName(apigeeLogEntry.Properties.URL)).
-	// 	SetDestination(util.GetURLHostName(apigeeLogEntry.Properties.BackendURL)).
-	// 	SetDirection("Outbound").
-	// 	SetStatus(txEventStatus).
-	// 	SetProtocolDetail(outboundHTTPProtocol).
-	// 	Build()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	transOutboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
+		SetTimestamp(int64(apigeeLogEntry.ClientStartTimeStamp)).
+		SetDuration(apigeeLogEntry.ClientStartTimeStamp - apigeeLogEntry.ClientEndTimeStamp).
+		SetTransactionID(apigeeLogEntry.MessageID).
+		SetID(apigeeLogEntry.MessageID + "-leg1"). //TODO diff between transactionID and ID
+		SetParentID(apigeeLogEntry.MessageID + "-leg0").
+		SetSource(util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		SetDestination(util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		SetDirection("Outbound").
+		SetStatus(txEventStatus).
+		SetProtocolDetail(outboundHTTPProtocol).
+		Build()
 
-	// transSummaryLogEvent, err := m.createSummaryEvent(apigeeLogEntry, centralCfg.GetTeamID())
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	// return []transaction.LogEvent{
-	// 	*transSummaryLogEvent,
-	// 	*transInboundLogEventLeg,
-	// 	*transOutboundLogEventLeg,
-	// }, nil
+	transSummaryLogEvent, err := m.createSummaryEvent(apigeeLogEntry, centralCfg.GetTeamID())
+	if err != nil {
+		return nil, err
+	}
+
+	return []transaction.LogEvent{
+		*transSummaryLogEvent,
+		*transInboundLogEventLeg,
+		*transOutboundLogEventLeg,
+	}, nil
 	return nil, nil
 }
 
@@ -114,28 +122,28 @@ func (m *EventMapper) buildHeaders(headers map[string]string) string {
 }
 
 func (m *EventMapper) createSummaryEvent(apigeeLogEntry LogEntry, teamID string) (*transaction.LogEvent, error) {
-	// transSummaryStatus := transaction.TxSummaryStatusUnknown
-	// statusCode := apigeeLogEntry.Properties.ResponseCode
-	// if statusCode >= http.StatusOK && statusCode < http.StatusBadRequest {
-	// 	transSummaryStatus = transaction.TxSummaryStatusSuccess
-	// } else if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError {
-	// 	transSummaryStatus = transaction.TxSummaryStatusFailure
-	// } else if statusCode >= http.StatusInternalServerError && statusCode < http.StatusNetworkAuthenticationRequired {
-	// 	transSummaryStatus = transaction.TxSummaryStatusException
-	// }
+	transSummaryStatus := transaction.TxSummaryStatusUnknown
+	statusCode := apigeeLogEntry.StatusCode
+	if statusCode >= http.StatusOK && statusCode < http.StatusBadRequest {
+		transSummaryStatus = transaction.TxSummaryStatusSuccess
+	} else if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError {
+		transSummaryStatus = transaction.TxSummaryStatusFailure
+	} else if statusCode >= http.StatusInternalServerError && statusCode < http.StatusNetworkAuthenticationRequired {
+		transSummaryStatus = transaction.TxSummaryStatusException
+	}
 
-	// return transaction.NewTransactionSummaryBuilder().
-	// 	SetTimestamp(makeTimestamp(apigeeLogEntry.Time)).
-	// 	SetTransactionID(apigeeLogEntry.CorrelationID).
-	// 	SetStatus(transSummaryStatus, strconv.Itoa(apigeeLogEntry.Properties.ResponseCode)).
-	// 	SetDuration(apigeeLogEntry.DurationMs).
-	// 	SetTeam(teamID).
-	// 	SetEntryPoint("http", apigeeLogEntry.Properties.Method, apigeeLogEntry.Properties.URL, util.GetURLHostName(apigeeLogEntry.Properties.URL)).
-	// 	// If the API is published to Central as unified catalog item/API service, see the Proxy details with the API definition
-	// 	// The Proxy.Name represents the name of the API
-	// 	// The Proxy.ID should be of format "remoteApiId_<ID Of the API on remote gateway>". Use transaction.FormatProxyID(<ID Of the API on remote gateway>) to get the formatted value.
-	// 	SetProxy(transaction.FormatProxyID(apigeeLogEntry.Properties.APIID), apigeeLogEntry.Properties.APIID, 1).
-	// 	Build()
+	return transaction.NewTransactionSummaryBuilder().
+		SetTimestamp(int64(apigeeLogEntry.ClientStartTimeStamp)).
+		SetTransactionID(apigeeLogEntry.MessageID).
+		SetStatus(transSummaryStatus, strconv.Itoa(apigeeLogEntry.StatusCode)).
+		SetDuration(apigeeLogEntry.ClientStartTimeStamp-apigeeLogEntry.ClientEndTimeStamp).
+		SetTeam(teamID).
+		SetEntryPoint("http", apigeeLogEntry.Verb, apigeeLogEntry.RequestHost, util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		// If the API is published to Central as unified catalog item/API service, see the Proxy details with the API definition
+		// The Proxy.Name represents the name of the API
+		// The Proxy.ID should be of format "remoteApiId_<ID Of the API on remote gateway>". Use transaction.FormatProxyID(<ID Of the API on remote gateway>) to get the formatted value.
+		SetProxy(transaction.FormatProxyID(apigeeLogEntry.APIName), apigeeLogEntry.APIName, 1).
+		Build()
 	return nil, nil
 }
 
@@ -145,4 +153,9 @@ func makeTimestamp(timeString string) int64 {
 		t = time.Now()
 	}
 	return t.UnixNano() / int64(time.Millisecond)
+}
+
+func buildURI(apigeeLogEntry LogEntry) string {
+	uri := apigeeLogEntry.RequestHost + apigeeLogEntry.Path
+	return uri
 }
