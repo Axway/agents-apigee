@@ -18,7 +18,7 @@ import (
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 
-	"github.com/Axway/agents-apigee/discovery/pkg/apigee/generatespec"
+	"github.com/Axway/agents-apigee/discovery/pkg/apigee/apigeebundle"
 	"github.com/Axway/agents-apigee/discovery/pkg/config"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
@@ -221,7 +221,7 @@ func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []b
 	if err != nil {
 		log.Error(err)
 	}
-	xmlProxyDetails := generatespec.APIProxy{}
+	xmlProxyDetails := apigeebundle.APIProxy{}
 	for _, zipFile := range zipReader.File {
 		// we only care about the files in proxies
 		if strings.HasPrefix(zipFile.Name, "apiproxy/"+apigeeProxy.Proxy.Name+".xml") {
@@ -270,5 +270,6 @@ func (a *GatewayClient) retrieveOrBuildSpec(apigeeProxy *apigeeProxyDetails) []b
 	}
 
 	// Build the spec as a last resort
-	return generatespec.Generate(zipBundle, apigeeProxy.APIRevision, a.envToURLs[apigeeProxy.Environment], xmlProxyDetails.Basepaths)
+	b := apigeebundle.NewAPIGEEBundle(zipBundle, apigeeProxy.Proxy.Name)
+	return b.Generate(apigeeProxy.APIRevision, a.envToURLs[apigeeProxy.Environment], xmlProxyDetails.Basepaths)
 }
