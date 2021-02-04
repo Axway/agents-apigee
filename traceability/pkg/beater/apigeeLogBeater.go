@@ -74,10 +74,10 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 			fmt.Println("EVENT TO PROCESS : " + string(eventData))
 
 			// Todo : Uncomment
-			// eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
-			// if eventsToPublish != nil {
-			// 	bt.client.PublishAll(eventsToPublish)
-			// }
+			eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
+			if eventsToPublish != nil {
+				bt.client.PublishAll(eventsToPublish)
+			}
 		}
 	}
 }

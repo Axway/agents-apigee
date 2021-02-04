@@ -27,7 +27,7 @@ func NewLogglyClient(logglyCfg *config.LogglyConfig, eventChannel chan []byte) (
 		apiClient:    coreapi.NewClient(corecfg.NewTLSConfig(), ""),
 		cfg:          logglyCfg,
 		eventChannel: eventChannel,
-		startTime:    time.Now().Add(-1 * time.Minute).Unix(),
+		startTime:    time.Now().Add(-60 * time.Minute).Unix(),
 		stopChannel:  make(chan bool),
 	}
 
