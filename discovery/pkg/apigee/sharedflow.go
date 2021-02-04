@@ -70,7 +70,7 @@ func (a *GatewayClient) createSharedFlowZip() ([]byte, error) {
 		}
 
 		// if this file is the policy, we have to update it
-		if zipPath == "/sharedflowbundle/policies/amplify-central-logging.xml" {
+		if zipPath == "sharedflowbundle/policies/amplify-central-logging.xml" {
 			filedata, err = a.updateSharedFlowPolicy(filedata)
 			if err != nil {
 				return err
