@@ -31,6 +31,8 @@ func init() {
 	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
 	rootProps.AddDurationProperty("apigee.pollInterval", 30*time.Second, "The time interval between checking for new APIGEE resources")
+	rootProps.AddStringProperty("apigee.loggly.token", "", "The Loggly API Token for sending log events")
+	rootProps.AddStringProperty("apigee.loggly.organization", "", "The Loggly Organization ID")
 }
 
 // Callback that agent will call to process the execution
@@ -55,8 +57,8 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 			Password: rootProps.StringPropertyValue("apigee.auth.password"),
 		},
 		Loggly: &config.LogglyConfig{
-			Organization: rootProps.StringPropertyValue("loggly.organization"),
-			APIToken:     rootProps.StringPropertyValue("loggly.token"),
+			Organization: rootProps.StringPropertyValue("apigee.loggly.organization"),
+			APIToken:     rootProps.StringPropertyValue("apigee.loggly.token"),
 		},
 	}
 
