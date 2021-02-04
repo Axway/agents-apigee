@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MessageLogging async="false" continueOnError="false" enabled="true" name="amplify-central-logging">
+    <DisplayName>amplify-central-logging</DisplayName>
+    <Syslog>
+        <Message>[{{.APIToken -}}4@41058 tag="apic-logs"]{
+                 "organization":"{organization.name}",
+                 "environment": "{environment.name}",
+                 "api": "{apiproxy.name}",
+                 "revision": "{apiproxy.revision}",
+                 "messageId": "{messageid}",
+                 "verb": "{request.verb}",
+                 "path": "{request.path}",
+                 "queryString": "{request.querystring}",
+                 "clientIP": "{client.ip}",
+                 "clientHost": "{client.host}",
+                 "clientStartTimeStamp": "{client.received.start.timestamp}",
+                 "clientEndTimeStamp": "{client.sent.end.timestamp}",
+                 "bytesReceived": "{request.header.Content-Length}",
+                 "bytesSent": "{response.header.Content-Length}",
+                 "userAgent": "{request.header.User-Agent}",
+                 "httpVersion": "{request.version}",
+                 "isError": "{is.error}",
+                 "statusCode": "{response.status.code}",
+                 "errorStatusCode": "{error.status.code}",
+                 "requestHost":"{request.header.Host}",
+                 "responseHost":"{response.header.Host}",
+                 "responseContentLength":"{response.header.Content-Length}",
+                 "requestContentType":"{request.header.Content-Type}"
+                 }</Message>
+        <Host>logs-01.loggly.com</Host>
+        <Port>514</Port>
+        <FormatMessage>true</FormatMessage>
+    </Syslog>
+</MessageLogging>

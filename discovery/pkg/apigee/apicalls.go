@@ -1,8 +1,13 @@
 package apigee
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"net/url"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
@@ -51,6 +56,43 @@ func (a *GatewayClient) getRequestWithQuery(url string, queryParams map[string]s
 			"Authorization": "Bearer " + a.accessToken,
 		},
 		QueryParams: queryParams,
+	}
+
+	// return the api response
+	return a.apiClient.Send(request)
+}
+
+//postAPIGEEBundle - posts the bundle data to the url
+func (a *GatewayClient) postAPIGEEBundle(url, contentType string, data []byte) (*coreapi.Response, error) {
+	queryParams := map[string]string{
+		"action": "import",
+		"name":   "test",
+	}
+
+	request := coreapi.Request{
+		Method: coreapi.POST,
+		URL:    url,
+		Headers: map[string]string{
+			"Content-Type":  contentType,
+			"Authorization": "Bearer " + a.accessToken,
+		},
+		QueryParams: queryParams,
+		Body:        data,
+	}
+
+	// return the api response
+	return a.apiClient.Send(request)
+}
+
+func (a *GatewayClient) putRequest(url string, data []byte) (*coreapi.Response, error) {
+	request := coreapi.Request{
+		Method: coreapi.PUT,
+		URL:    url,
+		Headers: map[string]string{
+			"Accept":        "application/json",
+			"Authorization": "Bearer " + a.accessToken,
+		},
+		Body: data,
 	}
 
 	// return the api response
@@ -188,4 +230,72 @@ func (a *GatewayClient) getSwagger(specPath string) []byte {
 	response, _ := a.getRequest(fmt.Sprintf("https://apigee.com%s", specPath))
 
 	return response.Body
+}
+
+//getSharedFlows - gets the list of shared flows
+func (a *GatewayClient) getSharedFlow(name string) (*models.SharedFlowRevisionDeploymentDetails, error) {
+
+	// Get the shared flows list
+	response, err := a.getRequest(fmt.Sprintf(orgURL+"/sharedflows/%v", a.cfg.Organization, name))
+	if err != nil {
+		return nil, err
+	}
+	flow := models.SharedFlowRevisionDeploymentDetails{}
+	json.Unmarshal(response.Body, &flow)
+
+	return &flow, nil
+}
+
+//createSharedFlow - gets the list of shared flows
+func (a *GatewayClient) createSharedFlow(data []byte) error {
+	var buffer bytes.Buffer
+	writer := multipart.NewWriter(&buffer)
+
+	flow, _ := writer.CreateFormFile("file", "flow.zip")
+	io.Copy(flow, bytes.NewReader(data))
+	writer.Close()
+	// Get the shared flows list
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(orgURL+"/sharedflows?action=import&name=amplify-central-logging", a.cfg.Organization), &buffer)
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", "Bearer "+a.accessToken)
+	client := &http.Client{}
+	response, err := client.Do(req)
+
+	if err != nil {
+		return err
+	}
+	body, _ := ioutil.ReadAll(response.Body)
+	log.Debug("posted shared flow, response: %v", string(body))
+
+	return nil
+}
+
+//createSharedFlow - gets the list of shared flows
+func (a *GatewayClient) publishSharedFlowToEnvironment(env string) error {
+
+	type flowhook struct {
+		ContinueOnError bool   `json:"continueOnError"`
+		SharedFlow      string `json:"mySharedFlow"`
+		State           string `json:"state"`
+	}
+
+	hook := flowhook{
+		ContinueOnError: true,
+		SharedFlow:      "amplify-central-logging",
+		State:           "deployed",
+	}
+
+	data, _ := json.Marshal(hook)
+
+	// Get the shared flows list
+	response, err := a.putRequest(fmt.Sprintf(orgURL+"/environments/%v/flowhooks/PostProxyFlowHook", a.cfg.Organization), data)
+
+	if err != nil {
+		return err
+	}
+	log.Debug("Flow hook shared flow, response: %v", string(response.Body))
+
+	return nil
 }

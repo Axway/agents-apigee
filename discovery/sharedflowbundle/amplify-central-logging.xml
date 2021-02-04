@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<SharedFlowBundle revision="1" name="amplify-central-logging">
+    <ConfigurationVersion majorVersion="4" minorVersion="0"/>
+    <CreatedAt/>
+    <CreatedBy/>
+    <Description>Shared flow for sending transactions to loggly for Amplify Central traceabiity agent</Description>
+    <DisplayName>amplify-central-logging</DisplayName>
+    <LastModifiedAt/>
+    <LastModifiedBy/>
+    <ManifestVersion/>
+    <Policies>
+        <Policy>amplify-central-logging</Policy>
+    </Policies>
+    <Resources/>
+    <Spec></Spec>
+    <subType>SharedFlow</subType>
+    <SharedFlows>
+        <SharedFlow>default</SharedFlow>
+    </SharedFlows>
+</SharedFlowBundle>
