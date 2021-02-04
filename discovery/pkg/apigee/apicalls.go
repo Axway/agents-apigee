@@ -225,6 +225,11 @@ func (a *GatewayClient) getSharedFlow(name string) (*models.SharedFlowRevisionDe
 	if err != nil {
 		return nil, err
 	}
+
+	if response.Code == http.StatusNotFound {
+		return nil, fmt.Errorf("could not find shared flow named %v", name)
+	}
+
 	flow := models.SharedFlowRevisionDeploymentDetails{}
 	json.Unmarshal(response.Body, &flow)
 

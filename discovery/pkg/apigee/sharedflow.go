@@ -18,7 +18,7 @@ const (
 // addSharedFlow - checks to see if the logging flow has been added and adds if it hasn't
 func (a *GatewayClient) addSharedFlow() {
 	_, err := a.getSharedFlow(sharedFlow)
-	if err != nil {
+	if err == nil {
 		return
 	}
 
@@ -96,14 +96,7 @@ func (a *GatewayClient) updateSharedFlowPolicy(templateBytes []byte) ([]byte, er
 	data := bytes.Buffer{}
 
 	tmpl, _ := template.New("policy").Parse(string(templateBytes))
-
-	/// TODO - use loggly config here
-	type TemplateData struct {
-		APIToken string
-	}
-
-	templateData := TemplateData{"7fa9ef24-0fba-407f-af34-103ce8872124"}
-	err := tmpl.Execute(&data, templateData)
+	err := tmpl.Execute(&data, a.cfg.GetLoggly())
 
 	return data.Bytes(), err
 }
