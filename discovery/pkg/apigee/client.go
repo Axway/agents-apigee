@@ -24,7 +24,6 @@ const (
 	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
 	openapi         = "openapi"
 	gatewayType     = "APIGEE"
-	sharedFlow      = "amplify-central-logging"
 )
 
 // GatewayClient - Represents the Gateway client

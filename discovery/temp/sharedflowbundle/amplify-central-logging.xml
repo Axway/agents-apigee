@@ -9,12 +9,9 @@
     <LastModifiedBy/>
     <ManifestVersion/>
     <Policies>
-        <Policy>apic-header-parser</Policy>
         <Policy>amplify-central-logging</Policy>
     </Policies>
-    <Resources>
-        <Resource>jsc://apic-header-parser.js</Resource>
-    </Resources>
+    <Resources/>
     <Spec></Spec>
     <subType>SharedFlow</subType>
     <SharedFlows>

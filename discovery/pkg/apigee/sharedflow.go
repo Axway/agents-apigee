@@ -11,6 +11,10 @@ import (
 	"github.com/markbates/pkger"
 )
 
+const (
+	sharedFlow = "amplify-central-logging"
+)
+
 // addSharedFlow - checks to see if the logging flow has been added and adds if it hasn't
 func (a *GatewayClient) addSharedFlow() {
 	_, err := a.getSharedFlow(sharedFlow)
@@ -22,11 +26,14 @@ func (a *GatewayClient) addSharedFlow() {
 	data, _ := a.createSharedFlowZip()
 
 	// upload the flow to apigee
-	a.createSharedFlow(data)
+	a.createSharedFlow(data, sharedFlow)
 
-	// deploy the shared flow to al envs
+	// TODO - get the posted shared flow latest revision for deployment call
+
+	// deploy the shared flow to all envs and create the hook
 	for env := range a.envToURLs {
-		a.publishSharedFlowToEnvironment(env)
+		a.deploySharedFlow(env, sharedFlow, "1")
+		a.publishSharedFlowToEnvironment(env, sharedFlow)
 	}
 }
 
@@ -50,7 +57,7 @@ func (a *GatewayClient) createSharedFlowZip() ([]byte, error) {
 		defer f.Close()
 
 		// Create the file in the zip
-		zipPath := strings.Split(path, ":")[1]
+		zipPath := strings.Split(path, ":/")[1]
 		zipFile, err := zipWriter.Create(zipPath)
 		if err != nil {
 			return err
@@ -90,6 +97,7 @@ func (a *GatewayClient) updateSharedFlowPolicy(templateBytes []byte) ([]byte, er
 
 	tmpl, _ := template.New("policy").Parse(string(templateBytes))
 
+	/// TODO - use loggly config here
 	type TemplateData struct {
 		APIToken string
 	}
