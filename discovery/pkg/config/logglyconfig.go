@@ -4,6 +4,8 @@ package config
 type LogglyConfig struct {
 	Organization string `config:"organization"`
 	APIToken     string `config:"token"`
+	Host         string `config:"host"`
+	Port         string `config:"port"`
 }
 
 // GetOrganization - Returns the Loggly Organization

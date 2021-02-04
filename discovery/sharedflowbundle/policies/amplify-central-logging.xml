@@ -27,8 +27,8 @@
                  "requestHeaders": {apic.reqHeaders},
                  "responseHeaders": {apic.resHeaders}
                  }</Message>
-        <Host>logs-01.loggly.com</Host>
-        <Port>514</Port>
+        <Host>{{.Host}}</Host>
+        <Port>{{.Port}}</Port>
         <FormatMessage>true</FormatMessage>
     </Syslog>
 </MessageLogging>
