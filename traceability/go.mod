@@ -2,7 +2,7 @@ module github.com/Axway/agents-apigee/traceability
 
 go 1.13
 
-replace github.com/Axway/agents-apigee/discovery => /home/sbolosan/go/src/github.com/Axway/agents-apigee/discovery
+// replace github.com/Axway/agents-apigee/discovery => /home/sbolosan/go/src/github.com/Axway/agents-apigee/discovery
 
 require (
 	github.com/Axway/agent-sdk v0.0.20-0.20210201151000-0d0f1b1614c4
