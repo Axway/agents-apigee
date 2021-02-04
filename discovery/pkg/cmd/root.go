@@ -54,6 +54,10 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 			Username: rootProps.StringPropertyValue("apigee.auth.username"),
 			Password: rootProps.StringPropertyValue("apigee.auth.password"),
 		},
+		Loggly: &config.LogglyConfig{
+			Organization: rootProps.StringPropertyValue("loggly.organization"),
+			APIToken:     rootProps.StringPropertyValue("loggly.token"),
+		},
 	}
 
 	agentConfig := config.AgentConfig{

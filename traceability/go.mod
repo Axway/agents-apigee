@@ -2,8 +2,11 @@ module github.com/Axway/agents-apigee/traceability
 
 go 1.13
 
+replace github.com/Axway/agents-apigee/discovery => /home/sbolosan/go/src/github.com/Axway/agents-apigee/discovery
+
 require (
-	github.com/Axway/agent-sdk v0.0.19-0.20210128153510-8e0733c08e0a
+	github.com/Axway/agent-sdk v0.0.20-0.20210201151000-0d0f1b1614c4
+	github.com/Axway/agents-apigee/discovery v0.0.0-20210204001956-6f49b41971b1
 	github.com/Shopify/sarama v1.26.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect

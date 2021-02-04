@@ -7,14 +7,14 @@ import (
 	libcmd "github.com/elastic/beats/v7/libbeat/cmd"
 	"github.com/elastic/beats/v7/libbeat/cmd/instance"
 
+	"github.com/Axway/agents-apigee/discovery/pkg/config"
 	"github.com/Axway/agents-apigee/traceability/pkg/beater"
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
+	// "github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // RootCmd - Agent root command
 var RootCmd corecmd.AgentRootCmd
 var beatCmd *libcmd.BeatsRootCmd
-var logglyConfig *config.LogglyConfig
 
 func init() {
 	name := "apigee_traceability_agent"
@@ -39,8 +39,8 @@ func init() {
 
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
-	rootProps.AddStringProperty("loggly.organization", "", "Loggly Organization")
-	rootProps.AddStringProperty("loggly.token", "", "API Token to use to authenticate to Loggly")
+	rootProps.AddStringProperty("apigee.loggly.organization", "", "Loggly Organization")
+	rootProps.AddStringProperty("apigiee.loggly.token", "", "API Token to use to authenticate to Loggly")
 
 }
 
@@ -54,17 +54,20 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
-	logglyConfig := &config.LogglyConfig{
-		Organization: rootProps.StringPropertyValue("loggly.organization"),
-		APIToken:     rootProps.StringPropertyValue("loggly.token"),
+
+	apigeeConfig := &config.ApigeeConfig{
+		Loggly: &config.LogglyConfig{
+			Organization: rootProps.StringPropertyValue("apigee.loggly.organization"),
+			APIToken:     rootProps.StringPropertyValue("apigee.loggly.token"),
+		},
 	}
 
 	agentConfig := &config.AgentConfig{
-		CentralCfg:   centralConfig,
-		LogglyConfig: logglyConfig,
+		CentralCfg: centralConfig,
+		GatewayCfg: apigeeConfig,
 	}
 
-	beater.SetLogglyConfig(logglyConfig)
+	beater.SetLogglyConfig(apigeeConfig.GetLoggly())
 
 	return agentConfig, nil
 }

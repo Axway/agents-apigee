@@ -18,15 +18,13 @@ type EventMapper struct {
 
 func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.LogEvent, error) {
 	centralCfg := agent.GetCentralConfig()
-	inboundReqHeaders := m.buildHeaders(apigeeLogEntry.RequestHeaders)  //TODO
-	inboundResHeaders := m.buildHeaders(apigeeLogEntry.ResponseHeaders) //TODO
 	inboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
 		SetURI(buildURI(apigeeLogEntry)).
 		SetMethod(apigeeLogEntry.Verb).
-		SetStatus(apigeeLogEntry.StatusCode, http.StatusText(apigeeLogEntry.StatusCode)).
+		SetStatus(stringToInt(apigeeLogEntry.StatusCode), http.StatusText(stringToInt(apigeeLogEntry.StatusCode))).
 		SetHost(apigeeLogEntry.RequestHost).
-		SetHeaders(inboundReqHeaders, inboundResHeaders).
-		SetByteLength(apigeeLogEntry.BytesSent, apigeeLogEntry.BytesReceived).
+		SetHeaders(apigeeLogEntry.RequestHeaders, apigeeLogEntry.ResponseHeaders).
+		SetByteLength(stringToInt(apigeeLogEntry.BytesSent), stringToInt(apigeeLogEntry.BytesReceived)).
 		SetRemoteAddress("", apigeeLogEntry.RequestHost, 443).
 		SetLocalAddress("", 0).
 		Build()
@@ -34,13 +32,13 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 		return nil, err
 	}
 	txEventStatus := transaction.TxEventStatusFail
-	if apigeeLogEntry.StatusCode < 400 {
+	if (stringToInt(apigeeLogEntry.StatusCode)) < 400 {
 		txEventStatus = transaction.TxEventStatusPass
 	}
 
 	transInboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
-		SetTimestamp(int64(apigeeLogEntry.ClientStartTimeStamp)).
-		SetDuration(apigeeLogEntry.ClientStartTimeStamp - apigeeLogEntry.ClientEndTimeStamp).
+		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
+		SetDuration(stringToInt(apigeeLogEntry.ClientStartTimeStamp) - stringToInt(apigeeLogEntry.ClientEndTimeStamp)).
 		SetTransactionID(apigeeLogEntry.MessageID).
 		SetID(apigeeLogEntry.MessageID + "-leg0").
 		// TODO :
@@ -55,16 +53,14 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 		return nil, err
 	}
 
-	outboundReqHeaders := m.buildHeaders((apigeeLogEntry.RequestHeaders))  //TODO
-	outboundResHeaders := m.buildHeaders((apigeeLogEntry.ResponseHeaders)) //TODO
 	//TODO - all outbound leg is same as inbound leg
 	outboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
 		SetURI(buildURI(apigeeLogEntry)).
 		SetMethod(apigeeLogEntry.Verb).
-		SetStatus(apigeeLogEntry.StatusCode, http.StatusText(apigeeLogEntry.StatusCode)).
+		SetStatus(stringToInt(apigeeLogEntry.StatusCode), http.StatusText(stringToInt(apigeeLogEntry.StatusCode))).
 		SetHost(apigeeLogEntry.RequestHost).
-		SetHeaders(outboundReqHeaders, outboundResHeaders).
-		SetByteLength(apigeeLogEntry.BytesSent, apigeeLogEntry.BytesReceived).
+		SetHeaders(apigeeLogEntry.RequestHeaders, apigeeLogEntry.ResponseHeaders).
+		SetByteLength(stringToInt(apigeeLogEntry.BytesSent), stringToInt(apigeeLogEntry.BytesReceived)).
 		SetRemoteAddress("", apigeeLogEntry.RequestHost, 443).
 		SetLocalAddress("", 0).
 		Build()
@@ -72,13 +68,13 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 		return nil, err
 	}
 	txEventStatus = transaction.TxEventStatusFail
-	if apigeeLogEntry.StatusCode < 400 {
+	if (stringToInt(apigeeLogEntry.StatusCode)) < 400 {
 		txEventStatus = transaction.TxEventStatusPass
 	}
 
 	transOutboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
-		SetTimestamp(int64(apigeeLogEntry.ClientStartTimeStamp)).
-		SetDuration(apigeeLogEntry.ClientStartTimeStamp - apigeeLogEntry.ClientEndTimeStamp).
+		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
+		SetDuration(stringToInt(apigeeLogEntry.ClientStartTimeStamp) - stringToInt(apigeeLogEntry.ClientEndTimeStamp)).
 		SetTransactionID(apigeeLogEntry.MessageID).
 		SetID(apigeeLogEntry.MessageID + "-leg1"). //TODO diff between transactionID and ID
 		SetParentID(apigeeLogEntry.MessageID + "-leg0").
@@ -123,7 +119,7 @@ func (m *EventMapper) buildHeaders(headers map[string]string) string {
 
 func (m *EventMapper) createSummaryEvent(apigeeLogEntry LogEntry, teamID string) (*transaction.LogEvent, error) {
 	transSummaryStatus := transaction.TxSummaryStatusUnknown
-	statusCode := apigeeLogEntry.StatusCode
+	statusCode := stringToInt(apigeeLogEntry.StatusCode)
 	if statusCode >= http.StatusOK && statusCode < http.StatusBadRequest {
 		transSummaryStatus = transaction.TxSummaryStatusSuccess
 	} else if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError {
@@ -133,10 +129,10 @@ func (m *EventMapper) createSummaryEvent(apigeeLogEntry LogEntry, teamID string)
 	}
 
 	return transaction.NewTransactionSummaryBuilder().
-		SetTimestamp(int64(apigeeLogEntry.ClientStartTimeStamp)).
+		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
 		SetTransactionID(apigeeLogEntry.MessageID).
-		SetStatus(transSummaryStatus, strconv.Itoa(apigeeLogEntry.StatusCode)).
-		SetDuration(apigeeLogEntry.ClientStartTimeStamp-apigeeLogEntry.ClientEndTimeStamp).
+		SetStatus(transSummaryStatus, apigeeLogEntry.StatusCode).
+		SetDuration(stringToInt(apigeeLogEntry.ClientStartTimeStamp)-stringToInt(apigeeLogEntry.ClientEndTimeStamp)).
 		SetTeam(teamID).
 		SetEntryPoint("http", apigeeLogEntry.Verb, apigeeLogEntry.RequestHost, util.GetURLHostName(apigeeLogEntry.RequestHost)).
 		// If the API is published to Central as unified catalog item/API service, see the Proxy details with the API definition
@@ -158,4 +154,14 @@ func makeTimestamp(timeString string) int64 {
 func buildURI(apigeeLogEntry LogEntry) string {
 	uri := apigeeLogEntry.RequestHost + apigeeLogEntry.Path
 	return uri
+}
+
+func stringToInt(s string) int {
+	newString, _ := strconv.Atoi(s)
+	return newString
+}
+
+func stringToInt64(s string) int64 {
+	newString, _ := strconv.ParseInt(s, 10, 64)
+	return newString
 }

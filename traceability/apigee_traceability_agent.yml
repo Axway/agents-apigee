@@ -1,8 +1,10 @@
 apigee_traceability_agent:
-  loggly:
-      organization: sbolosan
-      token: 7fa9ef24-0fba-407f-af34-103ce8872124
-  
+  apigee:
+    auth:
+    loggly:
+        organization: sbolosan
+        token: 7fa9ef24-0fba-407f-af34-103ce8872124
+    
   # Defines how often an event is sent to the output
   central:
     deployment: "${CENTRAL_DEPLOYMENT:teams}"

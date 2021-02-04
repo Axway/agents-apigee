@@ -10,7 +10,7 @@ import (
 	"github.com/elastic/beats/v7/libbeat/beat"
 	"github.com/elastic/beats/v7/libbeat/publisher"
 
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
+	"github.com/Axway/agents-apigee/discovery/pkg/config"
 )
 
 // EventProcessor - represents the processor for received event to generate event(s) for AMPLIFY Central
