@@ -81,8 +81,12 @@ func (a *GatewayClient) Authenticate() error {
 
 // DiscoverAPIs - Process the API discovery
 func (a *GatewayClient) DiscoverAPIs() {
+	// Get the env -> virtual hosts map in case we need to deploy the shared floe
+	a.updateVirtualHosts()
+
+	a.addSharedFlow()
 	for {
-		// Update the virtual host to environment mapping
+		// Update the env -> virtual host mapping
 		a.updateVirtualHosts()
 
 		// Loop all the api proxies
