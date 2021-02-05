@@ -2,13 +2,14 @@ package apigee
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/transaction"
-	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 )
 
@@ -19,7 +20,7 @@ type EventMapper struct {
 func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.LogEvent, error) {
 	centralCfg := agent.GetCentralConfig()
 	inboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
-		SetURI(buildURI(apigeeLogEntry)).
+		SetURI(apigeeLogEntry.Path).
 		SetMethod(apigeeLogEntry.Verb).
 		SetStatus(stringToInt(apigeeLogEntry.StatusCode), http.StatusText(stringToInt(apigeeLogEntry.StatusCode))).
 		SetHost(apigeeLogEntry.RequestHost).
@@ -38,13 +39,11 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 
 	transInboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
 		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
-		SetDuration(stringToInt(apigeeLogEntry.ClientStartTimeStamp) - stringToInt(apigeeLogEntry.ClientEndTimeStamp)).
+		SetDuration(getDuration(apigeeLogEntry)).
 		SetTransactionID(apigeeLogEntry.MessageID).
 		SetID(apigeeLogEntry.MessageID + "-leg0").
-		// TODO :
-		// TransactionID and ID : SetID(apigeeLogEntry.Properties.OperationID + "-leg0").
-		SetSource("client").
-		SetDestination(util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		SetSource(apigeeLogEntry.ClientHost).
+		SetDestination(buildURILeg(apigeeLogEntry)).
 		SetDirection("Inbound").
 		SetStatus(txEventStatus).
 		SetProtocolDetail(inboundHTTPProtocol).
@@ -53,9 +52,8 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 		return nil, err
 	}
 
-	//TODO - all outbound leg is same as inbound leg
 	outboundHTTPProtocol, err := transaction.NewHTTPProtocolBuilder().
-		SetURI(buildURI(apigeeLogEntry)).
+		SetURI(apigeeLogEntry.Path).
 		SetMethod(apigeeLogEntry.Verb).
 		SetStatus(stringToInt(apigeeLogEntry.StatusCode), http.StatusText(stringToInt(apigeeLogEntry.StatusCode))).
 		SetHost(apigeeLogEntry.RequestHost).
@@ -74,12 +72,12 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 
 	transOutboundLogEventLeg, err := transaction.NewTransactionEventBuilder().
 		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
-		SetDuration(stringToInt(apigeeLogEntry.ClientStartTimeStamp) - stringToInt(apigeeLogEntry.ClientEndTimeStamp)).
+		SetDuration(getDuration(apigeeLogEntry)).
 		SetTransactionID(apigeeLogEntry.MessageID).
 		SetID(apigeeLogEntry.MessageID + "-leg1"). //TODO diff between transactionID and ID
 		SetParentID(apigeeLogEntry.MessageID + "-leg0").
-		SetSource(util.GetURLHostName(apigeeLogEntry.RequestHost)).
-		SetDestination(util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		SetSource(buildURILeg(apigeeLogEntry)).
+		SetDestination(apigeeLogEntry.RequestHost).
 		SetDirection("Outbound").
 		SetStatus(txEventStatus).
 		SetProtocolDetail(outboundHTTPProtocol).
@@ -132,9 +130,9 @@ func (m *EventMapper) createSummaryEvent(apigeeLogEntry LogEntry, teamID string)
 		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
 		SetTransactionID(apigeeLogEntry.MessageID).
 		SetStatus(transSummaryStatus, apigeeLogEntry.StatusCode).
-		SetDuration(stringToInt(apigeeLogEntry.ClientStartTimeStamp)-stringToInt(apigeeLogEntry.ClientEndTimeStamp)).
+		SetDuration(getDuration(apigeeLogEntry)).
 		SetTeam(teamID).
-		SetEntryPoint("http", apigeeLogEntry.Verb, apigeeLogEntry.RequestHost, util.GetURLHostName(apigeeLogEntry.RequestHost)).
+		SetEntryPoint("http", apigeeLogEntry.Verb, buildURI(apigeeLogEntry), buildURI(apigeeLogEntry)).
 		// If the API is published to Central as unified catalog item/API service, see the Proxy details with the API definition
 		// The Proxy.Name represents the name of the API
 		// The Proxy.ID should be of format "remoteApiId_<ID Of the API on remote gateway>". Use transaction.FormatProxyID(<ID Of the API on remote gateway>) to get the formatted value.
@@ -152,7 +150,12 @@ func makeTimestamp(timeString string) int64 {
 }
 
 func buildURI(apigeeLogEntry LogEntry) string {
-	uri := apigeeLogEntry.RequestHost + apigeeLogEntry.Path
+	uri := fmt.Sprintf("%s-%s.apigee.net/%s%s", apigeeLogEntry.Organization, apigeeLogEntry.Environment, apigeeLogEntry.APIName, apigeeLogEntry.Path)
+	return strings.ToLower(uri)
+}
+
+func buildURILeg(apigeeLogEntry LogEntry) string {
+	uri := apigeeLogEntry.Organization + "-" + apigeeLogEntry.Environment + ".apigee.net"
 	return uri
 }
 
@@ -164,4 +167,9 @@ func stringToInt(s string) int {
 func stringToInt64(s string) int64 {
 	newString, _ := strconv.ParseInt(s, 10, 64)
 	return newString
+}
+
+func getDuration(apigeeLogEntry LogEntry) int {
+	duration := stringToInt(apigeeLogEntry.ClientEndTimeStamp) - stringToInt(apigeeLogEntry.ClientStartTimeStamp)
+	return duration
 }
