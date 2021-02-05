@@ -72,8 +72,6 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 			return nil
 		case eventData := <-bt.eventChannel:
 			fmt.Println("EVENT TO PROCESS : " + string(eventData))
-
-			// Todo : Uncomment
 			eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
 			if eventsToPublish != nil {
 				bt.client.PublishAll(eventsToPublish)

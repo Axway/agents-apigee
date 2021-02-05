@@ -45,7 +45,6 @@ func (a *LogglyClient) Start() {
 			}
 			a.readEvents(rsID)
 
-			// Todo : persist the startTime to ./data/somefile and read it on agent start
 			a.startTime = nowTime.Unix()
 
 			fmt.Println("Sleeping for 30 seconds")

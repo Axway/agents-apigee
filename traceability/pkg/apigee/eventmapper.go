@@ -74,7 +74,7 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 		SetTimestamp(stringToInt64(apigeeLogEntry.ClientStartTimeStamp)).
 		SetDuration(getDuration(apigeeLogEntry)).
 		SetTransactionID(apigeeLogEntry.MessageID).
-		SetID(apigeeLogEntry.MessageID + "-leg1"). //TODO diff between transactionID and ID
+		SetID(apigeeLogEntry.MessageID + "-leg1").
 		SetParentID(apigeeLogEntry.MessageID + "-leg0").
 		SetSource(buildURILeg(apigeeLogEntry)).
 		SetDestination(apigeeLogEntry.RequestHost).
