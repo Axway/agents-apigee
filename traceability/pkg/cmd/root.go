@@ -7,14 +7,14 @@ import (
 	libcmd "github.com/elastic/beats/v7/libbeat/cmd"
 	"github.com/elastic/beats/v7/libbeat/cmd/instance"
 
+	"github.com/Axway/agents-apigee/discovery/pkg/config"
 	"github.com/Axway/agents-apigee/traceability/pkg/beater"
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
+	// "github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // RootCmd - Agent root command
 var RootCmd corecmd.AgentRootCmd
 var beatCmd *libcmd.BeatsRootCmd
-var apigeeConfig *config.ApigeeConfig
 
 func init() {
 	name := "apigee_traceability_agent"
@@ -39,11 +39,8 @@ func init() {
 
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
-	rootProps.AddStringProperty("gateway-section.logFile", "./logs/traffic.log", "Sample log file with traffic event from gateway")
-	rootProps.AddBoolProperty("gateway-section.processOnInput", true, "Flag to process received event on input or by output before publishing the event by transport")
-	rootProps.AddStringProperty("apigee.organization", "", "APIGEE Organization")
-	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
-	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
+	rootProps.AddStringProperty("apigee.loggly.organization", "", "Loggly Organization")
+	rootProps.AddStringProperty("apigiee.loggly.token", "", "API Token to use to authenticate to Loggly")
 
 }
 
@@ -57,13 +54,11 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
+
 	apigeeConfig := &config.ApigeeConfig{
-		LogFile:        rootProps.StringPropertyValue("gateway-section.logFile"),
-		ProcessOnInput: rootProps.BoolPropertyValue("gateway-section.processOnInput"),
-		Organization:   rootProps.StringPropertyValue("apigee.organization"),
-		Auth: &config.AuthConfig{
-			Username: rootProps.StringPropertyValue("apigee.auth.username"),
-			Password: rootProps.StringPropertyValue("apigee.auth.password"),
+		Loggly: &config.LogglyConfig{
+			Organization: rootProps.StringPropertyValue("apigee.loggly.organization"),
+			APIToken:     rootProps.StringPropertyValue("apigee.loggly.token"),
 		},
 	}
 
@@ -71,12 +66,8 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 		CentralCfg: centralConfig,
 		GatewayCfg: apigeeConfig,
 	}
-	beater.SetGatewayConfig(apigeeConfig)
+
+	beater.SetLogglyConfig(apigeeConfig.GetLoggly())
 
 	return agentConfig, nil
-}
-
-// GetAgentConfig - Returns the agent config
-func GetAgentConfig() *config.ApigeeConfig {
-	return apigeeConfig
 }

@@ -18,6 +18,7 @@ type ApigeeConfig struct {
 	corecfg.IConfigValidator
 	Organization string        `config:"organization"`
 	Auth         *AuthConfig   `config:"auth"`
+	Loggly       *LogglyConfig `config:"loggly"`
 	PollInterval time.Duration `config:"pollInterval"`
 }
 
@@ -31,12 +32,25 @@ func (a *ApigeeConfig) ValidateCfg() (err error) {
 		return errors.New("Invalid gateway configuration: password is not configured")
 	}
 
+	if a.Loggly.Organization == "" {
+		return errors.New("Invalid gateway configuration: organization is not configured")
+	}
+
+	if a.Loggly.APIToken == "" {
+		return errors.New("Invalid gateway configuration: apitoken is not configured")
+	}
+
 	return
 }
 
 // GetAuth - Returns the Auth Config
 func (a *ApigeeConfig) GetAuth() *AuthConfig {
 	return a.Auth
+}
+
+// GetLoggly - Returns the Loggly Config
+func (a *ApigeeConfig) GetLoggly() *LogglyConfig {
+	return a.Loggly
 }
 
 // GetPollInterval - Returns the Poll Interval

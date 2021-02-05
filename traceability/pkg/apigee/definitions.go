@@ -3,119 +3,89 @@ package apigee
 // Headers - Type for request/response headers
 type Headers map[string]string
 
-// EventApigeeEntry - Type for event hub entry
-type EventApigeeEntry struct {
-	Records []EventEntry `json:"records"`
+// LogglyEvent - Event from loggly
+type LogglyEvent struct {
+	ID        string `json:"id"`
+	Raw       string `json:"raw"`
+	Timestamp int64  `json:"timestamp"`
+	Logmsg    string `json:"logmsg"`
 }
 
-// EventEntry - Type for gateway transaction detail
-type EventEntry struct {
-	Level            int             `json:"Level"`
-	IsRequestSuccess bool            `json:"isRequestSuccess"`
-	Time             string          `json:"time"`
-	OperationName    string          `json:"operationName"`
-	Category         string          `json:"category"`
-	DurationMs       int             `json:"durationMs"`
-	CallerIPAddress  string          `json:"callerIpAddress"`
-	CorrelationID    string          `json:"correlationId"`
-	Location         string          `json:"location"`
-	Properties       GatewayLogEntry `json:"properties"`
-	ResourceID       string          `json:"resourceId"`
+// LogglyRSID -
+type LogglyRSID struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }
 
-// GatewayLogEntry - Represents the structure of log entry the agent will receive
-type GatewayLogEntry struct {
-	APIID                  string  `json:"apiId"`
-	OperationID            string  `json:"operationId"`
-	APIMSubscriptionID     string  `json:"apimSubscriptionId"`
-	APIRevision            string  `json:"apiRevision"`
-	ClientProtocol         string  `json:"clientProtocol"`
-	ClientTLSVersion       string  `json:"clientTlsVersion"`
-	Method                 string  `json:"method"`
-	URL                    string  `json:"url"`
-	RequestSize            int     `json:"requestSize"`
-	ResponseCode           int     `json:"responseCode"`
-	ResponseSize           int     `json:"responseSize"`
-	Cache                  string  `json:"cache"`
-	BackendTime            int     `json:"backendTime"`
-	BackendProtocol        string  `json:"backendProtocol"`
-	BackendMethod          string  `json:"backendMethod"`
-	BackendURL             string  `json:"backendUrl"`
-	BackendResponseCode    int     `json:"backendResponseCode"`
-	ResponseHeaders        Headers `json:"responseHeaders"`
-	RequestHeaders         Headers `json:"requestHeaders"`
-	BackendResponseHeaders Headers `json:"backendResponseHeaders"`
-	BackendRequestHeaders  Headers `json:"backendRequestHeaders"`
+// LogglySearchResponse - Represents the array of events the agent will receive
+type LogglySearchResponse struct {
+	RSID LogglyRSID `json:"rsid"`
 }
 
-//AuthResponse - response struct from APIGEE auth call
-type AuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"`
-	Scope        string `json:"scope"`
-	JTI          string `json:"jti"`
+// LogglyEventsCollection - Represents the array of events the agent will receive
+type LogglyEventsCollection struct {
+	Events      []LogglyEvent `json:"events"`
+	Page        int           `json:"page"`
+	TotalEvents int           `json:"total_events"`
 }
 
-// grantType values
-type grantType int
-
-const (
-	password grantType = iota
-	refresh
-)
-
-func (g grantType) String() string {
-	return [...]string{"password", "refresh_token"}[g]
+// LogEntry - Represents the structure of log entry the agent will receive
+type LogEntry struct {
+	Organization          string `json:"organization"`
+	Environment           string `json:"environment"`
+	APIName               string `json:"api"`
+	APIRevision           string `json:"revision"`
+	MessageID             string `json:"messageId"`
+	ClientTLSVersion      string `json:"clientTlsVersion"`
+	Verb                  string `json:"verb"`
+	Path                  string `json:"path"`
+	QueryString           string `json:"queryString"`
+	ClientIP              string `json:"clientIP"`
+	ClientHost            string `json:"clientHost"`
+	ClientStartTimeStamp  string `json:"clientStartTimeStamp"`
+	ClientEndTimeStamp    string `json:"clientEndTimeStamp"`
+	BytesReceived         string `json:"bytesReceived"`
+	BytesSent             string `json:"bytesSent"`
+	UserAgent             string `json:"UserAgent"`
+	HTTPVersion           string `json:"httpVersion"`
+	ProxyURL              string `json:"proxyURL"`
+	IsError               string `json:"isError"`
+	StatusCode            string `json:"statusCode"`
+	ErrorStatusCode       string `json:"errorStatusCode"`
+	RequestHost           string `json:"requestHost"`
+	RequestContentType    string `json:"requestContentType"`
+	ResponseHost          string `json:"responseHost"`
+	ResponseContentLength string `json:"responseContentLength"`
+	ResponseHeaders       string `json:"responseHeaders"`
+	RequestHeaders        string `json:"requestHeaders"`
 }
 
-//Environments
-type environments []string
-
-// apiProxies
-type apiProxies []string
-
-// apigeeLogs - apigee logs
-type apigeeLogs struct {
-	Log []apigeeLog `json:"logs"`
+/*
+Current raw message
+{
+	"organization":"jasonmscollins-eval",
+	"environment": "prod",
+	"api": "Petstore",
+	"revision": "3",
+	"messageId": "rrt-7724201184537129167-f-gce-10936-8390016-1",
+	"verb": "GET",
+	"path": "/petstore/store/inventory",
+	"queryString": "",
+	"clientIP": "184.101.205.182",
+	"clientHost": "184.101.205.182",
+	"clientStartTimeStamp": "1612378803270",
+	"clientEndTimeStamp": "1612378803298",
+	"bytesReceived": "",
+	"bytesSent": "0",
+	"userAgent": "PostmanRuntime/7.26.8",
+	"httpVersion": "1.1",
+	"proxyURL": "https://jasonmscollins-eval-prod.apigee.net/petstore/store/inventory?apikey=DTuyUFjHAgXmrPGjPJs6Auql43A5THVJ",
+	"isError": "false",
+	"statusCode": "200",
+	"errorStatusCode": "",
+	"requestHost":"jasonmscollins-eval-prod.apigee.net",
+	"responseHost":"jasonmscollins-eval-prod.apigee.net",
+	"responseContentLength":"0",
+	"requestContentType":"application/json"
 }
-
-type apigeeLog struct {
-	FaultCode        string  `json:"fault_code"`
-	FaultFlow        string  `json:"fault_flow"`
-	FaultPolicy      string  `json:"fault_policy"`
-	FaultProxy       string  `json:"fault_proxy"`
-	FaultSource      string  `json:"fault_source"`
-	Request          string  `json:"request"`
-	RequestLength    int64   `json:"request_length"`
-	RequestMessageID string  `json:"request_message_id"`
-	ResponseSize     int64   `json:"response_size"`
-	ResponseStatus   string  `json:"response_status"`
-	ResponseTime     float64 `json:"response_time"`
-	Timestamp        string  `json:"timestamp"`
-	VirtualHost      string  `json:"virtual_host"`
-}
-
-// events
-type apigeeEvents struct {
-	Event []apigeeEvent `json:"events"`
-}
-
-type apigeeEvent struct {
-	ID                   string `json:"id"`
-	SharedID             string `json:"shared_id"`
-	EntityKey            string `json:"entity_key"`
-	EntityValue          string `json:"entity_value"`
-	DependentEntityValue string `json:"dependent_entity_string"`
-	Component            string `json:"component"`
-	Pod                  string `json:"pod"`
-	Region               string `json:"region"`
-	Organization         string `json:organization"`
-	Environment          string `json:environment"`
-	Name                 string `json:"name"`
-	Type                 string `json:"type"`
-	Source               string `json:"source"`
-	RawPayload           string `json:"raw_payload"` //TODO shane
-	Time                 string `json:"time"`
-}
+*/

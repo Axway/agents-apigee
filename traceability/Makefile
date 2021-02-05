@@ -18,7 +18,7 @@ update-sdk:
 	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@main"
 
 
-${WORKSPACE}/apic_traceability_agent: dep
+${WORKSPACE}/apigee_traceability_agent: dep
 	@export time=`date +%Y%m%d%H%M%S` && \
 	export version=`cat version` && \
 	export commit_id=`git rev-parse --short HEAD` && \
@@ -27,7 +27,7 @@ ${WORKSPACE}/apic_traceability_agent: dep
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEETraceabilityAgent'" \
-		-a -o ${WORKSPACE}/bin/apic_traceability_agent ${WORKSPACE}/main.go
+		-a -o ${WORKSPACE}/bin/apigee_traceability_agent ${WORKSPACE}/main.go
 
-build:${WORKSPACE}/apic_traceability_agent
+build:${WORKSPACE}/apigee_traceability_agent
 	@echo "Build complete"

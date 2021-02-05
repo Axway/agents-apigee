@@ -1,0 +1,618 @@
+---
+openapi: "3.0.0"
+servers:
+- url: "https://api.enterprise.apigee.com/v1"
+info:
+  title: "Shared flows and flow hooks API"
+  description: "Manage shared flows and flow hooks. For more information, see:\n*\
+    \ <a href=\"https://docs.apigee.com/api-platform/fundamentals/shared-flows\">Reusable\
+    \ shared flows</a>\n* <a href=\"https://docs.apigee.com/api-platform/fundamentals/flow-hooks\"\
+    >Attaching a shared flow using a flow hook</a>."
+  version: "1.0"
+security:
+- Basic: []
+- OAuth: []
+paths:
+  /organizations/{org_name}/sharedflows:
+    post:
+      tags:
+      - "Shared flows"
+      summary: "Import a shared flow"
+      description: "Imports a ZIP-formatted shared flow configuration bundle from\
+        \ a local machine to an Edge organization. If the shared flow already exists,\
+        \ this API creates a new revision of it. If the shared flow does not exist,\
+        \ this API creates it.\n\n**Notes**:\n\n* **Currently, you cannot import a\
+        \ shared flow using the Try this API panel**.\n* By default, shared flow configurations\
+        \ are not validated on import.\n\nOnce imported, the shared flow revision\
+        \ must be deployed before it can be accessed at runtime.\n\nFor example, the\
+        \ following curl call imports a shared flow configuration bundle:\n\n```\n\
+        curl \"https://api.enterprise.apigee.com/v1/organizations/{org_name}/sharedflows?action=import&name=example\"\
+        \ \\\n  -X POST \\\n  -H Content-Type=\"multipart/form-data\"\n  -F \"file=@shareflow.zip\"\
+        \ \\\n  -u email:password\n\n```"
+      operationId: "importSharedFlow"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/action"
+      - $ref: "#/components/parameters/name"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedFlowRevision"
+              example:
+                basepaths: []
+                configurationVersion:
+                  majorVersion: 4
+                  minorVersion: 0
+                contextInfo: "Revision null of application -NA-, in organization -NA-"
+                createdAt: 1472699641914
+                createdBy: "ahamilton@example.com"
+                description: "Shared flow used to verify API key."
+                displayName: "My shared flow"
+                entityMetaDataAsProperties:
+                  bundle_type: "zip"
+                  lastModifiedBy: "ahamilton@example.com"
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: "1560888800458"
+                  subType: "null"
+                  createdAt: "1472699641914"
+                lastModifiedAt: 1560888800458
+                lastModifiedBy: "ahamilton@example.com"
+                manifestVersion": "SHA-512:46eac8e4f4xxxxxxxxxxx"
+                name: "mySharedFlow"
+                policies:
+                - "Verify-API-Key"
+                proxies: []
+                resourceFiles:
+                  resourceFile: []
+                resources: []
+                revision: "1"
+                sharedFlows:
+                - "default"
+                spec: ""
+                targetServers: []
+                targets: []
+                type: "Application"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Shared flow configuration."
+        content:
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    get:
+      tags:
+      - "Shared flows"
+      summary: "List shared flows"
+      description: "Lists the shared flows in an organization."
+      operationId: "listSharedFlows"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+                  description: "Shared flow name."
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/sharedflows/{sharedflow_name}:
+    delete:
+      tags:
+      - "Shared Flows"
+      summary: "Delete shared flow"
+      description: "Deletes shared flow and all associated policies, resources, and\
+        \ revisions. You must undeploy the shared flow before deleting it."
+      operationId: "deleteSharedFlow"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/sharedflow_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedFlowRevision"
+              example:
+                basepaths: []
+                configurationVersion:
+                  majorVersion: 4
+                  minorVersion: 0
+                contextInfo: "Revision null of application -NA-, in organization -NA-"
+                createdAt: 1472699641914
+                createdBy: "ahamilton@example.com"
+                description: "Shared flow used to verify API key."
+                displayName: "My shared flow"
+                entityMetaDataAsProperties:
+                  bundle_type: "zip"
+                  lastModifiedBy: "ahamilton@example.com"
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: "1560888800458"
+                  subType: "null"
+                  createdAt: "1472699641914"
+                lastModifiedAt: 1560888800458
+                lastModifiedBy: "ahamilton@example.com"
+                manifestVersion": "SHA-512:46eac8e4f4xxxxxxxxxxx"
+                name: "mySharedFlow"
+                policies:
+                - "Verify-API-Key"
+                proxies: []
+                resourceFiles:
+                  resourceFile: []
+                resources: []
+                revision: "1"
+                sharedFlows:
+                - "default"
+                spec: ""
+                targetServers: []
+                targets: []
+                type: "Application"
+        "400":
+          description: "Bad request"
+    get:
+      tags:
+      - "Shared Flows"
+      summary: "Get shared flow"
+      description: "Gets a shared flow including a list of existing revisions."
+      operationId: "getSharedFlow"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/sharedflow_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedFlow"
+              example:
+                metaData:
+                  createdAt: 1537811449596
+                  createdBy: "ahamilton@example.com"
+                  lastModifiedAt: 1537811449596
+                  lastModifiedBy: "ahamilton@example.com"
+                name: "mySharedFlow"
+                revision:
+                - "1"
+                - "2"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/sharedflows/{sharedflow_name}/revisions:
+    get:
+      tags:
+      - "Shared Flow"
+      summary: "List shared flow revisions"
+      description: "List all revisions for a shared flow."
+      operationId: "listSharedFlowRevisions"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/sharedflow_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+                  description: "Shared flow revision."
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/sharedflows/{sharedflow_name}/revisions/{revision_number}:
+    get:
+      tags:
+      - "Shared Flow"
+      summary: "Export a shared flow revision"
+      description: "Exports the shared flow configuration for the specified revision\
+        \ as a zip file.\n\n**Note**: **Currently, you cannot import a shared flow\
+        \ using the Try this API panel**.\n\nSet the `format` query parameter to `bundle`.\
+        \ If you are using curl, specify `-o filename.zip` to save the output to a\
+        \ file; otherwise, it displays to `stdout`. Then, develop the shared flow\
+        \ configuration locally and <a href=\"/docs/shared-flows/1/routes/organizations/%7Borg_name%7D/sharedflows/post\"\
+        >import</a> the updated shared flow configuration revision."
+      operationId: "getAPIProxyRevision"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/sharedflow_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/format"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/octet-stream:
+              schema:
+                type: "string"
+                format: "binary"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/environments/{env_name}/flowhooks/{flow_hook}:
+    put:
+      tags:
+      - "Shared Flows"
+      - "Flow Hooks"
+      summary: "Attach a shared flow to a flow hook."
+      description: "Attaches a shared flow to the specified flow hook. Valid values\
+        \ for flow hook include:\n\n* `PreProxyFlowHook`\n* `PreTargetFlowHook`\n\
+        * `PostTargetFlowHook`\n* `PostProxyFlowHook`\n\nFor more information, see\
+        \ see <a href=\"https://docs.apigee.com/api-platform/fundamentals/flow-hooks\"\
+        >Attaching a shared flow using a flow hook</a> and <a href=\"https://docs.apigee.com/api-platform/fundamentals/shared-flows\"\
+        >Reusable shared flows</a>."
+      operationId: "attachFlowHook"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/flow_hook"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowHook"
+              example:
+                continueOnError: true
+                sharedFlow: "mySharedFlow"
+                state: "deployed"
+        "400":
+          description: "Bad request"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                FlowHook:
+                  type: "object"
+                  properties:
+                    SharedFlow:
+                      type: "string"
+                      description: "Shared flow to attach to the flow hook."
+              example:
+                FlowHook:
+                  SharedFlow: "mySharedFlow"
+          application/xml:
+            schema:
+              type: "object"
+              properties:
+                FlowHook:
+                  type: "object"
+                  properties:
+                    SharedFlow:
+                      type: "string"
+                      description: "Shared flow to attach to the flow hook."
+              example:
+                FlowHook:
+                  SharedFlow: "mySharedFlow"
+    get:
+      tags:
+      - "Shared Flows"
+      - "Flow Hooks"
+      summary: "Get the shared flow attached to a flow hook"
+      description: "Gets the shared flow attached to a flow hook. Valid values for\
+        \ flow hook include:\n\n* `PreProxyFlowHook`\n* `PreTargetFlowHook`\n* `PostTargetFlowHook`\n\
+        * `PostProxyFlowHook`\n\nOnly one shared flow at a time can be attached to\
+        \ a flow hook. \n\nFor more information, see see <a href=\"https://docs.apigee.com/api-platform/fundamentals/flow-hooks\"\
+        >Attaching a shared flow using a flow hook</a> and <a href=\"https://docs.apigee.com/api-platform/fundamentals/shared-flows\"\
+        >Reusable shared flows</a>."
+      operationId: "getSharedFlowAttachedFlowHook"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/flow_hook"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowHook"
+              example:
+                continueOnError: true
+                sharedFlow: "mySharedFlow"
+        "400":
+          description: "Bad request"
+    delete:
+      tags:
+      - "Shared Flows"
+      - "Flow Hooks"
+      summary: "Detach a shared flow to a flow hook."
+      description: "Detaches a shared flow from the specified flow hook. Valid values\
+        \ for flow hook include:\n\n* `PreProxyFlowHook`\n* `PreTargetFlowHook`\n\
+        * `PostTargetFlowHook`\n* `PostProxyFlowHook`\nIf no shared flow is attached,\
+        \ this will not return an error. Only one shared flow at a time can be attached\
+        \ to a flow hook. \n\nFor more information, see see <a href=\"https://docs.apigee.com/api-platform/fundamentals/flow-hooks\"\
+        >Attach a shared flow using a flow hook</a> and <a href=\"https://docs.apigee.com/api-platform/fundamentals/shared-flows\"\
+        >Reusable shared flows</a>."
+      operationId: "detachFlowHook"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/flow_hook"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowHook"
+              example:
+                continueOnError: true
+                sharedFlow: "mySharedFlow"
+                state: "undeployed"
+        "400":
+          description: "Bad request"
+components:
+  securitySchemes:
+    Basic:
+      type: "http"
+      scheme: "basic"
+      description: "Multi-factor authentication is not supported."
+    OAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      description: "For OAuth, enter the following in the Key field: Bearer %your-token%\
+        \ (see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens)"
+  parameters:
+    org_name:
+      in: "path"
+      name: "org_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Organization name."
+    sharedflow_name:
+      in: "path"
+      name: "sharedflow_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Shared flow name."
+    revision_number:
+      in: "path"
+      name: "revision_number"
+      required: true
+      schema:
+        type: "string"
+      description: "Revision number."
+    env_name:
+      in: "path"
+      name: "env_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Environment name."
+    flow_hook:
+      in: "path"
+      name: "flow_hook"
+      required: true
+      schema:
+        type: "string"
+      description: "Flow hook name. Specify one of the following flowhook locations:\
+        \ `PreProxyFlowHook`, `PreTargetFlowHook`, `PostTargetFlowHook`, `PostProxyFlowHook`"
+    action:
+      in: "query"
+      name: "action"
+      required: true
+      schema:
+        type: "string"
+      description: "Set to `import` to import the shared flow configuration."
+    name:
+      in: "query"
+      name: "name"
+      required: true
+      schema:
+        type: "string"
+      description: "Name for the imported shared flow."
+    format:
+      in: "query"
+      name: "format"
+      required: true
+      schema:
+        type: "string"
+      description: "Format used when downloading the shared flow configuration revision.\
+        \ Set to `bundle` to download the shared flow configuration revision as a\
+        \ zip file."
+  schemas:
+    SharedFlow:
+      description: "Shared flow metadata and revisions."
+      type: "object"
+      properties:
+        metadata:
+          description: "Shared flow metadata."
+          type: "object"
+          properties:
+            createdAt:
+              description: "Time when the shared flow was created in milliseconds\
+                \ since epoch."
+              type: "integer"
+            createdBy:
+              type: "string"
+              description: "Email address of developer that created the shared flow."
+            lastModifiedAt:
+              description: "Time when the shared flow was last modified in milliseconds\
+                \ since epoch."
+              type: "integer"
+            lastModifiedBy:
+              description: "Email address of developer that last modified the shared\
+                \ flow."
+              type: "string"
+        name:
+          description: "Name of the shared flow."
+          type: "string"
+        revision:
+          description: "Revisions defined for the shared flow."
+          type: "array"
+          items:
+            type: "string"
+            description: "Revision number."
+    SharedFlowRevision:
+      description: "Shared flow revision."
+      type: "object"
+      properties:
+        basepaths:
+          description: "Base paths for the shared flow."
+          type: "array"
+          items:
+            type: "string"
+        configurationVersion:
+          description: "Version of the shared flow configuration schema to which this\
+            \ shared flow conforms. This setting may be used in the future to track\
+            \ the evolution of the shared flow format."
+          type: "object"
+          properties:
+            majorVersion:
+              description: "Major version of the shared flow configuration schema.\
+                \ The only supported value is '4'."
+              type: "integer"
+            minorVersion:
+              description: "Minor version of the shared flow configuration schema.\
+                \ The only supported value is '0'."
+              type: "integer"
+        contextInfo:
+          type: "string"
+          description: "Revision number, app name, and organization for the shared\
+            \ flow."
+        createdAt:
+          description: "Time when the shared flow revision was created in milliseconds\
+            \ since epoch."
+          type: "integer"
+        createdBy:
+          description: "Email address of developer that created the shared flow."
+          type: "string"
+        description:
+          type: "string"
+          description: "Description of the shared flow."
+        displayName:
+          type: "string"
+          description: "Display name for the shared flow."
+        entityMetaDataAsProperties:
+          description: "Kev-value map of metadata describing the shared flow revision."
+          type: "object"
+          properties:
+            bundle_type:
+              description: "Type of bundle. Set to `zip`."
+              type: "string"
+            createdAt:
+              description: "Time when the shared flow revision was created in milliseconds\
+                \ since epoch."
+              type: "string"
+            createdBy:
+              description: "Email address of developer that created the shared flow."
+              type: "string"
+            lastModifiedAt:
+              description: "Time when the shared flow version was last modified in\
+                \ milliseconds since epoch."
+              type: "string"
+            lastModifiedBy:
+              description: "Email address of developer that last modified the shared\
+                \ flow."
+              type: "string"
+            subType:
+              description: "Set to `null`."
+              type: "string"
+        lastModifiedAt:
+          description: "Time when the shared flow version was last modified in milliseconds\
+            \ since epoch."
+          type: "integer"
+        lastModifiedBy:
+          description: "Email address of developer that last modified the shared flow."
+          type: "string"
+        manifestVersion:
+          description: "Manifest version of the bundle."
+          type: "string"
+        name:
+          description: "Name of the shared flow."
+          type: "string"
+        policies:
+          description: "List of policies included in the shared flow revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "Policy name."
+        proxies:
+          description: "List of API proxy names included in the shared flow revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "API proxy name."
+        resourceFiles:
+          description: "Resource files included with the shared flow revision."
+          type: "object"
+          properties:
+            resourceFile:
+              description: "Resource files included with the shared flow revision."
+              type: "array"
+              items:
+                description: "Resource filename."
+                type: "object"
+                properties:
+                  name:
+                    description: "Name of the resource file."
+                    type: "string"
+                  type:
+                    description: "Type of resource file."
+                    type: "string"
+        resources:
+          description: "List of resources included in the shared flow revision, formatted\
+            \ as `{type}://{name}`."
+          type: "array"
+          items:
+            type: "string"
+            description: "Resource name."
+        sharedFlows:
+          description: "List of shared flows included in the shared flow revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "Shared flow name."
+        spec:
+          description: "OpenAPI Specification that is associated with the shared flow.\
+            \ This value may be a URL or to a path in the spec store or on GitHub,\
+            \ for example."
+        targetServers:
+          description: "List of TargetServers referenced in any TargetEndpoints of\
+            \ the shared flow. Typically, this element is included only when the shared\
+            \ flow was created using the Edge  UI. This is a 'manifest' setting designed\
+            \ to provide visibility into the contents of the shared flow."
+          type: "array"
+          items:
+            type: "string"
+            description: "TargetServer name."
+        targets:
+          description: "List of targets included in the shared flow revision."
+          type: "array"
+          items:
+            type: "string"
+            description: "Target name."
+        type:
+          description: "Set to `Application`."
+          type: "string"
+    FlowHook:
+      description: "Flow hook attachment details."
+      type: "object"
+      properties:
+        continueOnError:
+          type: "string"
+          description: "Flag that specifies whether execution should continue if the\
+            \ flow hook throws an exception."
+        sharedFlow:
+          type: "string"
+          description: "Shared flow attached to the flow hook. Omitted if no shared\
+            \ flow is attached."
+        state:
+          type: "string"
+          description: "Displays the updated deployment status of the flow hook, such\
+            \ as `deployed` or `undeployed`. Only displays when attaching to or detaching\
+            \ from a flow hook."

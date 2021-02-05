@@ -3,6 +3,7 @@ package apigee
 import (
 	"fmt"
 
+	"github.com/Axway/agents-apigee/discovery/pkg/apigee/apigeebundle"
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
@@ -34,6 +35,7 @@ type apigeeProxyDetails struct {
 	Proxy       models.ApiProxy
 	Revision    models.DeploymentDetailsRevision
 	APIRevision models.ApiProxyRevision
+	Bundle      *apigeebundle.APIGEEBundle
 	Environment string
 }
 
