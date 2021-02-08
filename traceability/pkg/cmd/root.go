@@ -7,9 +7,8 @@ import (
 	libcmd "github.com/elastic/beats/v7/libbeat/cmd"
 	"github.com/elastic/beats/v7/libbeat/cmd/instance"
 
-	"github.com/Axway/agents-apigee/discovery/pkg/config"
 	"github.com/Axway/agents-apigee/traceability/pkg/beater"
-	// "github.com/Axway/agents-apigee/traceability/pkg/config"
+	"github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // RootCmd - Agent root command

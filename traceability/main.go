@@ -1,4 +1,4 @@
-package traceability
+package main
 
 import (
 	"fmt"

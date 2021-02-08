@@ -8,7 +8,7 @@ import (
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/util/log"
-	"github.com/Axway/agents-apigee/discovery/pkg/config"
+	"github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // LogglyClient - Represents the loggly client
