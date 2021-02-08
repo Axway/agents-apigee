@@ -85,7 +85,7 @@ func (a *APIGEEBundle) parseAll(data []byte) {
 			}
 			xml.Unmarshal(fileBytes, &a.VerifyAPIKey)
 		default:
-			log.Warnf("Skipped parsing %s", zipFile.Name)
+			log.Debugf("Skipped parsing %s", zipFile.Name)
 		}
 	}
 }

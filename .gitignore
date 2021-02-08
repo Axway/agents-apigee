@@ -2,6 +2,7 @@ bin/
 .vscode/
 logs/
 vendor/
+demo/
 
 env_vars
 apigee_discovery_agent.yml

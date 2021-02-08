@@ -2,10 +2,11 @@ package config
 
 // LogglyConfig - represents the config for gateway
 type LogglyConfig struct {
-	Organization string `config:"organization"`
-	APIToken     string `config:"token"`
-	Host         string `config:"host"`
-	Port         string `config:"port"`
+	Organization  string `config:"organization"`
+	CustomerToken string `config:"customerToken"`
+	APIToken      string `config:"apiToken"`
+	Host          string `config:"host"`
+	Port          string `config:"port"`
 }
 
 // GetOrganization - Returns the Loggly Organization

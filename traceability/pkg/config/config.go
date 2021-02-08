@@ -25,19 +25,23 @@ type ApigeeConfig struct {
 // ValidateCfg - Validates the gateway config
 func (a *ApigeeConfig) ValidateCfg() (err error) {
 	if a.Auth.Username == "" {
-		return errors.New("Invalid gateway configuration: username is not configured")
+		return errors.New("Invalid APIGEE configuration: username is not configured")
 	}
 
 	if a.Auth.Password == "" {
-		return errors.New("Invalid gateway configuration: password is not configured")
+		return errors.New("Invalid APIGEE configuration: password is not configured")
 	}
 
 	if a.Loggly.Organization == "" {
-		return errors.New("Invalid gateway configuration: organization is not configured")
+		return errors.New("Invalid APIGEE configuration: loggly.organization is not configured")
+	}
+
+	if a.Loggly.CustomerToken == "" {
+		return errors.New("Invalid APIGEE configuration: loggly.customertoken is not configured")
 	}
 
 	if a.Loggly.APIToken == "" {
-		return errors.New("Invalid gateway configuration: apitoken is not configured")
+		return errors.New("Invalid APIGEE configuration: loggly.apitoken is not configured")
 	}
 
 	return

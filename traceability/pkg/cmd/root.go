@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	corecmd "github.com/Axway/agent-sdk/pkg/cmd"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 
@@ -38,8 +40,15 @@ func init() {
 
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
-	rootProps.AddStringProperty("apigee.loggly.organization", "", "Loggly Organization")
-	rootProps.AddStringProperty("apigiee.loggly.token", "", "API Token to use to authenticate to Loggly")
+	rootProps.AddStringProperty("apigee.organization", "", "APIGEE Organization")
+	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
+	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
+	rootProps.AddDurationProperty("apigee.pollInterval", 30*time.Second, "The time interval between checking for new APIGEE resources")
+	rootProps.AddStringProperty("apigee.loggly.customertoken", "", "The Loggly Customer Token for sending log events")
+	rootProps.AddStringProperty("apigee.loggly.apitoken", "", "The Loggly API Token for retrieving log events")
+	rootProps.AddStringProperty("apigee.loggly.organization", "", "The Loggly Organization ID")
+	rootProps.AddStringProperty("apigee.loggly.host", "logs-01.loggly.com", "The Loggly Host URL")
+	rootProps.AddStringProperty("apigee.loggly.port", "514", "The Loggly Port")
 
 }
 
@@ -55,9 +64,18 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	// Parse the config from bound properties and setup gateway config
 
 	apigeeConfig := &config.ApigeeConfig{
+		Organization: rootProps.StringPropertyValue("apigee.organization"),
+		PollInterval: rootProps.DurationPropertyValue("apigee.pollInterval"),
+		Auth: &config.AuthConfig{
+			Username: rootProps.StringPropertyValue("apigee.auth.username"),
+			Password: rootProps.StringPropertyValue("apigee.auth.password"),
+		},
 		Loggly: &config.LogglyConfig{
-			Organization: rootProps.StringPropertyValue("apigee.loggly.organization"),
-			APIToken:     rootProps.StringPropertyValue("apigee.loggly.token"),
+			Organization:  rootProps.StringPropertyValue("apigee.loggly.organization"),
+			CustomerToken: rootProps.StringPropertyValue("apigee.loggly.customertoken"),
+			APIToken:      rootProps.StringPropertyValue("apigee.loggly.apitoken"),
+			Host:          rootProps.StringPropertyValue("apigee.loggly.host"),
+			Port:          rootProps.StringPropertyValue("apigee.loggly.port"),
 		},
 	}
 
