@@ -41,7 +41,64 @@ In this section we'll setup the Discovery Agent and the Traceability Agent so th
 
 For the discovery and traceability agents to be configured.  You must create an amplify-central-logging shared flow, with steps:
 - JavaScript script that aggregates all the headers and creates variables for the flow
-- Message logging policy that takes those headers as well as other info to send to a centralized logging server (Loggly in our development).
+```
+ // Read request headers for both proxy and target flow
+ var headerNames = context.getVariable('request.headers.names');
+ var strHeaderNames = String(headerNames);
+ var headerList = strHeaderNames.substring(1, strHeaderNames.length - 1).split(new RegExp(', ', 'g'));
+ var reqHeaders = {};
+ headerList.forEach(function(headerName) {
+   reqHeaders[headerName] = context.getVariable('request.header.' + headerName);
+ });
+ // Read response headers for proxy flow
+ headerNames = context.getVariable('response.headers.names');
+ strHeaderNames = String(headerNames);
+ headerList = strHeaderNames.substring(1, strHeaderNames.length - 1).split(new RegExp(', ', 'g'));
+ var resHeaders = {};
+ headerList.forEach(function(headerName) {
+   resHeaders[headerName] = context.getVariable('response.header.' + headerName);
+ });
+ 
+ context.setVariable("apic.reqHeaders", JSON.stringify(JSON.stringify(reqHeaders)));
+ context.setVariable("apic.resHeaders", JSON.stringify(JSON.stringify(resHeaders)));
+```
+- Message logging policy that takes those headers as well as other info to send to a centralized logging server (Loggly in our development).  Below is the code snippets for message loggin policy
+```
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MessageLogging async="false" continueOnError="false" enabled="true" name="amplify-central-logging">
+    <DisplayName>amplify-central-logging</DisplayName>
+    <Syslog>
+        <Message>[<LogglyToken>@41058 tag="apic-logs"]{
+                 "organization":"{organization.name}",
+                 "environment": "{environment.name}",
+                 "api": "{apiproxy.name}",
+                 "revision": "{apiproxy.revision}",
+                 "messageId": "{messageid}",
+                 "verb": "{request.verb}",
+                 "path": "{request.path}",
+                 "queryString": "{request.querystring}",
+                 "clientIP": "{client.ip}",
+                 "clientHost": "{client.host}",
+                 "clientStartTimeStamp": "{client.received.start.timestamp}",
+                 "clientEndTimeStamp": "{system.timestamp}",
+                 "bytesReceived": "{request.header.Content-Length}",
+                 "bytesSent": "{response.header.Content-Length}",
+                 "userAgent": "{request.header.User-Agent}",
+                 "httpVersion": "{request.version}",
+                 "isError": "{is.error}",
+                 "statusCode": "{response.status.code}",
+                 "errorStatusCode": "{error.status.code}",
+                 "requestHost":"{request.header.Host}",
+                 "responseHost":"{response.header.Host}",
+                 "requestHeaders": {apic.reqHeaders},
+                 "responseHeaders": {apic.resHeaders}
+                 }</Message>
+        <Host><<Loggly Host>></Host>
+        <Port><<Loggly Port>></Port>
+        <FormatMessage>true</FormatMessage>
+    </Syslog>
+</MessageLogging>
+```
 - Deployed the shared flow to all environments
 - Add the shared flow as a Flow Hook, Post Proxy, on all environments
 - Main discovery loop checking for new and changed proxies
