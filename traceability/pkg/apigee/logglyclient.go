@@ -2,7 +2,6 @@ package apigee
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
@@ -47,7 +46,7 @@ func (a *LogglyClient) Start() {
 
 			a.startTime = nowTime.Unix()
 
-			fmt.Println("Sleeping for 30 seconds")
+			log.Debug("Sleeping for 30 seconds")
 			time.Sleep(30 * time.Second)
 		}
 	}()
@@ -93,7 +92,7 @@ func (a *LogglyClient) createSearch() (string, error) {
 
 	response, err := a.apiClient.Send(request)
 	if err != nil {
-		fmt.Println("Error in creating search for events : " + err.Error())
+		log.Errorf("Error in creating search for events : " + err.Error())
 		return "", err
 	}
 
@@ -116,7 +115,7 @@ func (a *LogglyClient) readEvents(rsID string) error {
 	}
 	response, err := a.apiClient.Send(request)
 	if err != nil {
-		fmt.Println("Error in getting events : " + err.Error())
+		log.Errorf("Error in getting events : " + err.Error())
 		return err
 	}
 

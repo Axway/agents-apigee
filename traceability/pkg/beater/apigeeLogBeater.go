@@ -1,10 +1,9 @@
 package beater
 
 import (
-	"fmt"
-
 	agenterrors "github.com/Axway/agent-sdk/pkg/util/errors"
 	hc "github.com/Axway/agent-sdk/pkg/util/healthcheck"
+	"github.com/Axway/agent-sdk/pkg/util/log"
 
 	"github.com/elastic/beats/v7/libbeat/beat"
 	"github.com/elastic/beats/v7/libbeat/common"
@@ -71,7 +70,7 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		case <-bt.done:
 			return nil
 		case eventData := <-bt.eventChannel:
-			fmt.Println("EVENT TO PROCESS : " + string(eventData))
+			log.Debug("EVENT TO PROCESS : " + string(eventData))
 			eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
 			if eventsToPublish != nil {
 				bt.client.PublishAll(eventsToPublish)
