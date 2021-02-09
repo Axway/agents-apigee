@@ -14,7 +14,7 @@
                  "clientIP": "{client.ip}",
                  "clientHost": "{client.host}",
                  "clientStartTimeStamp": "{client.received.start.timestamp}",
-                 "clientEndTimeStamp": "{client.sent.end.timestamp}",
+                 "clientEndTimeStamp": "{system.timestamp}",
                  "bytesReceived": "{request.header.Content-Length}",
                  "bytesSent": "{response.header.Content-Length}",
                  "userAgent": "{request.header.User-Agent}",
