@@ -16,7 +16,6 @@ The following make targets are available
 | update-sdk | pulls the latest changes to main on the SDK repo               |                              |
 | build      | builds the binary traceability agent                           | bn/apigee_traceability_agent |
 
-
 ### Build (Windows)
 
 * Build the agent using the following command
