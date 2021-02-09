@@ -21,6 +21,7 @@ type APIProxy struct {
 	LastModifiedBy  string               `xml:"LastModifiedBy"`
 	ManifestVersion string               `xml:"ManifestVersion"`
 	Policies        policies             `xml:"Policies"`
+	Revision        string               `xml:"revision,attr"`
 	ProxyEndpoints  proxyEndpoints       `xml:"ProxyEndpoints"`
 	Resources       string               `xml:"Resources"`
 	Spec            string               `xml:"Spec"`
