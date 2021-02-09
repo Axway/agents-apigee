@@ -28,3 +28,16 @@ The following make targets are available
       * Read in all proxy endpoints
       * Create OAS3 spec with information about endpoints and policies
 * Create the Amplify Central API
+
+## Discovery agent variables
+
+| Environment Variable        | Description                               | Default (if applicable) |
+|-----------------------------|-------------------------------------------|-------------------------|
+| APIGEE_ORGANIZATION         | The Apigee organization name              |                         |
+| APIGEE_AUTH_USERNAME        | The Apigee account username/email address |                         |
+| APIGEE_AUTH_PASSWORD        | The Apigee account password               |                         |
+| APIGEE_LOGGLY_ORGANIZATION  | The Loggly organization name              |                         |
+| APIGEE_LOGGLY_CUSTOMERTOKEN | The Loggly customer token                 |                         |
+| APIGEE_LOGGLY_APITOKEN      | The Loggly API token                      |                         |
+| APIGEE_LOGGLY_HOST          | The Loggly host address                   | logs-01.loggly.com      |
+| APIGEE_LOGGLY_PORT          | The Loggly host port                      | 514                     |
