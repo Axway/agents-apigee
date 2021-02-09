@@ -160,8 +160,8 @@ LOG_OUTPUT=stdout
 
 ## Discovery Agent
 
-Reference: [Discovery Agent](https://github.com/Axway/agents-apigee/blob/main/discovery/README.md)
+Reference: [Discovery Agent](/discovery/README.md)
 
 ## Traceability Agent
 
-Reference: [Traceability Agent](https://github.com/Axway/agents-apigee/blob/main/traceability/README.md)
+Reference: [Traceability Agent](/traceability/README.md)

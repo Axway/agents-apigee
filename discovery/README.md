@@ -15,6 +15,27 @@ The following make targets are available
 | build           | builds the binary discovery agent                              | bn/apigee_discovery_agent |
 | apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models         |
 
+### Build (Windows)
+
+* Build the agent using the following command
+
+```shell
+go build -tags static_all \
+    -ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEEDiscoveryAgent'" \
+    -a -o ./bin/apigee_discovery_agent.exe ./main.go
+```
+
+### Run (Windows)
+
+* After a successful build, you should see the executable under the bin folder.   And you can execute it using the following command
+
+```shell
+./apigee_discovery_agent.exe --envFile env_vars
+```
+
 ## Discovery agent proxy discovery
 
 * Find all deployed API proxies
@@ -28,3 +49,20 @@ The following make targets are available
       * Read in all proxy endpoints
       * Create OAS3 spec with information about endpoints and policies
 * Create the Amplify Central API
+
+## Discovery agent variables
+
+| Environment Variable        | Description                               | Default (if applicable) |
+|-----------------------------|-------------------------------------------|-------------------------|
+| APIGEE_ORGANIZATION         | The Apigee organization name              |                         |
+| APIGEE_AUTH_USERNAME        | The Apigee account username/email address |                         |
+| APIGEE_AUTH_PASSWORD        | The Apigee account password               |                         |
+| APIGEE_LOGGLY_ORGANIZATION  | The Loggly organization name              |                         |
+| APIGEE_LOGGLY_CUSTOMERTOKEN | The Loggly customer token                 |                         |
+| APIGEE_LOGGLY_APITOKEN      | The Loggly API token                      |                         |
+| APIGEE_LOGGLY_HOST          | The Loggly host address                   | logs-01.loggly.com      |
+| APIGEE_LOGGLY_PORT          | The Loggly host port                      | 514                     |
+
+## Discovery Agent flow diagram
+
+![Discovery Agent Process](/resources/discovery_agent_apigee.JPG)
