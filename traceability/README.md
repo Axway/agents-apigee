@@ -1,6 +1,8 @@
 # Apigee Traceability Agent
 
-The Traceability agent finds deployed API Proxies in Apigee then sends them to API Central
+The Traceability agent finds logs from consumed Apigee proxies and sends the traffic data to Amplify Central
+
+![Traceability Agent Process](/resources/traceability_agent_apigee.JPG)
 
 ## Build and run
 
@@ -13,7 +15,6 @@ The following make targets are available
 | test       | runs go test against all test files int he repo                | test results                 |
 | update-sdk | pulls the latest changes to main on the SDK repo               |                              |
 | build      | builds the binary traceability agent                           | bn/apigee_traceability_agent |
-
 
 ### Build (Windows)
 
@@ -48,7 +49,3 @@ go build -tags static_all \
 | APIGEE_LOGGLY_APITOKEN      | The Loggly API token                      |                         |
 | APIGEE_LOGGLY_HOST          | The Loggly host address                   | logs-01.loggly.com      |
 | APIGEE_LOGGLY_PORT          | The Loggly host port                      | 514                     |
-
-## Traceability Agent flow diagram
-
-![Traceability Agent Process](/resources/traceability_agent_apigee.JPG)
