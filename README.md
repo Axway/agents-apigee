@@ -48,11 +48,13 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 * Create a [Loggly](https://www.loggly.com/) account
 * Note the following values:
   * Subdomain
+    * In Loggly select "Logs", on the left, then click on your profile icon on the upper right. It will list current subdomains
+    * In the browser URL, "subdomain.loggly.com"
   * Customer Token
-    * In Loggly select "Logs", on the right, then "Source Setup"
+    * In Loggly select "Logs", on the left, then "Source Setup"
     * At the top select "Customer Tokens"
   * API Token
-    * In Loggly select "Settings", on the right, "Log Settings". then "API Tokens"
+    * In Loggly select "Settings", on the left, "Log Settings". then "API Tokens"
     * Generate one if necessary
 
 ### Loggly integration with Apigee
