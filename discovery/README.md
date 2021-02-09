@@ -62,3 +62,7 @@ go build -tags static_all \
 | APIGEE_LOGGLY_APITOKEN      | The Loggly API token                      |                         |
 | APIGEE_LOGGLY_HOST          | The Loggly host address                   | logs-01.loggly.com      |
 | APIGEE_LOGGLY_PORT          | The Loggly host port                      | 514                     |
+
+## Discovery Agent flow diagram
+
+![Discovery Agent Process](/resources/discovery_agent_apigee.JPG)
