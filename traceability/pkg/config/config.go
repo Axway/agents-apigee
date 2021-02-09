@@ -32,8 +32,8 @@ func (a *ApigeeConfig) ValidateCfg() (err error) {
 		return errors.New("Invalid APIGEE configuration: password is not configured")
 	}
 
-	if a.Loggly.Organization == "" {
-		return errors.New("Invalid APIGEE configuration: loggly.organization is not configured")
+	if a.Loggly.Subdomain == "" {
+		return errors.New("Invalid APIGEE configuration: loggly.subdomain is not configured")
 	}
 
 	if a.Loggly.CustomerToken == "" {

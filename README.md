@@ -47,7 +47,7 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 
 * Create a [Loggly](https://www.loggly.com/) account
 * Note the following values:
-  * Organization Name
+  * Subdomain
   * Customer Token
     * In Loggly select "Logs", on the right, then "Source Setup"
     * At the top select "Customer Tokens"
@@ -148,7 +148,7 @@ CENTRAL_AUTH_PUBLICKEY=/keys/public_key.pem              # path to the key file 
 APIGEE_ORGANIZATION=<Apigee Organization>                # created in Prepare Apigee step
 APIGEE_AUTH_USERNAME=<Apigee Username>                   # created in Prepare Apigee step
 APIGEE_AUTH_PASSWORD=<Apigee Password>                   # created in Prepare Apigee step
-APIGEE_LOGGLY_ORGANIZATION=<Loggly Organization>         # created in Prepare Loggly step
+APIGEE_LOGGLY_SUBDOMAIN=<Loggly Subdomain      >         # created in Prepare Loggly step
 APIGEE_LOGGLY_CUSTOMERTOKEN=<Loggly Customer Token>      # created in Prepare Loggly step
 APIGEE_LOGGLY_APITOKEN=<Loggly API Token>                # created in Prepare Loggly step
 APIGEE_LOGGLY_HOST=logs-01.loggly.com

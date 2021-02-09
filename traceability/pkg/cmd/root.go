@@ -46,7 +46,7 @@ func init() {
 	rootProps.AddDurationProperty("apigee.pollInterval", 30*time.Second, "The time interval between checking for new APIGEE resources")
 	rootProps.AddStringProperty("apigee.loggly.customertoken", "", "The Loggly Customer Token for sending log events")
 	rootProps.AddStringProperty("apigee.loggly.apitoken", "", "The Loggly API Token for retrieving log events")
-	rootProps.AddStringProperty("apigee.loggly.organization", "", "The Loggly Organization ID")
+	rootProps.AddStringProperty("apigee.loggly.subdomain", "", "The Loggly subdomain")
 	rootProps.AddStringProperty("apigee.loggly.host", "logs-01.loggly.com", "The Loggly Host URL")
 	rootProps.AddStringProperty("apigee.loggly.port", "514", "The Loggly Port")
 
@@ -71,7 +71,7 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 			Password: rootProps.StringPropertyValue("apigee.auth.password"),
 		},
 		Loggly: &config.LogglyConfig{
-			Organization:  rootProps.StringPropertyValue("apigee.loggly.organization"),
+			Subdomain:     rootProps.StringPropertyValue("apigee.loggly.subdomain"),
 			CustomerToken: rootProps.StringPropertyValue("apigee.loggly.customertoken"),
 			APIToken:      rootProps.StringPropertyValue("apigee.loggly.apitoken"),
 			Host:          rootProps.StringPropertyValue("apigee.loggly.host"),

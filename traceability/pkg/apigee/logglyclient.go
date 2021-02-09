@@ -58,7 +58,7 @@ func (a *LogglyClient) Stop() {
 }
 
 func (a *LogglyClient) getAPIBaseURL() string {
-	return "https://" + a.cfg.Organization + ".loggly.com/apiv2"
+	return "https://" + a.cfg.Subdomain + ".loggly.com/apiv2"
 }
 
 func (a *LogglyClient) getSearchURL() string {
