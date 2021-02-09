@@ -3,6 +3,7 @@ bin/
 logs/
 vendor/
 demo/
+/traceability/data
 
 env_vars
 apigee_discovery_agent.yml
