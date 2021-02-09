@@ -28,3 +28,26 @@ The following make targets are available
       * Read in all proxy endpoints
       * Create OAS3 spec with information about endpoints and policies
 * Create the Amplify Central API
+
+## Steps to run the discovery agent
+
+* Build the agent using the following command
+```
+make build
+
+```
+If you don't have to Make configured.  You can use the go build command as follows for Windows
+```
+go build -tags static_all \
+    -ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEEDiscoveryAgent'" \
+    -a -o ${WORKSPACE}/bin/apigee_discovery_agent.exe ${WORKSPACE}/main.go
+
+```
+
+* After a successful build, you should see the executable under the bin folder.   And you can execute it using the following command
+
+```
+./apigee_discovery_agent.exe --envFile env_vars
