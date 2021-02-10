@@ -40,7 +40,7 @@ type apigeeProxyDetails struct {
 }
 
 func (a *apigeeProxyDetails) GetVersion() string {
-	return fmt.Sprintf("%d.%d", a.APIRevision.ConfigurationVersion.MajorVersion, a.APIRevision.ConfigurationVersion.MinorVersion)
+	return fmt.Sprintf("%v", a.APIRevision.Revision)
 }
 
 func (a *apigeeProxyDetails) GetCacheKey() string {
