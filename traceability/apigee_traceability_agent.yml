@@ -10,22 +10,36 @@ apigee_traceability_agent:
       customertoken: ${APIGEE_LOGGLY_CUSTOMERTOKEN}
       host: ${APIGEE_LOGGLY_HOST:logs-01.loggly.com}
       port: ${APIGEE_LOGGLY_PORT:514}
-
   # Defines how often an event is sent to the output
   central:
-    organizationId: ${CENTRAL_ORGANIZATIONID}
-    environment: ${CENTRAL_ENVIRONMENT}
+    url: "${CENTRAL_URL:https://apicentral.axway.com}"
+    organizationID: "${CENTRAL_ORGANIZATIONID}"
+    team: ${CENTRAL_TEAM:""}
+    deployment: "${CENTRAL_DEPLOYMENT:prod}"
+    environment: "${CENTRAL_ENVIRONMENT}"
+    agentName: ${CENTRAL_AGENTNAME:""}
+    platformURL: "${CENTRAL_PLATFORMURL:https://platform.axway.com}"
     auth:
-      clientId: ${CENTRAL_AUTH_CLIENTID}
-      privateKey: ${CENTRAL_AUTH_PRIVATEKEY}
-      publicKey: ${CENTRAL_AUTH_PUBLICKEY}
-
+      url: "${CENTRAL_AUTH_URL:https://login.axway.com/auth}"
+      realm: "${CENTRAL_AUTH_REALM:Broker}"
+      clientId: "${CENTRAL_AUTH_CLIENTID}"
+      privateKey: "${CENTRAL_AUTH_PRIVATEKEY:/keys/private_key.pem}"
+      publicKey: "${CENTRAL_AUTH_PUBLICKEY:/keys/public_key.pem}"
+      keyPassword: ${CENTRAL_AUTH_KEYPASSWORD:""}
+    ssl:
+      minVersion: ${CENTRAL_SSL_MINVERSION:"TLS1.2"}
+      maxVersion: ${CENTRAL_SSL_MAXVERSION:"TLS1.3"}
+      nextProtos: ${CENTRAL_SSL_NEXTPROTOS:[]}
+      cipherSuites: ${CENTRAL_SSL_CIPHERSUITES:["ECDHE-ECDSA-AES-256-GCM-SHA384", "ECDHE-RSA-AES-256-GCM-SHA384", "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-CHACHA20-POLY1305", "ECDHE-ECDSA-AES-128-GCM-SHA256", "ECDHE-RSA-AES-128-GCM-SHA256", "ECDHE-ECDSA-AES-128-CBC-SHA256", "ECDHE-RSA-AES-128-CBC-SHA256"]}
+      insecureSkipVerify: ${CENTRAL_SSL_INSECURESKIPVERIFY:false}
+  status:
+    port: ${STATUS_PORT:8990}
+    healthCheckPeriod: ${STATUS_HEALTHCHECKPERIOD:3m}
+    healthCheckInterval: ${STATUS_HEALTHCHECKINTERVAL:30s}
   log:
-    level: ${LOG_LEVEL:"debug"}
-    format: json
-    output: stdout
-    path: logs
-    maskedValues:
+    level: ${LOG_LEVEL:info}
+    format: ${LOG_FORMAT:json}
+    output: ${LOG_OUTPUT:stdout}
 
 # Condor Ingestion service
 output.traceability:
@@ -52,7 +66,9 @@ output.traceability:
 logging:
   metrics:
     enabled: false
-  # Send all logging output to stderr
-  to_stderr: true
-  # Set log level
-  level: ${LOG_LEVEL:"debug"}
+  files:
+    permissions: 0600
+    name: ${LOG_FILE_NAME:traceability_agent.log}
+    dir: ${LOG_FILE_PATH:logs}
+    keepfiles: ${LOG_FILE_KEEPFILES:7}
+    rotateeverybytes: ${LOG_FILE_ROTATEEVERYBYTES:10485760}
