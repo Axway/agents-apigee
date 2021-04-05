@@ -3,7 +3,7 @@ module github.com/Axway/agents-apigee/traceability
 go 1.13
 
 require (
-	github.com/Axway/agent-sdk v0.0.20-0.20210201151000-0d0f1b1614c4
+	github.com/Axway/agent-sdk v0.0.23
 	github.com/Shopify/sarama v1.26.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect

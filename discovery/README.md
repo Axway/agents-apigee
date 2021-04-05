@@ -17,6 +17,18 @@ The following make targets are available
 | build           | builds the binary discovery agent                              | bn/apigee_discovery_agent |
 | apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models         |
 
+### Build (Docker)
+
+```
+make docker-build
+```
+
+### Run (Docker)
+
+```
+docker run --env-file env_vars -v `pwd`/keys:/keys apigee-discovery-agent
+```
+
 ### Build (Windows)
 
 * Build the agent using the following command

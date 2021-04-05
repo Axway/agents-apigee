@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/markbates/pkger"
 )
 
@@ -17,28 +18,41 @@ const (
 
 // addSharedFlow - checks to see if the logging flow has been added and adds if it hasn't
 func (a *GatewayClient) addSharedFlow() {
+	log.Debugf("Checking for shared flow")
 	_, err := a.getSharedFlow(sharedFlow)
 	if err == nil {
 		return
 	}
+	log.Debugf("Shared flow not found, deploying it now")
 
 	// flow does not exist, add it
 	data, _ := a.createSharedFlowZip()
 
 	// upload the flow to apigee
-	a.createSharedFlow(data, sharedFlow)
-
+	log.Debugf("Deploy shared flow to apigee")
+	err = a.createSharedFlow(data, sharedFlow)
+	if err != nil {
+		log.Errorf("Error hit deploying the shared flow: %v", err)
+	}
 	// TODO - get the posted shared flow latest revision for deployment call
 
 	// deploy the shared flow to all envs and create the hook
 	for env := range a.envToURLs {
-		a.deploySharedFlow(env, sharedFlow, "1")
-		a.publishSharedFlowToEnvironment(env, sharedFlow)
+		log.Debugf("Deploy flow hook to %s", env)
+		err = a.deploySharedFlow(env, sharedFlow, "1")
+		if err != nil {
+			log.Errorf("Error hit deploying the shared flow revision to the %s env: %v", env, err)
+		}
+		err = a.publishSharedFlowToEnvironment(env, sharedFlow)
+		if err != nil {
+			log.Errorf("Error hit publising the shared flow to the %s env: %v", env, err)
+		}
 	}
 }
 
 // createSharedFlowZip - creates the shared flow bundle from the template files
 func (a *GatewayClient) createSharedFlowZip() ([]byte, error) {
+	log.Debugf("Creating archive for shared flow")
 
 	newZipFile := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(newZipFile)

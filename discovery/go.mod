@@ -3,7 +3,7 @@ module github.com/Axway/agents-apigee/discovery
 go 1.13
 
 require (
-	github.com/Axway/agent-sdk v0.0.20-0.20210201151000-0d0f1b1614c4
+	github.com/Axway/agent-sdk v0.0.23
 	github.com/getkin/kin-openapi v0.38.0
 	github.com/markbates/pkger v0.17.1
 	github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3
