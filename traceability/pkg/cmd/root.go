@@ -20,8 +20,9 @@ var beatCmd *libcmd.BeatsRootCmd
 func init() {
 	name := "apigee_traceability_agent"
 	settings := instance.Settings{
-		Name:          name,
-		HasDashboards: true,
+		Name:            name,
+		HasDashboards:   true,
+		ConfigOverrides: corecfg.LogConfigOverrides(),
 	}
 
 	// Initialize the beat command
