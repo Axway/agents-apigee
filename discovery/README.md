@@ -8,14 +8,15 @@ The Discovery agent finds deployed API Proxies in Apigee then sends them to API 
 
 The following make targets are available
 
-| Target          | Description                                                    | Output(s)                 |
-|-----------------|----------------------------------------------------------------|---------------------------|
-| lint            | runs go lint against all source files                          | linter results            |
-| dep             | downloads all dependencies needed to build the discovery agent | /vendor                   |
-| test            | runs go test against all test files int he repo                | test results              |
-| update-sdk      | pulls the latest changes to main on the SDK repo               |                           |
-| build           | builds the binary discovery agent                              | bn/apigee_discovery_agent |
-| apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models         |
+| Target          | Description                                                    | Output(s)                     |
+|-----------------|----------------------------------------------------------------|-------------------------------|
+| lint            | runs go lint against all source files                          | linter results                |
+| dep             | downloads all dependencies needed to build the discovery agent | /vendor                       |
+| test            | runs go test against all test files int he repo                | test results                  |
+| update-sdk      | pulls the latest changes to main on the SDK repo               |                               |
+| build           | builds the binary discovery agent                              | bin/apigee_discovery_agent    |
+| apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models             |
+| build           | builds the traceability agent in a docker container            | apigee-discovery-agent:latest |
 
 ### Build (Docker)
 
@@ -26,7 +27,7 @@ make docker-build
 ### Run (Docker)
 
 ```
-docker run --env-file env_vars -v `pwd`/keys:/keys apigee-discovery-agent
+docker run --env-file env_vars -v `pwd`/keys:/keys apigee-discovery-agent:latest
 ```
 
 ### Build (Windows)
