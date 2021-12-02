@@ -1,15 +1,13 @@
 module github.com/Axway/agents-apigee/discovery
 
-go 1.13
+go 1.16
 
 require (
-	github.com/Axway/agent-sdk v0.0.23
-	github.com/getkin/kin-openapi v0.38.0
+	github.com/Axway/agent-sdk v1.1.11-0.20211202200236-6b12e662e18a
+	github.com/getkin/kin-openapi v0.67.0
 	github.com/markbates/pkger v0.17.1
 	github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3
-	github.com/tidwall/gjson v1.6.8
-	golang.org/x/sys v0.0.0-20201201145000-ef89a241ccb3 // indirect
-	golang.org/x/text v0.3.4 // indirect
+	github.com/tidwall/gjson v1.9.4
 )
 
 replace (

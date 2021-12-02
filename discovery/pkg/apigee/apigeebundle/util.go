@@ -7,7 +7,7 @@ import (
 )
 
 //generateEndpoints - takes an APIGEE endpoints file and adds all endpoints to the spec
-func generateEndpoints(spec *openapi3.Swagger, proxy proxyEndpoint) {
+func generateEndpoints(spec *openapi3.T, proxy proxyEndpoint) {
 	// Unmarshal the proxy details
 	for _, flow := range proxy.Flows.Flow {
 		var verb, urlPath string

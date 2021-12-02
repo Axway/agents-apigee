@@ -103,7 +103,7 @@ func (a *APIGEEBundle) updateOAS2Spec(spec []byte) []byte {
 	//OAS2
 
 	// Update the host
-	oas2Spec := openapi2.Swagger{}
+	oas2Spec := openapi2.T{}
 	json.Unmarshal(spec, &oas2Spec)
 	oas2Spec.Schemes = []string{"http"}
 	for _, urlString := range a.URLs {
@@ -129,7 +129,7 @@ func (a *APIGEEBundle) updateOAS3Spec(spec []byte) []byte {
 			URL: url,
 		})
 	}
-	oas3Spec := openapi3.Swagger{}
+	oas3Spec := openapi3.T{}
 	json.Unmarshal(spec, &oas3Spec)
 	oas3Spec.Servers = servers
 
@@ -140,7 +140,7 @@ func (a *APIGEEBundle) updateOAS3Spec(spec []byte) []byte {
 //Generate - generate a spec file
 func (a *APIGEEBundle) Generate(name, description, version string) []byte {
 	// data is the byte array of the zip archive
-	spec := openapi3.Swagger{
+	spec := openapi3.T{
 		OpenAPI: "3.0.1",
 		Info: &openapi3.Info{
 			Title:       name,
