@@ -7,38 +7,23 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
-	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
 )
 
 const (
-	orgURL = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	orgURL     = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	portalsURL = "https://apigee.com/portals/api/sites"
 )
 
-func (a *GatewayClient) postAuth(authData url.Values) AuthResponse {
-	request := coreapi.Request{
-		Method: coreapi.POST,
-		URL:    apigeeAuthURL,
-		Headers: map[string]string{
-			"Content-Type":  "application/x-www-form-urlencoded",
-			"Authorization": "Basic " + apigeeAuthToken,
-		},
-		Body: []byte(authData.Encode()),
+func (a *GatewayClient) defaultHeaders() map[string]string {
+	// return the default headers
+	return map[string]string{
+		"Content-Type":  "application/json",
+		"Accept":        "application/json",
+		"Authorization": "Bearer " + a.accessToken,
 	}
-
-	// Get the initial authentication token
-	response, err := a.apiClient.Send(request)
-	if err != nil {
-		log.Errorf(err.Error())
-	}
-	authResponse := AuthResponse{}
-	json.Unmarshal(response.Body, &authResponse)
-
-	a.accessToken = authResponse.AccessToken
-	return authResponse
 }
 
 func (a *GatewayClient) getRequest(url string) (*coreapi.Response, error) {
@@ -49,12 +34,9 @@ func (a *GatewayClient) getRequest(url string) (*coreapi.Response, error) {
 func (a *GatewayClient) getRequestWithQuery(url string, queryParams map[string]string) (*coreapi.Response, error) {
 	// create the get request
 	request := coreapi.Request{
-		Method: coreapi.GET,
-		URL:    url,
-		Headers: map[string]string{
-			"Accept":        "application/json",
-			"Authorization": "Bearer " + a.accessToken,
-		},
+		Method:      coreapi.GET,
+		URL:         url,
+		Headers:     a.defaultHeaders(),
 		QueryParams: queryParams,
 	}
 
@@ -65,12 +47,9 @@ func (a *GatewayClient) getRequestWithQuery(url string, queryParams map[string]s
 func (a *GatewayClient) postRequestWithQuery(url string, queryParams map[string]string, data []byte) (*coreapi.Response, error) {
 	// create the post request
 	request := coreapi.Request{
-		Method: coreapi.POST,
-		URL:    url,
-		Headers: map[string]string{
-			"Accept":        "application/json",
-			"Authorization": "Bearer " + a.accessToken,
-		},
+		Method:      coreapi.POST,
+		URL:         url,
+		Headers:     a.defaultHeaders(),
 		QueryParams: queryParams,
 	}
 
@@ -81,14 +60,10 @@ func (a *GatewayClient) postRequestWithQuery(url string, queryParams map[string]
 func (a *GatewayClient) putRequest(url string, data []byte) (*coreapi.Response, error) {
 	// create the put request
 	request := coreapi.Request{
-		Method: coreapi.PUT,
-		URL:    url,
-		Headers: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer " + a.accessToken,
-		},
-		Body: data,
+		Method:  coreapi.PUT,
+		URL:     url,
+		Headers: a.defaultHeaders(),
+		Body:    data,
 	}
 
 	// return the api response
@@ -115,6 +90,36 @@ func (a *GatewayClient) getAPIs() apis {
 	return apiProxies
 }
 
+//getProducts - get the list of products for the org
+func (a *GatewayClient) getProducts() products {
+	// Get the products
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apiproducts", a.cfg.Organization))
+	products := products{}
+	json.Unmarshal(response.Body, &products)
+
+	return products
+}
+
+//getPortals - get the list of portals for the org
+func (a *GatewayClient) getPortals() []portalData {
+	// Get the portals
+	response, _ := a.getRequestWithQuery(portalsURL, map[string]string{"orgname": a.cfg.Organization})
+	portalRes := portalResponse{}
+	json.Unmarshal(response.Body, &portalRes)
+
+	return portalRes.Data
+}
+
+//getPortalAPIs - get the list of portals for the org
+func (a *GatewayClient) getPortalAPIs(portalID string) []apiDocData {
+	// Get the apidocs
+	response, _ := a.getRequest(fmt.Sprintf("%s/%s/apidocs", portalsURL, portalID))
+	apiDocRes := apiDocDataResponse{}
+	json.Unmarshal(response.Body, &apiDocRes)
+
+	return apiDocRes.Data
+}
+
 //getAPIsWithData - get the list of apis for the org
 func (a *GatewayClient) getAPIsWithData() []models.ApiProxy {
 	queryParams := map[string]string{
@@ -138,6 +143,16 @@ func (a *GatewayClient) getAPI(apiName string) models.ApiProxy {
 	json.Unmarshal(response.Body, &apiProxy)
 
 	return apiProxy
+}
+
+//getProduct - get details of the product
+func (a *GatewayClient) getProduct(productName string) models.ApiProduct {
+	// Get the product
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apiproducts/%s", a.cfg.Organization, productName))
+	product := models.ApiProduct{}
+	json.Unmarshal(response.Body, &product)
+
+	return product
 }
 
 //getRevisionsDetails - get the revision details for a specific org, api, revision combo
@@ -172,7 +187,7 @@ func (a *GatewayClient) getResourceFiles(apiName, revisionNumber string) models.
 	return apiResourceFiles
 }
 
-//getRevisionSpec - gets the resource file of type openapi for  the org, api, revision, and spec file specified
+//getRevisionSpec - gets the resource file of type openapi for the org, api, revision, and spec file specified
 func (a *GatewayClient) getRevisionSpec(apiName, revisionNumber, specFile string) []byte {
 	// Get the openapi resource file
 	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile))

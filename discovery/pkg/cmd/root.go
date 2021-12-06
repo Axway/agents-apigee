@@ -42,7 +42,7 @@ func init() {
 func run() error {
 	apigeeClient, err := apigee.NewClient(apigeeConfig)
 	if err == nil {
-		apigeeClient.DiscoverAPIs()
+		apigeeClient.AgentRunning()
 	}
 	return err
 }

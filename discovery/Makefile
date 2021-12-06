@@ -72,6 +72,9 @@ ${WORKSPACE}/discovery_agent:
 build: dep ${WORKSPACE}/discovery_agent	
 	@echo "Build complete"
 
+apigee-generate: ## generate apigee resources
+	./scripts/apigee_generate.sh
+
 docker: dep
 	@docker build -t apigee-discover-agent:latest -f ${WORKSPACE}/docker/Dockerfile .
 	@echo "Docker build complete"

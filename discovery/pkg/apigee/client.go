@@ -11,6 +11,7 @@ import (
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/cache"
+	"github.com/Axway/agent-sdk/pkg/jobs"
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 
@@ -20,10 +21,8 @@ import (
 )
 
 const (
-	apigeeAuthURL   = "https://login.apigee.com/oauth/token"
-	apigeeAuthToken = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
-	openapi         = "openapi"
-	gatewayType     = "APIGEE"
+	openapi     = "openapi"
+	gatewayType = "APIGEE"
 )
 
 // GatewayClient - Represents the Gateway client
@@ -33,6 +32,7 @@ type GatewayClient struct {
 	accessToken  string
 	pollInterval time.Duration
 	envToURLs    map[string][]string
+	stopChan     chan struct{}
 }
 
 // NewClient - Creates a new Gateway Client
@@ -41,42 +41,57 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*GatewayClient, error) {
 		apiClient:    coreapi.NewClient(nil, ""),
 		cfg:          apigeeCfg,
 		pollInterval: apigeeCfg.GetPollInterval(),
+		stopChan:     make(chan struct{}),
 	}
 
 	// Start the authentication
-	client.Authenticate()
+	err := client.registerJobs()
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
 
-// Authenticate - handles the initial authentication then starts a go routine to refresh the token
-func (a *GatewayClient) Authenticate() error {
-	authData := url.Values{}
-	authData.Set("grant_type", password.String())
-	authData.Set("username", a.cfg.GetAuth().GetUsername())
-	authData.Set("password", a.cfg.GetAuth().GetPassword())
+// registerJobs - registers the agent jobs
+func (a *GatewayClient) registerJobs() error {
+	// create the auth job and register it
+	authentication := newAuthJob(a.apiClient, a.cfg.Auth.GetUsername(), a.cfg.Auth.GetPassword(), a.setAccessToken)
+	jobs.RegisterIntervalJobWithName(authentication, 10*time.Minute, "APIGEE Auth Token")
 
-	authResponse := a.postAuth(authData)
+	// create the channel for portal poller to handler communication
+	portalChan := make(chan string)
 
-	log.Debugf("APIGEE auth token: %s", authResponse.AccessToken)
+	// create the portals/portal poller job and register it
+	portals := newPollPortalsJob(a, portalChan)
+	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
 
-	// Continually refresh the token
-	go func() {
-		for {
-			// Refresh the token 5 minutes before expiration
-			time.Sleep(time.Duration(authResponse.ExpiresIn-300) * time.Second)
+	// create the channel for the portal api jobs to handler communication
+	apiChan := make(chan *apiDocData)
 
-			log.Debug("Refreshing auth token")
-			authData := url.Values{}
-			authData.Set("grant_type", refresh.String())
-			authData.Set("refresh_token", authResponse.RefreshToken)
+	// create the portal handler job and register it
+	portalHandler := newPortalHandlerJob(a, portalChan, apiChan)
+	jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "New Portal Handler")
 
-			authResponse = a.postAuth(authData)
-			log.Debugf("APIGEE auth token: %s", authResponse.AccessToken)
-		}
-	}()
+	// create the api handler job and register it
+	apiHandler := newPortalAPIHandlerJob(a, apiChan)
+	jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
 
 	return nil
+}
+
+func (a *GatewayClient) setAccessToken(token string) {
+	a.accessToken = token
+}
+
+// AgentRunning - waits for a signal to stop the agent
+func (a *GatewayClient) AgentRunning() {
+	<-a.stopChan
+}
+
+// Stop - signals the agent to stop
+func (a *GatewayClient) Stop() {
+	a.stopChan <- struct{}{}
 }
 
 // DiscoverAPIs - Process the API discovery

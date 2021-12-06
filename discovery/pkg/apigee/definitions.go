@@ -56,6 +56,9 @@ type virtualHosts []string
 //APIs
 type apis []string
 
+//Products
+type products []string
+
 //EnvironmentRevisions
 type environmentRevision struct {
 	EnvironmentName string
@@ -65,4 +68,53 @@ type environmentRevision struct {
 //specAssociationFile -
 type specAssociationFile struct {
 	URL string `json:"url"`
+}
+
+// portalResponse
+type portalResponse struct {
+	Status    string       `json:"status"`
+	Message   string       `json:"message"`
+	Code      string       `json:"code"`
+	ErrorCode string       `json:"error_code"`
+	RequestID string       `json:"request_id"`
+	Data      []portalData `json:"data"`
+}
+
+type portalData struct {
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	Description          string `json:"description"`
+	CustomDomain         string `json:"customDomain"`
+	OrgName              string `json:"orgName"`
+	Status               string `json:"status"`
+	VisibleToCustomers   bool   `json:"visibleToCustomers"`
+	HTTPS                bool   `json:"https"`
+	DefaultDomain        string `json:"defaultDomain"`
+	CustomeDomainEnabled bool   `json:"customDomainEnabled"`
+	DefaultURL           string `json:"defaultURL"`
+	CurrentURL           string `json:"currentURL"`
+	CurrentDomain        string `json:"currentDomain"`
+}
+
+// apiDocDataResponse
+type apiDocDataResponse struct {
+	Status    string       `json:"status"`
+	Message   string       `json:"message"`
+	Code      string       `json:"code"`
+	ErrorCode string       `json:"error_code"`
+	RequestID string       `json:"request_id"`
+	Data      []apiDocData `json:"data"`
+}
+
+type apiDocData struct {
+	ID            string `json:"id"`
+	PortalID      string `json:"siteId"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	APIID         string `json:"apiId"`
+	ProductName   string `json:"edgeAPIProductName"`
+	SpecContent   string `json:"specContent"`
+	SpecTitle     string `json:"specTitle"`
+	SpecID        string `json:"specId"`
+	ProductExists bool   `json:"productExists"`
 }
