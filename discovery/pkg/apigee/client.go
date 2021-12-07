@@ -49,18 +49,19 @@ func (a *GatewayClient) registerJobs() error {
 	jobs.RegisterIntervalJobWithName(authentication, 10*time.Minute, "APIGEE Auth Token")
 
 	// create the channel for portal poller to handler communication
-	portalChan := make(chan string)
+	newPortalChan := make(chan string)
+	removedPortalChan := make(chan string)
 
 	// create the portals/portal poller job and register it
-	portals := newPollPortalsJob(a, portalChan)
+	portals := newPollPortalsJob(a, newPortalChan, removedPortalChan)
 	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
 
 	// create the channel for the portal api jobs to handler communication
 	apiChan := make(chan *apiDocData)
 
 	// create the portal handler job and register it
-	portalHandler := newPortalHandlerJob(a, portalChan, apiChan)
-	jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "New Portal Handler")
+	portalHandler := newPortalHandlerJob(a, newPortalChan, removedPortalChan, apiChan)
+	jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
 
 	// create the api handler job and register it
 	apiHandler := newPortalAPIHandlerJob(a, apiChan)

@@ -90,14 +90,35 @@ func (j *newPortalAPIHandler) stopped() {
 func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 	log.Tracef("Handling new api %+v", newAPI)
 
+	// get the spec to build the service body
+	spec := j.getAPISpec(newAPI.SpecContent)
+
+	// create the service body to use for update or create
+	apiID := fmt.Sprint(newAPI.ID)
+	serviceBody, _ := apic.NewServiceBodyBuilder().
+		SetID(apiID).
+		SetAPIName(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID)).
+		SetDescription(newAPI.Description).
+		SetAPISpec(spec).
+		SetTitle(fmt.Sprintf("%s (%s)", newAPI.Title, newAPI.PortalTitle)).
+		Build()
+
+	serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)
+
 	// Check DiscoveryCache for API
-	if !agent.IsAPIPublishedByID(fmt.Sprint(newAPI.ID)) {
+	if !agent.IsAPIPublishedByID(apiID) {
 		// call new API
-		j.handleNewAPI(newAPI)
+		j.publishAPI(newAPI, serviceBody, serviceBodyHash)
 		return
 	}
 
-	//
+	// Check to see if the API has changed
+	if value := agent.GetAttributeOnPublishedAPIByID(apiID, hashKey); value != fmt.Sprint(serviceBodyHash) {
+		// handle update
+		log.Tracef("%s has been updated, push new revision", newAPI.ProductName)
+		serviceBody.APIUpdateSeverity = "Major"
+		j.publishAPI(newAPI, serviceBody, serviceBodyHash)
+	}
 }
 
 func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
@@ -109,24 +130,16 @@ func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
 	return specData
 }
 
-func (j *newPortalAPIHandler) handleNewAPI(newAPI *apiDocData) {
-	spec := j.getAPISpec(newAPI.SpecContent)
+func (j *newPortalAPIHandler) publishAPI(newAPI *apiDocData, serviceBody apic.ServiceBody, serviceBodyHash uint64) {
 
-	apiTitle := fmt.Sprintf("%s (%s)", newAPI.Title, newAPI.PortalTitle)
-	serviceBody, _ := apic.NewServiceBodyBuilder().
-		SetID(fmt.Sprint(newAPI.ID)).
-		SetAPIName(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID)).
-		SetDescription(newAPI.Description).
-		SetAPISpec(spec).
-		SetTitle(apiTitle).
-		Build()
-
-	serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)
-
-	log.Infof("Published API %s to AMPLIFY Central", apiTitle)
+	// Add a few more attributes to the service body
 	serviceBody.ServiceAttributes[hashKey] = util.ConvertUnitToString(serviceBodyHash)
 	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
-	agent.PublishAPI(serviceBody)
-	currentHash, _ := coreutil.ComputeHash(serviceBody)
-	cache.GetCache().Set(fmt.Sprint(newAPI.ID), currentHash)
+
+	err := agent.PublishAPI(serviceBody)
+	if err == nil {
+		log.Infof("Published API %s to AMPLIFY Central", serviceBody.NameToPush)
+		currentHash, _ := coreutil.ComputeHash(serviceBody)
+		cache.GetCache().Set(fmt.Sprint(newAPI.ID), currentHash)
+	}
 }

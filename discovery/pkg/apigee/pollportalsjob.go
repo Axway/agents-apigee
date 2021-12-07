@@ -13,16 +13,18 @@ const (
 // job that will poll for any new portals on APIGEE Edge
 type pollPortalsJob struct {
 	jobs.Job
-	apigeeClient *GatewayClient
-	portalsMap   map[string]string
-	portalChan   chan string
+	apigeeClient      *GatewayClient
+	portalsMap        map[string]string
+	newPortalChan     chan string
+	removedPortalChan chan string
 }
 
-func newPollPortalsJob(apigeeClient *GatewayClient, portalChan chan string) *pollPortalsJob {
+func newPollPortalsJob(apigeeClient *GatewayClient, newPortalChan, removedPortalChan chan string) *pollPortalsJob {
 	return &pollPortalsJob{
-		apigeeClient: apigeeClient,
-		portalsMap:   make(map[string]string),
-		portalChan:   portalChan,
+		apigeeClient:      apigeeClient,
+		portalsMap:        make(map[string]string),
+		newPortalChan:     newPortalChan,
+		removedPortalChan: removedPortalChan,
 	}
 }
 
@@ -39,13 +41,26 @@ func (j *pollPortalsJob) Status() error {
 
 func (j *pollPortalsJob) Execute() error {
 	allPortals := j.apigeeClient.getPortals()
+	portalsFound := make(map[string]string)
 	for _, portal := range allPortals {
+		portalsFound[portal.ID] = portal.Name
 		if _, ok := j.portalsMap[portal.ID]; !ok {
 			log.Debugf("Found new portal %s", portal.Name)
 			j.portalsMap[portal.ID] = portal.Name
 			cache.GetCache().Set(portalMapCacheKey, j.portalsMap)
 			// send to portal handler
-			j.portalChan <- portal.ID
+			j.newPortalChan <- portal.ID
+		}
+	}
+
+	// check if any portal has been removed
+	for id := range j.portalsMap {
+		if _, ok := portalsFound[id]; !ok {
+			j.removedPortalChan <- id
+			defer func(id string) {
+				delete(j.portalsMap, id)
+				cache.GetCache().Set(portalMapCacheKey, j.portalsMap)
+			}(id) // remove apis from the map
 		}
 	}
 	return nil
