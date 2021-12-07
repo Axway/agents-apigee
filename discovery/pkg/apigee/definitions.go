@@ -98,16 +98,16 @@ type portalData struct {
 
 // apiDocDataResponse
 type apiDocDataResponse struct {
-	Status    string       `json:"status"`
-	Message   string       `json:"message"`
-	Code      string       `json:"code"`
-	ErrorCode string       `json:"error_code"`
-	RequestID string       `json:"request_id"`
-	Data      []apiDocData `json:"data"`
+	Status    string        `json:"status"`
+	Message   string        `json:"message"`
+	Code      string        `json:"code"`
+	ErrorCode string        `json:"error_code"`
+	RequestID string        `json:"request_id"`
+	Data      []*apiDocData `json:"data"`
 }
 
 type apiDocData struct {
-	ID            string `json:"id"`
+	ID            int    `json:"id"`
 	PortalID      string `json:"siteId"`
 	Title         string `json:"title"`
 	Description   string `json:"description"`
@@ -117,4 +117,9 @@ type apiDocData struct {
 	SpecTitle     string `json:"specTitle"`
 	SpecID        string `json:"specId"`
 	ProductExists bool   `json:"productExists"`
+	PortalTitle   string
+}
+
+func (a *apiDocData) SetPortalTitle(title string) {
+	a.PortalTitle = title
 }

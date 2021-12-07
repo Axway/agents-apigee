@@ -3,6 +3,7 @@ package apigee
 import (
 	"fmt"
 
+	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 )
@@ -15,7 +16,7 @@ type newPortalHandler struct {
 	apiChan      chan *apiDocData
 	stopChan     chan interface{}
 	isRunning    bool
-	statusChan   chan bool
+	runningChan  chan bool
 }
 
 func newPortalHandlerJob(apigeeClient *GatewayClient, portalChan chan string, apiChan chan *apiDocData) *newPortalHandler {
@@ -25,7 +26,7 @@ func newPortalHandlerJob(apigeeClient *GatewayClient, portalChan chan string, ap
 		stopChan:     make(chan interface{}),
 		isRunning:    false,
 		apiChan:      apiChan,
-		statusChan:   make(chan bool),
+		runningChan:  make(chan bool),
 	}
 	go job.statusUpdate()
 	return job
@@ -46,16 +47,20 @@ func (j *newPortalHandler) Status() error {
 }
 
 func (j *newPortalHandler) statusUpdate() {
-	j.isRunning = <-j.statusChan
-	j.statusUpdate()
+	for {
+		select {
+		case update := <-j.runningChan:
+			j.isRunning = update
+		}
+	}
 }
 
 func (j *newPortalHandler) started() {
-	j.statusChan <- true
+	j.runningChan <- true
 }
 
 func (j *newPortalHandler) stopped() {
-	j.statusChan <- false
+	j.runningChan <- false
 }
 
 func (j *newPortalHandler) Execute() error {
@@ -79,7 +84,25 @@ func (j *newPortalHandler) Execute() error {
 func (j *newPortalHandler) handlePortal(newPortal string) {
 	log.Tracef("Handling new portal %s", newPortal)
 
+	portalName, err := j.getPortalNameByID(newPortal)
+	if err != nil {
+		log.Errorf("could not start watching for apis on portal %s", newPortal)
+	}
+
 	// register a new job to poll for apis in this portal
-	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, j.apiChan)
-	jobs.RegisterIntervalJobWithName(portalAPIsJob, j.apigeeClient.pollInterval, fmt.Sprintf("%s Portal Poller", newPortal))
+	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, portalName, j.apiChan)
+	jobs.RegisterIntervalJobWithName(portalAPIsJob, j.apigeeClient.pollInterval, fmt.Sprintf("%s Portal Poller", portalName))
+}
+
+func (j *newPortalHandler) getPortalNameByID(newPortal string) (string, error) {
+	portalMapInterface, err := cache.GetCache().Get(portalMapCacheKey)
+	if err != nil {
+		log.Error("error hit getting the portal map from the cache")
+		return "", err
+	}
+	portalMap := portalMapInterface.(map[string]string)
+	if portalName, ok := portalMap[newPortal]; ok {
+		return portalName, nil
+	}
+	return "", fmt.Errorf("portal id %s not in cache", newPortal)
 }

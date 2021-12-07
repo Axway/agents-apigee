@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	orgURL     = "https://api.enterprise.apigee.com/v1/organizations/%s/"
-	portalsURL = "https://apigee.com/portals/api/sites"
+	orgURL        = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	portalsURL    = "https://apigee.com/portals/api/sites"
+	orgDataAPIURL = "https://apigee.com/dapi/api/organizations/%s"
 )
 
 func (a *GatewayClient) defaultHeaders() map[string]string {
@@ -111,7 +112,7 @@ func (a *GatewayClient) getPortals() []portalData {
 }
 
 //getPortalAPIs - get the list of portals for the org
-func (a *GatewayClient) getPortalAPIs(portalID string) []apiDocData {
+func (a *GatewayClient) getPortalAPIs(portalID string) []*apiDocData {
 	// Get the apidocs
 	response, _ := a.getRequest(fmt.Sprintf("%s/%s/apidocs", portalsURL, portalID))
 	apiDocRes := apiDocDataResponse{}
@@ -177,10 +178,18 @@ func (a *GatewayClient) getRevisionDefinitionBundle(apiName, revisionNumber stri
 	return response.Body
 }
 
+//getSpecContent - get the spec content for an api product
+func (a *GatewayClient) getSpecContent(contentID string) []byte {
+	// Get the spec content file
+	response, _ := a.getRequest(fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID))
+
+	return response.Body
+}
+
 //getResourceFiles - get the revision resource files list for the org, api, revision combo
-func (a *GatewayClient) getResourceFiles(apiName, revisionNumber string) models.ApiProxyRevisionResourceFiles {
+func (a *GatewayClient) getResourceFiles() models.ApiProxyRevisionResourceFiles {
 	// Get the revision resource files
-	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apis/%s/revisions/%s/resourcefiles", a.cfg.Organization, apiName, revisionNumber))
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"/resourcefiles", a.cfg.Organization))
 	apiResourceFiles := models.ApiProxyRevisionResourceFiles{}
 	json.Unmarshal(response.Body, &apiResourceFiles)
 

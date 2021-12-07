@@ -3,8 +3,17 @@ package apigee
 import (
 	"fmt"
 
+	"github.com/Axway/agent-sdk/pkg/agent"
+	"github.com/Axway/agent-sdk/pkg/apic"
+	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
+	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/Axway/agents-apigee/discovery/pkg/util"
+)
+
+const (
+	hashKey = "APIGEEHash"
 )
 
 //newPortalAPIHandler - job that waits for
@@ -14,7 +23,7 @@ type newPortalAPIHandler struct {
 	apiChan      chan *apiDocData
 	stopChan     chan interface{}
 	isRunning    bool
-	statusChan   chan bool
+	runningChan  chan bool
 }
 
 func newPortalAPIHandlerJob(apigeeClient *GatewayClient, apiChan chan *apiDocData) *newPortalAPIHandler {
@@ -23,7 +32,7 @@ func newPortalAPIHandlerJob(apigeeClient *GatewayClient, apiChan chan *apiDocDat
 		stopChan:     make(chan interface{}),
 		isRunning:    false,
 		apiChan:      apiChan,
-		statusChan:   make(chan bool),
+		runningChan:  make(chan bool),
 	}
 	go job.statusUpdate()
 	return job
@@ -41,19 +50,6 @@ func (j *newPortalAPIHandler) Status() error {
 		return fmt.Errorf("new api handler not running")
 	}
 	return nil
-}
-
-func (j *newPortalAPIHandler) statusUpdate() {
-	j.isRunning = <-j.statusChan
-	j.statusUpdate()
-}
-
-func (j *newPortalAPIHandler) started() {
-	j.statusChan <- true
-}
-
-func (j *newPortalAPIHandler) stopped() {
-	j.statusChan <- false
 }
 
 func (j *newPortalAPIHandler) Execute() error {
@@ -74,12 +70,63 @@ func (j *newPortalAPIHandler) Execute() error {
 	}
 }
 
+func (j *newPortalAPIHandler) statusUpdate() {
+	for {
+		select {
+		case update := <-j.runningChan:
+			j.isRunning = update
+		}
+	}
+}
+
+func (j *newPortalAPIHandler) started() {
+	j.runningChan <- true
+}
+
+func (j *newPortalAPIHandler) stopped() {
+	j.runningChan <- false
+}
+
 func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 	log.Tracef("Handling new api %+v", newAPI)
 
-	// Get API Spec
-
 	// Check DiscoveryCache for API
+	if !agent.IsAPIPublishedByID(fmt.Sprint(newAPI.ID)) {
+		// call new API
+		j.handleNewAPI(newAPI)
+		return
+	}
 
 	//
+}
+
+func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
+	specData := []byte{}
+	if contentID != "" {
+		// Get API Spec
+		specData = j.apigeeClient.getSpecContent(contentID)
+	}
+	return specData
+}
+
+func (j *newPortalAPIHandler) handleNewAPI(newAPI *apiDocData) {
+	spec := j.getAPISpec(newAPI.SpecContent)
+
+	apiTitle := fmt.Sprintf("%s (%s)", newAPI.Title, newAPI.PortalTitle)
+	serviceBody, _ := apic.NewServiceBodyBuilder().
+		SetID(fmt.Sprint(newAPI.ID)).
+		SetAPIName(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID)).
+		SetDescription(newAPI.Description).
+		SetAPISpec(spec).
+		SetTitle(apiTitle).
+		Build()
+
+	serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)
+
+	log.Infof("Published API %s to AMPLIFY Central", apiTitle)
+	serviceBody.ServiceAttributes[hashKey] = util.ConvertUnitToString(serviceBodyHash)
+	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
+	agent.PublishAPI(serviceBody)
+	currentHash, _ := coreutil.ComputeHash(serviceBody)
+	cache.GetCache().Set(fmt.Sprint(newAPI.ID), currentHash)
 }
