@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	hashKey = "APIGEEHash"
+	hashKey     = "APIGEEHash"
+	gatewayType = "APIGEE"
 )
 
 //newPortalAPIHandler - job that waits for

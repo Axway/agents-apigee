@@ -40,7 +40,7 @@ func init() {
 
 // Callback that agent will call to process the execution
 func run() error {
-	apigeeClient, err := apigee.NewClient(apigeeConfig)
+	apigeeClient, err := apigee.NewAgent(apigeeConfig)
 	if err == nil {
 		apigeeClient.AgentRunning()
 	}
