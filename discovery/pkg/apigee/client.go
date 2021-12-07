@@ -57,14 +57,15 @@ func (a *GatewayClient) registerJobs() error {
 	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
 
 	// create the channel for the portal api jobs to handler communication
-	apiChan := make(chan *apiDocData)
+	newAPIChan := make(chan *apiDocData)
+	removedAPIChan := make(chan string)
 
 	// create the portal handler job and register it
-	portalHandler := newPortalHandlerJob(a, newPortalChan, removedPortalChan, apiChan)
+	portalHandler := newPortalHandlerJob(a, newPortalChan, removedPortalChan, removedAPIChan, newAPIChan)
 	jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
 
 	// create the api handler job and register it
-	apiHandler := newPortalAPIHandlerJob(a, apiChan)
+	apiHandler := newPortalAPIHandlerJob(a, newAPIChan, removedAPIChan)
 	jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
 
 	return nil

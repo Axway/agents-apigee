@@ -19,20 +19,22 @@ const (
 //newPortalAPIHandler - job that waits for
 type newPortalAPIHandler struct {
 	jobs.Job
-	apigeeClient *GatewayClient
-	apiChan      chan *apiDocData
-	stopChan     chan interface{}
-	isRunning    bool
-	runningChan  chan bool
+	apigeeClient   *GatewayClient
+	newAPIChan     chan *apiDocData
+	removedAPIChan chan string
+	stopChan       chan interface{}
+	isRunning      bool
+	runningChan    chan bool
 }
 
-func newPortalAPIHandlerJob(apigeeClient *GatewayClient, apiChan chan *apiDocData) *newPortalAPIHandler {
+func newPortalAPIHandlerJob(apigeeClient *GatewayClient, newAPIChan chan *apiDocData, removedAPIChan chan string) *newPortalAPIHandler {
 	job := &newPortalAPIHandler{
-		apigeeClient: apigeeClient,
-		stopChan:     make(chan interface{}),
-		isRunning:    false,
-		apiChan:      apiChan,
-		runningChan:  make(chan bool),
+		apigeeClient:   apigeeClient,
+		stopChan:       make(chan interface{}),
+		isRunning:      false,
+		newAPIChan:     newAPIChan,
+		removedAPIChan: removedAPIChan,
+		runningChan:    make(chan bool),
 	}
 	go job.statusUpdate()
 	return job
@@ -57,12 +59,18 @@ func (j *newPortalAPIHandler) Execute() error {
 	defer j.stopped()
 	for {
 		select {
-		case newAPI, ok := <-j.apiChan:
+		case newAPI, ok := <-j.newAPIChan:
 			if !ok {
 				err := fmt.Errorf("new api channel was closed")
 				return err
 			}
 			j.handleAPI(newAPI)
+		case removedAPI, ok := <-j.removedAPIChan:
+			if !ok {
+				err := fmt.Errorf("removed api channel was closed")
+				return err
+			}
+			j.handleRemovedAPI(removedAPI)
 		case <-j.stopChan:
 			log.Info("Stopping the api handler")
 			return nil
@@ -127,6 +135,7 @@ func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
 		// Get API Spec
 		specData = j.apigeeClient.getSpecContent(contentID)
 	}
+	// handle products without a spec
 	return specData
 }
 
@@ -142,4 +151,10 @@ func (j *newPortalAPIHandler) publishAPI(newAPI *apiDocData, serviceBody apic.Se
 		currentHash, _ := coreutil.ComputeHash(serviceBody)
 		cache.GetCache().Set(fmt.Sprint(newAPI.ID), currentHash)
 	}
+}
+
+func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
+	log.Tracef("Handling removed api %s", removedAPIID)
+
+	// TODO - handle removed API
 }
