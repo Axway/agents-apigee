@@ -18,7 +18,7 @@ type portalHandler struct {
 	stopChan          chan interface{}
 	isRunning         bool
 	runningChan       chan bool
-	jobsMap           map[string]string // keep map of all jobs created for the portals
+	jobsMap           map[string]*pollPortalAPIsJob // keep map of all jobs created for the portals
 }
 
 func newPortalHandlerJob(apigeeClient *GatewayClient, newPortalChan, removedPortalChan chan string, apiChan chan *apiDocData) *portalHandler {
@@ -30,7 +30,7 @@ func newPortalHandlerJob(apigeeClient *GatewayClient, newPortalChan, removedPort
 		isRunning:         false,
 		apiChan:           apiChan,
 		runningChan:       make(chan bool),
-		jobsMap:           make(map[string]string),
+		jobsMap:           make(map[string]*pollPortalAPIsJob),
 	}
 	go job.statusUpdate()
 	return job
@@ -102,20 +102,20 @@ func (j *portalHandler) handleNewPortal(newPortal string) {
 
 	// register a new job to poll for apis in this portal
 	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, portalName, j.apiChan)
-	jobID, err := jobs.RegisterIntervalJobWithName(portalAPIsJob, j.apigeeClient.pollInterval, fmt.Sprintf("%s Portal Poller", portalName))
+	err = portalAPIsJob.Register()
 	if err != nil {
 		log.Errorf("error hit starting job for portal ID %s", newPortal)
 		return
 	}
-	j.jobsMap[newPortal] = jobID
+	j.jobsMap[newPortal] = portalAPIsJob
 }
 
 func (j *portalHandler) handleRemovedPortal(removedPortal string) {
 	log.Tracef("Handling removed portal %s", removedPortal)
 
 	// unregister the job to polling for apis in this portal
-	if jobID, ok := j.jobsMap[removedPortal]; ok {
-		jobs.UnregisterJob(jobID)
+	if job, ok := j.jobsMap[removedPortal]; ok {
+		job.PortalRemoved()
 	}
 }
 
