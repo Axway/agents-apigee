@@ -83,8 +83,10 @@ func (j *pollPortalAPIsJob) Execute() error {
 }
 
 func (j *pollPortalAPIsJob) PortalRemoved() {
-	// TODO clean up any APIs published from this portal
-	log.Trace("********* Cleaning up APIs **********")
+	// Loop all apis in this portal and remove them
+	for _, id := range j.portalAPIsMap {
+		j.removedAPIChan <- id
+	}
 
 	// Unregister this portals job
 	jobs.UnregisterJob(j.jobID)
