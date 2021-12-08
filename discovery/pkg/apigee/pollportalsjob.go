@@ -14,7 +14,7 @@ const (
 type pollPortalsJob struct {
 	jobs.Job
 	apigeeClient      *GatewayClient
-	portalsMap        map[string]string
+	portalsMap        map[string]portalData
 	newPortalChan     chan string
 	removedPortalChan chan string
 }
@@ -22,7 +22,7 @@ type pollPortalsJob struct {
 func newPollPortalsJob(apigeeClient *GatewayClient, newPortalChan, removedPortalChan chan string) *pollPortalsJob {
 	return &pollPortalsJob{
 		apigeeClient:      apigeeClient,
-		portalsMap:        make(map[string]string),
+		portalsMap:        make(map[string]portalData),
 		newPortalChan:     newPortalChan,
 		removedPortalChan: removedPortalChan,
 	}
@@ -46,7 +46,7 @@ func (j *pollPortalsJob) Execute() error {
 		portalsFound[portal.ID] = portal.Name
 		if _, ok := j.portalsMap[portal.ID]; !ok {
 			log.Debugf("Found new portal %s", portal.Name)
-			j.portalsMap[portal.ID] = portal.Name
+			j.portalsMap[portal.ID] = portal
 			cache.GetCache().Set(portalMapCacheKey, j.portalsMap)
 			// send to portal handler
 			j.newPortalChan <- portal.ID

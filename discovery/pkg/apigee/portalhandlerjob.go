@@ -127,9 +127,9 @@ func (j *portalHandler) getPortalNameByID(newPortal string) (string, error) {
 		log.Error("error hit getting the portal map from the cache")
 		return "", err
 	}
-	portalMap := portalMapInterface.(map[string]string)
-	if portalName, ok := portalMap[newPortal]; ok {
-		return portalName, nil
+	portalMap := portalMapInterface.(map[string]portalData)
+	if portal, ok := portalMap[newPortal]; ok {
+		return portal.Name, nil
 	}
 	return "", fmt.Errorf("portal id %s not in cache", newPortal)
 }

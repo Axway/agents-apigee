@@ -97,11 +97,42 @@ func (j *newPortalAPIHandler) stopped() {
 	j.runningChan <- false
 }
 
+func (j *newPortalAPIHandler) getPortalData(portalID string) (*portalData, error) {
+	portalDataInterface, err := cache.GetCache().Get(portalMapCacheKey)
+	portalDataMap := make(map[string]portalData, 0)
+	if err != nil {
+		return nil, fmt.Errorf("error getting portal data from cache")
+	} else {
+		ok := false
+		if portalDataMap, ok = portalDataInterface.(map[string]portalData); !ok {
+			return nil, fmt.Errorf("portal data in cache could not be read")
+		}
+	}
+
+	if portal, ok := portalDataMap[portalID]; ok {
+		return &portal, nil
+	}
+	return nil, fmt.Errorf("portal with ID %s not found", portalID)
+}
+
 func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 	log.Tracef("Handling new api %+v", newAPI)
 
 	// get the spec to build the service body
 	spec := j.getAPISpec(newAPI.SpecContent)
+
+	portal, err := j.getPortalData(newAPI.PortalID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// get the image, if set
+	image := ""
+	imageContentType := ""
+	if newAPI.ImageURL != nil {
+		image, imageContentType = j.apigeeClient.getImageWithURL(*newAPI.ImageURL, portal.CurrentURL)
+	}
 
 	// create the service body to use for update or create
 	apiID := fmt.Sprint(newAPI.ID)
@@ -110,8 +141,11 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 		SetAPIName(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID)).
 		SetDescription(newAPI.Description).
 		SetAPISpec(spec).
+		SetImage(image).
+		SetImageContentType(imageContentType).
 		SetAuthPolicy(j.determineAuthPolicyFromSpec(spec)).
 		SetTitle(fmt.Sprintf("%s (%s)", newAPI.Title, newAPI.PortalTitle)).
+		SetSubscriptionName(defaultSubscriptionSchema).
 		Build()
 
 	serviceBodyHash, _ := coreutil.ComputeHash(serviceBody)

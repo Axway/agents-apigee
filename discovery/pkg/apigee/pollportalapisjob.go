@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 )
@@ -56,13 +57,16 @@ func (j *pollPortalAPIsJob) Execute() error {
 	allPortalAPIs := j.apigeeClient.getPortalAPIs(j.portalID)
 	log.Tracef("%s Portal APIs: %+v", j.portalName, allPortalAPIs)
 	apisFound := make(map[string]string)
-	// TODO cache portal apis list
 	for _, api := range allPortalAPIs {
 		id := strconv.Itoa(api.ID)
 		apisFound[id] = api.ProductName
 		if _, ok := j.portalAPIsMap[id]; !ok {
 			log.Debugf("Found new api product %s", api.ProductName)
 			j.portalAPIsMap[id] = api.ProductName
+		}
+		changed, err := cache.GetCache().HasItemChanged(id, *api)
+		if err == nil || changed {
+			cache.GetCache().Set(id, *api) // set in cache
 			api.SetPortalTitle(j.portalName)
 			// send to new api handler
 			j.newAPIChan <- api

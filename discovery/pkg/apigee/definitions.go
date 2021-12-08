@@ -8,6 +8,11 @@ import (
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
 
+const (
+	defaultSubscriptionSchema = "apigee-subscription-schema"
+	appNameKey                = "appName"
+)
+
 // grantType values
 type grantType int
 
@@ -72,6 +77,16 @@ type specAssociationFile struct {
 
 // portalResponse
 type portalResponse struct {
+	Status    string     `json:"status"`
+	Message   string     `json:"message"`
+	Code      string     `json:"code"`
+	ErrorCode string     `json:"error_code"`
+	RequestID string     `json:"request_id"`
+	Data      portalData `json:"data"`
+}
+
+// portalsResponse
+type portalsResponse struct {
 	Status    string       `json:"status"`
 	Message   string       `json:"message"`
 	Code      string       `json:"code"`
@@ -107,17 +122,21 @@ type apiDocDataResponse struct {
 }
 
 type apiDocData struct {
-	ID            int    `json:"id"`
-	PortalID      string `json:"siteId"`
-	Title         string `json:"title"`
-	Description   string `json:"description"`
-	APIID         string `json:"apiId"`
-	ProductName   string `json:"edgeAPIProductName"`
-	SpecContent   string `json:"specContent"`
-	SpecTitle     string `json:"specTitle"`
-	SpecID        string `json:"specId"`
-	ProductExists bool   `json:"productExists"`
-	PortalTitle   string
+	ID               int     `json:"id"`
+	PortalID         string  `json:"siteId"`
+	Title            string  `json:"title"`
+	Description      string  `json:"description"`
+	APIID            string  `json:"apiId"`
+	ProductName      string  `json:"edgeAPIProductName"`
+	SpecContent      string  `json:"specContent"`
+	SpecTitle        string  `json:"specTitle"`
+	SpecID           string  `json:"specId"`
+	ProductExists    bool    `json:"productExists"`
+	Modified         int     `json:"modified"`
+	SnapshotModified int     `json:"snapshotModified"`
+	ImageURL         *string `json:"imageUrl"`
+	CategoryIds      []int   `json:"categoryIds"`
+	PortalTitle      string
 }
 
 func (a *apiDocData) SetPortalTitle(title string) {

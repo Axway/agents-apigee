@@ -2,6 +2,7 @@ package apigee
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -105,6 +106,16 @@ func (a *GatewayClient) getProducts() products {
 func (a *GatewayClient) getPortals() []portalData {
 	// Get the portals
 	response, _ := a.getRequestWithQuery(portalsURL, map[string]string{"orgname": a.cfg.Organization})
+	portalRes := portalsResponse{}
+	json.Unmarshal(response.Body, &portalRes)
+
+	return portalRes.Data
+}
+
+//getPortals - get the list of portals for the org
+func (a *GatewayClient) getPortal(portalID string) portalData {
+	// Get the portals
+	response, _ := a.getRequest(fmt.Sprintf("%s/%s/portal", portalsURL, portalID))
 	portalRes := portalResponse{}
 	json.Unmarshal(response.Body, &portalRes)
 
@@ -154,6 +165,31 @@ func (a *GatewayClient) getProduct(productName string) models.ApiProduct {
 	json.Unmarshal(response.Body, &product)
 
 	return product
+}
+
+//getImageWithURL - get the list of portals for the org
+func (a *GatewayClient) getImageWithURL(imageURL, portalURL string) (string, string) {
+	// Get the portal
+	request := coreapi.Request{
+		Method: coreapi.GET,
+		URL:    fmt.Sprintf("%s%s", portalURL, imageURL),
+	}
+	response, _ := a.apiClient.Send(request)
+
+	contentType := ""
+	if contentTypeArray, ok := response.Headers["Content-Type"]; ok {
+		contentType = contentTypeArray[0]
+		// assuming an octet stream type is actually an image/png
+		if contentType == "application/octet-stream" {
+			contentType = "image/png"
+		}
+	}
+
+	if response.Code != 200 || string(response.Body) == "" || contentType == "" {
+		return "", ""
+	}
+
+	return base64.StdEncoding.EncodeToString(response.Body), contentType
 }
 
 //getRevisionsDetails - get the revision details for a specific org, api, revision combo
