@@ -10,6 +10,7 @@ import (
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -109,6 +110,7 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 		SetAPIName(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID)).
 		SetDescription(newAPI.Description).
 		SetAPISpec(spec).
+		SetAuthPolicy(j.determineAuthPolicyFromSwagger(spec)).
 		SetTitle(fmt.Sprintf("%s (%s)", newAPI.Title, newAPI.PortalTitle)).
 		Build()
 
@@ -158,4 +160,35 @@ func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
 	log.Tracef("Handling removed api %s", removedAPIID)
 
 	// TODO - handle removed API
+}
+
+func (j *newPortalAPIHandler) determineAuthPolicyFromSwagger(swagger []byte) string {
+	// Check for a security definition in the swagger
+	var authPolicy = apic.Passthrough
+
+	// OAS2
+	securityDefs := gjson.GetBytes(swagger, "securityDefinitions.*.type")
+	for _, def := range securityDefs.Array() {
+		if def.String() == "apiKey" {
+			authPolicy = apic.Apikey
+			return authPolicy
+		}
+		if def.String() == "oauth2" {
+			authPolicy = apic.Oauth
+		}
+	}
+
+	// OAS3
+	securityDefs = gjson.GetBytes(swagger, "components.securitySchemes.*.type")
+	for _, def := range securityDefs.Array() {
+		if def.String() == "apiKey" {
+			authPolicy = apic.Apikey
+			return authPolicy
+		}
+		if def.String() == "oauth2" {
+			authPolicy = apic.Oauth
+		}
+	}
+
+	return authPolicy
 }

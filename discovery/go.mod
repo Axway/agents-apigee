@@ -7,7 +7,7 @@ require (
 	github.com/getkin/kin-openapi v0.67.0
 	github.com/markbates/pkger v0.17.1
 	github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3
-	github.com/tidwall/gjson v1.9.4
+	github.com/tidwall/gjson v1.12.1
 )
 
 replace (
