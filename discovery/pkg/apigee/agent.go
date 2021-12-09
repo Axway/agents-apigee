@@ -40,6 +40,7 @@ func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
 	}
 
 	agent.handleSubscriptions()
+	agent.apigeeClient.addSharedFlow()
 
 	return agent, nil
 }
