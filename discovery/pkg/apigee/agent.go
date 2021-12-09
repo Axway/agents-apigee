@@ -5,6 +5,7 @@ import (
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
+	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 
 	"github.com/Axway/agents-apigee/discovery/pkg/config"
@@ -32,13 +33,13 @@ func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
 		stopChan:     make(chan struct{}),
 	}
 
-	agent.handleSubscriptions()
-
 	// Start the agent jobs
 	err = agent.registerJobs()
 	if err != nil {
 		return nil, err
 	}
+
+	agent.handleSubscriptions()
 
 	return agent, nil
 }
@@ -58,16 +59,20 @@ func (a *Agent) registerJobs() error {
 	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
 
 	// create the channel for the portal api jobs to handler communication
-	newAPIChan := make(chan *apiDocData)
+	processAPIChan := make(chan *apiDocData)
 	removedAPIChan := make(chan string)
 
 	// create the portal handler job and register it
-	portalHandler := newPortalHandlerJob(a.apigeeClient, newPortalChan, removedPortalChan, removedAPIChan, newAPIChan)
+	portalHandler := newPortalHandlerJob(a.apigeeClient, newPortalChan, removedPortalChan, removedAPIChan, processAPIChan)
 	jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
 
 	// create the api handler job and register it
-	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, newAPIChan, removedAPIChan)
+	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, processAPIChan, removedAPIChan)
 	jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
+
+	// create job that gets the developers
+
+	// create job that gets the apps
 
 	return nil
 }
@@ -110,5 +115,12 @@ func (a *Agent) handleSubscriptions() {
 }
 
 func (a *Agent) processSubscribe(sub apic.Subscription) {
+	api, err := cache.GetCache().Get(sub.GetRemoteAPIAttributes()[apic.AttrExternalAPIName])
+	_ = api
+	_ = err
+
+	// get product by name
+
+	// get app by name
 	return
 }

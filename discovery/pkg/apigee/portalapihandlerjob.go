@@ -22,19 +22,19 @@ const (
 type newPortalAPIHandler struct {
 	jobs.Job
 	apigeeClient   *GatewayClient
-	newAPIChan     chan *apiDocData
+	processAPIChan chan *apiDocData
 	removedAPIChan chan string
 	stopChan       chan interface{}
 	isRunning      bool
 	runningChan    chan bool
 }
 
-func newPortalAPIHandlerJob(apigeeClient *GatewayClient, newAPIChan chan *apiDocData, removedAPIChan chan string) *newPortalAPIHandler {
+func newPortalAPIHandlerJob(apigeeClient *GatewayClient, processAPIChan chan *apiDocData, removedAPIChan chan string) *newPortalAPIHandler {
 	job := &newPortalAPIHandler{
 		apigeeClient:   apigeeClient,
 		stopChan:       make(chan interface{}),
 		isRunning:      false,
-		newAPIChan:     newAPIChan,
+		processAPIChan: processAPIChan,
 		removedAPIChan: removedAPIChan,
 		runningChan:    make(chan bool),
 	}
@@ -61,7 +61,7 @@ func (j *newPortalAPIHandler) Execute() error {
 	defer j.stopped()
 	for {
 		select {
-		case newAPI, ok := <-j.newAPIChan:
+		case newAPI, ok := <-j.processAPIChan:
 			if !ok {
 				err := fmt.Errorf("new api channel was closed")
 				return err
@@ -137,14 +137,16 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 	// create the service body to use for update or create
 	apiID := fmt.Sprint(newAPI.ID)
 	serviceBody, _ := apic.NewServiceBodyBuilder().
-		SetID(apiID).
-		SetAPIName(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID)).
+		SetID(newAPI.ProductName).
+		SetAPIName(newAPI.ProductName).
+		SetStage(newAPI.PortalTitle).
+		SetStageDescriptor("Portal").
 		SetDescription(newAPI.Description).
 		SetAPISpec(spec).
 		SetImage(image).
 		SetImageContentType(imageContentType).
 		SetAuthPolicy(j.determineAuthPolicyFromSpec(spec)).
-		SetTitle(fmt.Sprintf("%s (%s)", newAPI.Title, newAPI.PortalTitle)).
+		SetTitle(newAPI.Title).
 		SetSubscriptionName(defaultSubscriptionSchema).
 		Build()
 
@@ -164,6 +166,8 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
 		serviceBody.APIUpdateSeverity = "Major"
 		j.publishAPI(newAPI, serviceBody, serviceBodyHash)
 	}
+	// update the cache
+	cache.GetCache().Set(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.APIID), *newAPI)
 }
 
 func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {

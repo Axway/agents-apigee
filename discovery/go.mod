@@ -2,8 +2,10 @@ module github.com/Axway/agents-apigee/discovery
 
 go 1.16
 
+// replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
+
 require (
-	github.com/Axway/agent-sdk v1.1.11-0.20211202200236-6b12e662e18a
+	github.com/Axway/agent-sdk v1.1.12-0.20211209170306-cb1c5d2cacf4
 	github.com/getkin/kin-openapi v0.67.0
 	github.com/markbates/pkger v0.17.1
 	github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3

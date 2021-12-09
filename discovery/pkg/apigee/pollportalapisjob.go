@@ -16,18 +16,18 @@ type pollPortalAPIsJob struct {
 	portalID       string
 	portalName     string
 	portalAPIsMap  map[string]string
-	newAPIChan     chan *apiDocData
+	processAPIChan chan *apiDocData
 	removedAPIChan chan string
 	jobID          string
 }
 
-func newPollPortalAPIsJob(apigeeClient *GatewayClient, portalID, portalName string, newAPIChan chan *apiDocData, removedAPIChan chan string) *pollPortalAPIsJob {
+func newPollPortalAPIsJob(apigeeClient *GatewayClient, portalID, portalName string, processAPIChan chan *apiDocData, removedAPIChan chan string) *pollPortalAPIsJob {
 	return &pollPortalAPIsJob{
 		apigeeClient:   apigeeClient,
 		portalID:       portalID,
 		portalName:     portalName,
 		portalAPIsMap:  make(map[string]string),
-		newAPIChan:     newAPIChan,
+		processAPIChan: processAPIChan,
 		removedAPIChan: removedAPIChan,
 	}
 }
@@ -65,11 +65,11 @@ func (j *pollPortalAPIsJob) Execute() error {
 			j.portalAPIsMap[id] = api.ProductName
 		}
 		changed, err := cache.GetCache().HasItemChanged(id, *api)
-		if err == nil || changed {
+		if err != nil || changed {
 			cache.GetCache().Set(id, *api) // set in cache
 			api.SetPortalTitle(j.portalName)
 			// send to new api handler
-			j.newAPIChan <- api
+			j.processAPIChan <- api
 		}
 	}
 

@@ -18,8 +18,8 @@ code.cloudfoundry.org/go-loggregator v7.4.0+incompatible/go.mod h1:KPBTRqj+y738N
 code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f/go.mod h1:sk5LnIjB/nIEU7yP5sDQExVm62wu0pBh3yrElngUisI=
 code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a/go.mod h1:tkZo8GtzBjySJ7USvxm4E36lNQw1D3xM6oKHGqdaAJ4=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/Axway/agent-sdk v1.1.11-0.20211202200236-6b12e662e18a h1:gar6HZQLJxnmhwb9p/tDkvi+M4CyTaWG5JkQfOxwWCc=
-github.com/Axway/agent-sdk v1.1.11-0.20211202200236-6b12e662e18a/go.mod h1:KY4NBY8ZkVPcB+WYZFBvHcNoSy+gNQjPZSa1S9kW4T8=
+github.com/Axway/agent-sdk v1.1.12-0.20211209170306-cb1c5d2cacf4 h1:LkRxq+avOn6i2gf1X/j07cIUfR8sqFTSqBebs/+Ty9Y=
+github.com/Axway/agent-sdk v1.1.12-0.20211209170306-cb1c5d2cacf4/go.mod h1:KY4NBY8ZkVPcB+WYZFBvHcNoSy+gNQjPZSa1S9kW4T8=
 github.com/Azure/azure-amqp-common-go/v3 v3.0.0/go.mod h1:SY08giD/XbhTz07tJdpw1SoxQXHPN30+DI3Z04SYqyg=
 github.com/Azure/azure-event-hubs-go/v3 v3.1.2/go.mod h1:hR40byNJjKkS74+3RhloPQ8sJ8zFQeJ920Uk3oYY0+k=
 github.com/Azure/azure-pipeline-go v0.1.8/go.mod h1:XA1kFWRVhSK+KNFiOhfv83Fv8L9achrP7OxIzeTn1Yg=
@@ -181,8 +181,6 @@ github.com/gabriel-vasile/mimetype v1.1.2/go.mod h1:6CDPel/o/3/s4+bp6kIbsWATq8pm
 github.com/garyburd/redigo v1.0.1-0.20160525165706-b8dc90050f24/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
 github.com/getkin/kin-openapi v0.67.0 h1:FGVL6Rs2ZWx/RrWdoRfqw74mrkClHOg3rW6knMk7VqQ=
 github.com/getkin/kin-openapi v0.67.0/go.mod h1:7Yn5whZr5kJi6t+kShccXS8ae1APpYTW6yheSwk8Yi4=
-github.com/getkin/kin-openapi v0.84.0 h1:EBH74SpHJPdOV33fHBVgAxKjWBX2sLCfccalw7xyTOY=
-github.com/getkin/kin-openapi v0.84.0/go.mod h1:660oXbgy5JFMKreazJaQTw7o+X00qeSyhcnluiMv+Xg=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -523,7 +521,6 @@ github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/tidwall/gjson v1.9.4 h1:oNis7dk9Rs3dKJNNigXZT1MTOiJeBtpurn+IpCB75MY=
 github.com/tidwall/gjson v1.9.4/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.12.1 h1:ikuZsLdhr8Ws0IdROXUS1Gi4v9Z4pGqpX/CvJkxvfpo=
 github.com/tidwall/gjson v1.12.1/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
