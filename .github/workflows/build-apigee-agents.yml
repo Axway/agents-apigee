@@ -1,0 +1,56 @@
+name: Build Apigee discovery agent
+
+on:
+  push:
+    branches: [main, bootstrap]
+  pull_request:
+    branches: [main, bootstrap]
+
+jobs:
+  buildDiscoveryAgent:
+    env:
+      GOPATH: ${{ github.workspace }}
+      GOFLAGS: "-mod=mod"
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/discovery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Build discovery agent
+        working-directory: discovery
+        run: go build -v ./...
+
+      - name: Test discovery agent
+        working-directory: discovery
+        run: go test -v ./...
+
+  buildTraceabilityAgent:
+    env:
+      GOPATH: ${{ github.workspace }}
+      GOFLAGS: "-mod=mod"
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/discovery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Build traceability agent
+        working-directory: traceability
+        run: go build -v ./...
+
+      - name: Test traceability agent
+        working-directory: traceability
+        run: go test -v ./...
