@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	gatewayType = "APIGEE"
+	gatewayType  = "APIGEE"
+	catalogIDKey = "PortalCatalogID"
 )
 
 //newPortalAPIHandler - job that waits for
@@ -134,7 +135,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apiDocData) (*apic.Servic
 
 	// create attributes to be added to revision and instance
 	attributes := make(map[string]string)
-	attributes["PortalCatalogID"] = apiID
+	attributes[catalogIDKey] = apiID
 	attributes["PortalID"] = newAPI.PortalID
 
 	sb, err := apic.NewServiceBodyBuilder().

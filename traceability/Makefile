@@ -10,7 +10,6 @@ lint:
 dep:
 	@echo "Resolving go package dependencies"
 	@go mod tidy
-	@go mod vendor
 	@echo "Package dependencies completed"
 
 update-sdk:

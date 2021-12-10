@@ -6,7 +6,7 @@ import (
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 
-	"github.com/Axway/agents-apigee/discovery/pkg/config"
+	"github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // GatewayClient - Represents the Gateway client

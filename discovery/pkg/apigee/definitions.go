@@ -1,13 +1,5 @@
 package apigee
 
-import (
-	"fmt"
-
-	"github.com/Axway/agents-apigee/discovery/pkg/apigee/apigeebundle"
-	"github.com/Axway/agents-apigee/discovery/pkg/apigee/models"
-	"github.com/Axway/agents-apigee/discovery/pkg/util"
-)
-
 const (
 	defaultSubscriptionSchema = "apigee-subscription-schema"
 	appNameKey                = "appName"
@@ -35,45 +27,8 @@ type AuthResponse struct {
 	JTI          string `json:"jti"`
 }
 
-// apigeeProxyDetails- APIGEE Proxy Details
-type apigeeProxyDetails struct {
-	Proxy       models.ApiProxy
-	Revision    models.DeploymentDetailsRevision
-	APIRevision models.ApiProxyRevision
-	Bundle      *apigeebundle.APIGEEBundle
-	Environment string
-}
-
-func (a *apigeeProxyDetails) GetVersion() string {
-	return fmt.Sprintf("%v", a.APIRevision.Revision)
-}
-
-func (a *apigeeProxyDetails) GetCacheKey() string {
-	return util.FormatRemoteAPIID(a.Proxy.Name, a.Environment, a.Revision.Name)
-}
-
-//Environments
-type environments []string
-
-//VirtualHosts
-type virtualHosts []string
-
-//APIs
-type apis []string
-
 //Products
 type products []string
-
-//EnvironmentRevisions
-type environmentRevision struct {
-	EnvironmentName string
-	Revisions       []models.DeploymentDetailsRevision
-}
-
-//specAssociationFile -
-type specAssociationFile struct {
-	URL string `json:"url"`
-}
 
 // portalResponse
 type portalResponse struct {

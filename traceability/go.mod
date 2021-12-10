@@ -3,7 +3,7 @@ module github.com/Axway/agents-apigee/traceability
 go 1.13
 
 require (
-	github.com/Axway/agent-sdk v0.0.23
+	github.com/Axway/agent-sdk v1.1.12-0.20211210140325-e5d172937b72
 	github.com/Shopify/sarama v1.26.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -16,6 +16,7 @@ require (
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
+	github.com/markbates/pkger v0.17.1
 	github.com/miekg/dns v1.1.29 // indirect
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect

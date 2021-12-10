@@ -40,17 +40,13 @@ func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
 	}
 
 	agent.handleSubscriptions()
-	agent.apigeeClient.addSharedFlow()
+	// agent.apigeeClient.addSharedFlow()
 
 	return agent, nil
 }
 
 // registerJobs - registers the agent jobs
 func (a *Agent) registerJobs() error {
-	// create the auth job and register it
-	authentication := newAuthJob(a.apigeeClient.apiClient, a.cfg.Auth.GetUsername(), a.cfg.Auth.GetPassword(), a.setAccessToken)
-	jobs.RegisterIntervalJobWithName(authentication, 10*time.Minute, "APIGEE Auth Token")
-
 	// create the channel for portal poller to handler communication
 	newPortalChan := make(chan string)
 	removedPortalChan := make(chan string)
@@ -116,7 +112,10 @@ func (a *Agent) handleSubscriptions() {
 }
 
 func (a *Agent) processSubscribe(sub apic.Subscription) {
-	api, err := cache.GetCache().Get(sub.GetRemoteAPIAttributes()[apic.AttrExternalAPIName])
+	apiAttributes := sub.GetRemoteAPIAttributes()
+	c := cache.GetCache()
+	api, err := cache.GetCache().Get(apiAttributes[catalogIDKey])
+	_ = c
 	_ = api
 	_ = err
 
