@@ -7,6 +7,44 @@ on:
     branches: [main, bootstrap]
 
 jobs:
+  testDiscoveryAgent:
+    env:
+      GOFLAGS: "-mod=mod"
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/discovery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Test discovery agent
+        working-directory: discovery
+        run: go test -v ./...
+
+  testTraceabilityAgent:
+    env:
+      GOFLAGS: "-mod=mod"
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/discovery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Test traceability agent
+        working-directory: traceability
+        run: go test -v ./...
+
   buildDiscoveryAgent:
     env:
       GOFLAGS: "-mod=mod"
@@ -24,18 +62,19 @@ jobs:
 
       - name: Build discovery agent
         working-directory: discovery
-        run: go build -v ./...
+        run: make build
 
-      - name: Test discovery agent
-        working-directory: discovery
-        run: go test -v ./...
+      - uses: actions/upload-artifact@v2
+        with:
+          name: apigee-discovery-agent
+          path: discovery/bin/discovery_agent
 
   buildTraceabilityAgent:
     env:
       GOFLAGS: "-mod=mod"
     defaults:
       run:
-        working-directory: ${{ env.GOPATH }}/discovery
+        working-directory: ${{ env.GOPATH }}/traceability
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -47,8 +86,9 @@ jobs:
 
       - name: Build traceability agent
         working-directory: traceability
-        run: go build -v ./...
+        run: make build
 
-      - name: Test traceability agent
-        working-directory: traceability
-        run: go test -v ./...
+      - uses: actions/upload-artifact@v2
+        with:
+          name: apigee-traceability-agent
+          path: traceability/bin/traceability_agent
