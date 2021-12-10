@@ -6,15 +6,16 @@ import (
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
 )
 
 //portalHandler - job that waits for
 type portalHandler struct {
 	jobs.Job
-	apigeeClient      *GatewayClient
+	apigeeClient      *apigee.ApigeeClient
 	newPortalChan     chan string
 	removedPortalChan chan string
-	newAPIChan        chan *apiDocData
+	newAPIChan        chan *apigee.APIDocData
 	removedAPIChan    chan string
 	stopChan          chan interface{}
 	isRunning         bool
@@ -22,7 +23,7 @@ type portalHandler struct {
 	jobsMap           map[string]*pollPortalAPIsJob // keep map of all jobs created for the portals
 }
 
-func newPortalHandlerJob(apigeeClient *GatewayClient, newPortalChan, removedPortalChan, removedAPIChan chan string, newAPIChan chan *apiDocData) *portalHandler {
+func newPortalHandlerJob(apigeeClient *apigee.ApigeeClient, newPortalChan, removedPortalChan, removedAPIChan chan string, newAPIChan chan *apigee.APIDocData) *portalHandler {
 	job := &portalHandler{
 		apigeeClient:      apigeeClient,
 		newPortalChan:     newPortalChan,
@@ -39,10 +40,7 @@ func newPortalHandlerJob(apigeeClient *GatewayClient, newPortalChan, removedPort
 }
 
 func (j *portalHandler) Ready() bool {
-	if j.apigeeClient.accessToken == "" {
-		return false
-	}
-	return true
+	return j.apigeeClient.IsReady()
 }
 
 func (j *portalHandler) Status() error {
@@ -127,7 +125,7 @@ func (j *portalHandler) getPortalNameByID(newPortal string) (string, error) {
 		log.Error("error hit getting the portal map from the cache")
 		return "", err
 	}
-	portalMap := portalMapInterface.(map[string]portalData)
+	portalMap := portalMapInterface.(map[string]apigee.PortalData)
 	if portal, ok := portalMap[newPortal]; ok {
 		return portal.Name, nil
 	}

@@ -1,16 +1,17 @@
 package cmd
 
 import (
-	"time"
-
 	corecmd "github.com/Axway/agent-sdk/pkg/cmd"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 
 	libcmd "github.com/elastic/beats/v7/libbeat/cmd"
 	"github.com/elastic/beats/v7/libbeat/cmd/instance"
 
+	"github.com/Axway/agents-apigee/client/pkg/config"
+
+	"github.com/Axway/agents-apigee/traceability/pkg/apigee"
 	"github.com/Axway/agents-apigee/traceability/pkg/beater"
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
+	logglycfg "github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // RootCmd - Agent root command
@@ -41,16 +42,8 @@ func init() {
 
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
-	rootProps.AddStringProperty("apigee.organization", "", "APIGEE Organization")
-	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
-	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
-	rootProps.AddDurationProperty("apigee.pollInterval", 30*time.Second, "The time interval between checking for new APIGEE resources")
-	rootProps.AddStringProperty("apigee.loggly.customertoken", "", "The Loggly Customer Token for sending log events")
-	rootProps.AddStringProperty("apigee.loggly.apitoken", "", "The Loggly API Token for retrieving log events")
-	rootProps.AddStringProperty("apigee.loggly.subdomain", "", "The Loggly subdomain")
-	rootProps.AddStringProperty("apigee.loggly.host", "logs-01.loggly.com", "The Loggly Host URL")
-	rootProps.AddStringProperty("apigee.loggly.port", "514", "The Loggly Port")
-
+	config.AddProperties(rootProps)
+	logglycfg.AddProperties(rootProps)
 }
 
 // Callback that agent will call to process the execution
@@ -63,29 +56,18 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
+	apigeeConfig := config.ParseConfig(rootProps)
+	logglyConfig := logglycfg.ParseConfig(rootProps)
 
-	apigeeConfig := &config.ApigeeConfig{
-		Organization: rootProps.StringPropertyValue("apigee.organization"),
-		PollInterval: rootProps.DurationPropertyValue("apigee.pollInterval"),
-		Auth: &config.AuthConfig{
-			Username: rootProps.StringPropertyValue("apigee.auth.username"),
-			Password: rootProps.StringPropertyValue("apigee.auth.password"),
-		},
-		Loggly: &config.LogglyConfig{
-			Subdomain:     rootProps.StringPropertyValue("apigee.loggly.subdomain"),
-			CustomerToken: rootProps.StringPropertyValue("apigee.loggly.customertoken"),
-			APIToken:      rootProps.StringPropertyValue("apigee.loggly.apitoken"),
-			Host:          rootProps.StringPropertyValue("apigee.loggly.host"),
-			Port:          rootProps.StringPropertyValue("apigee.loggly.port"),
-		},
-	}
-
-	agentConfig := &config.AgentConfig{
+	agentConfig := &apigee.AgentConfig{
 		CentralCfg: centralConfig,
-		GatewayCfg: apigeeConfig,
+		ApigeeCfg:  apigeeConfig,
+		LogglyCfg:  logglyConfig,
 	}
 
-	beater.SetLogglyConfig(apigeeConfig.GetLoggly())
+	beater.SetLogglyConfig(logglyConfig)
+
+	apigee.NewAgent(agentConfig)
 
 	return agentConfig, nil
 }

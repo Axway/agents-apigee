@@ -7,7 +7,6 @@ import (
 
 	"github.com/elastic/beats/v7/libbeat/beat"
 	"github.com/elastic/beats/v7/libbeat/common"
-	"github.com/elastic/beats/v7/libbeat/logp"
 
 	"github.com/Axway/agents-apigee/traceability/pkg/apigee"
 	"github.com/Axway/agents-apigee/traceability/pkg/config"
@@ -55,7 +54,7 @@ func SetLogglyConfig(logglyCfg *config.LogglyConfig) {
 
 // Run starts ApigeeTraceabilityAgent.
 func (bt *customLogBeater) Run(b *beat.Beat) error {
-	logp.Info("apigee_traceability_agent is running! Hit CTRL-C to stop it.")
+	log.Info("apigee_traceability_agent is running! Hit CTRL-C to stop it.")
 
 	var err error
 	bt.client, err = b.Publisher.Connect()

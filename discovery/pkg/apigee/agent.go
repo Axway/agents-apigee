@@ -6,22 +6,30 @@ import (
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/cache"
+	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 
-	"github.com/Axway/agents-apigee/discovery/pkg/config"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
+	"github.com/Axway/agents-apigee/client/pkg/config"
 )
+
+// AgentConfig - represents the config for agent
+type AgentConfig struct {
+	CentralCfg corecfg.CentralConfig `config:"central"`
+	ApigeeCfg  *config.ApigeeConfig  `config:"apigee"`
+}
 
 // Agent - Represents the Gateway client
 type Agent struct {
 	cfg          *config.ApigeeConfig
-	apigeeClient *GatewayClient
+	apigeeClient *apigee.ApigeeClient
 	pollInterval time.Duration
 	stopChan     chan struct{}
 }
 
 // NewAgent - Creates a new Agent
 func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
-	apigeeClient, err := NewClient(apigeeCfg)
+	apigeeClient, err := apigee.NewClient(apigeeCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +48,6 @@ func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
 	}
 
 	agent.handleSubscriptions()
-	// agent.apigeeClient.addSharedFlow()
 
 	return agent, nil
 }
@@ -56,7 +63,7 @@ func (a *Agent) registerJobs() error {
 	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
 
 	// create the channel for the portal api jobs to handler communication
-	processAPIChan := make(chan *apiDocData)
+	processAPIChan := make(chan *apigee.APIDocData)
 	removedAPIChan := make(chan string)
 
 	// create the portal handler job and register it
@@ -72,10 +79,6 @@ func (a *Agent) registerJobs() error {
 	// create job that gets the apps
 
 	return nil
-}
-
-func (a *Agent) setAccessToken(token string) {
-	a.apigeeClient.setAccessToken(token)
 }
 
 // AgentRunning - waits for a signal to stop the agent

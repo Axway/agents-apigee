@@ -9,6 +9,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 	"github.com/tidwall/gjson"
 )
@@ -21,15 +22,15 @@ const (
 //newPortalAPIHandler - job that waits for
 type newPortalAPIHandler struct {
 	jobs.Job
-	apigeeClient   *GatewayClient
-	processAPIChan chan *apiDocData
+	apigeeClient   *apigee.ApigeeClient
+	processAPIChan chan *apigee.APIDocData
 	removedAPIChan chan string
 	stopChan       chan interface{}
 	isRunning      bool
 	runningChan    chan bool
 }
 
-func newPortalAPIHandlerJob(apigeeClient *GatewayClient, processAPIChan chan *apiDocData, removedAPIChan chan string) *newPortalAPIHandler {
+func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, processAPIChan chan *apigee.APIDocData, removedAPIChan chan string) *newPortalAPIHandler {
 	job := &newPortalAPIHandler{
 		apigeeClient:   apigeeClient,
 		stopChan:       make(chan interface{}),
@@ -43,10 +44,7 @@ func newPortalAPIHandlerJob(apigeeClient *GatewayClient, processAPIChan chan *ap
 }
 
 func (j *newPortalAPIHandler) Ready() bool {
-	if j.apigeeClient.accessToken == "" {
-		return false
-	}
-	return true
+	return j.apigeeClient.IsReady()
 }
 
 func (j *newPortalAPIHandler) Status() error {
@@ -97,14 +95,14 @@ func (j *newPortalAPIHandler) stopped() {
 	j.runningChan <- false
 }
 
-func (j *newPortalAPIHandler) getPortalData(portalID string) (*portalData, error) {
+func (j *newPortalAPIHandler) getPortalData(portalID string) (*apigee.PortalData, error) {
 	portalDataInterface, err := cache.GetCache().Get(portalMapCacheKey)
-	portalDataMap := make(map[string]portalData, 0)
+	portalDataMap := make(map[string]apigee.PortalData, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error getting portal data from cache")
 	}
 	ok := false
-	if portalDataMap, ok = portalDataInterface.(map[string]portalData); !ok {
+	if portalDataMap, ok = portalDataInterface.(map[string]apigee.PortalData); !ok {
 		return nil, fmt.Errorf("portal data in cache could not be read")
 	}
 
@@ -114,7 +112,7 @@ func (j *newPortalAPIHandler) getPortalData(portalID string) (*portalData, error
 	return nil, fmt.Errorf("portal with ID %s not found", portalID)
 }
 
-func (j *newPortalAPIHandler) buildServiceBody(newAPI *apiDocData) (*apic.ServiceBody, error) {
+func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic.ServiceBody, error) {
 	// get the spec to build the service body
 	spec := j.getAPISpec(newAPI.SpecContent)
 
@@ -127,7 +125,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apiDocData) (*apic.Servic
 	image := ""
 	imageContentType := ""
 	if newAPI.ImageURL != nil {
-		image, imageContentType = j.apigeeClient.getImageWithURL(*newAPI.ImageURL, portal.CurrentURL)
+		image, imageContentType = j.apigeeClient.GetImageWithURL(*newAPI.ImageURL, portal.CurrentURL)
 	}
 
 	// create the service body to use for update or create
@@ -156,7 +154,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apiDocData) (*apic.Servic
 	return &sb, err
 }
 
-func (j *newPortalAPIHandler) handleAPI(newAPI *apiDocData) {
+func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	log.Tracef("handling api %v from portal %v", newAPI.Title, newAPI.PortalID)
 
 	serviceBody, err := j.buildServiceBody(newAPI)
@@ -189,13 +187,13 @@ func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
 	specData := []byte{}
 	if contentID != "" {
 		// Get API Spec
-		specData = j.apigeeClient.getSpecContent(contentID)
+		specData = j.apigeeClient.GetSpecContent(contentID)
 	}
 	// handle products without a spec
 	return specData
 }
 
-func (j *newPortalAPIHandler) publishAPI(newAPI *apiDocData, serviceBody *apic.ServiceBody, serviceBodyHash uint64) {
+func (j *newPortalAPIHandler) publishAPI(newAPI *apigee.APIDocData, serviceBody *apic.ServiceBody, serviceBodyHash uint64) {
 
 	// Add a few more attributes to the service body
 	serviceBody.ServiceAttributes[fmt.Sprintf("%s-hash", newAPI.PortalID)] = util.ConvertUnitToString(serviceBodyHash)

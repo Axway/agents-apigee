@@ -7,21 +7,22 @@ import (
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
 )
 
 // job that will poll for any new apis in the portal on APIGEE Edge
 type pollPortalAPIsJob struct {
 	jobs.Job
-	apigeeClient   *GatewayClient
+	apigeeClient   *apigee.ApigeeClient
 	portalID       string
 	portalName     string
 	portalAPIsMap  map[string]string
-	processAPIChan chan *apiDocData
+	processAPIChan chan *apigee.APIDocData
 	removedAPIChan chan string
 	jobID          string
 }
 
-func newPollPortalAPIsJob(apigeeClient *GatewayClient, portalID, portalName string, processAPIChan chan *apiDocData, removedAPIChan chan string) *pollPortalAPIsJob {
+func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalName string, processAPIChan chan *apigee.APIDocData, removedAPIChan chan string) *pollPortalAPIsJob {
 	return &pollPortalAPIsJob{
 		apigeeClient:   apigeeClient,
 		portalID:       portalID,
@@ -33,7 +34,7 @@ func newPollPortalAPIsJob(apigeeClient *GatewayClient, portalID, portalName stri
 }
 
 func (j *pollPortalAPIsJob) Register() error {
-	jobID, err := jobs.RegisterIntervalJobWithName(j, j.apigeeClient.pollInterval, fmt.Sprintf("%s Portal Poller", j.portalName))
+	jobID, err := jobs.RegisterIntervalJobWithName(j, j.apigeeClient.GetConfig().GetPollInterval(), fmt.Sprintf("%s Portal Poller", j.portalName))
 	if err != nil {
 		return err
 	}
@@ -42,10 +43,7 @@ func (j *pollPortalAPIsJob) Register() error {
 }
 
 func (j *pollPortalAPIsJob) Ready() bool {
-	if j.apigeeClient.accessToken == "" {
-		return false
-	}
-	return true
+	return j.apigeeClient.IsReady()
 }
 
 func (j *pollPortalAPIsJob) Status() error {
@@ -54,7 +52,7 @@ func (j *pollPortalAPIsJob) Status() error {
 
 func (j *pollPortalAPIsJob) Execute() error {
 	log.Tracef("Executing %s Portal poller", j.portalName)
-	allPortalAPIs := j.apigeeClient.getPortalAPIs(j.portalID)
+	allPortalAPIs := j.apigeeClient.GetPortalAPIs(j.portalID)
 	log.Tracef("%s Portal APIs: %+v", j.portalName, allPortalAPIs)
 	apisFound := make(map[string]string)
 	for _, api := range allPortalAPIs {

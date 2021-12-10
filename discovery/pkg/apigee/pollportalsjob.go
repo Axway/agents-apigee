@@ -4,6 +4,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
 )
 
 const (
@@ -13,26 +14,23 @@ const (
 // job that will poll for any new portals on APIGEE Edge
 type pollPortalsJob struct {
 	jobs.Job
-	apigeeClient      *GatewayClient
-	portalsMap        map[string]portalData
+	apigeeClient      *apigee.ApigeeClient
+	portalsMap        map[string]apigee.PortalData
 	newPortalChan     chan string
 	removedPortalChan chan string
 }
 
-func newPollPortalsJob(apigeeClient *GatewayClient, newPortalChan, removedPortalChan chan string) *pollPortalsJob {
+func newPollPortalsJob(apigeeClient *apigee.ApigeeClient, newPortalChan, removedPortalChan chan string) *pollPortalsJob {
 	return &pollPortalsJob{
 		apigeeClient:      apigeeClient,
-		portalsMap:        make(map[string]portalData),
+		portalsMap:        make(map[string]apigee.PortalData),
 		newPortalChan:     newPortalChan,
 		removedPortalChan: removedPortalChan,
 	}
 }
 
 func (j *pollPortalsJob) Ready() bool {
-	if j.apigeeClient.accessToken == "" {
-		return false
-	}
-	return true
+	return j.apigeeClient.IsReady()
 }
 
 func (j *pollPortalsJob) Status() error {
@@ -40,7 +38,7 @@ func (j *pollPortalsJob) Status() error {
 }
 
 func (j *pollPortalsJob) Execute() error {
-	allPortals := j.apigeeClient.getPortals()
+	allPortals := j.apigeeClient.GetPortals()
 	portalsFound := make(map[string]string)
 	for _, portal := range allPortals {
 		portalsFound[portal.ID] = portal.Name
