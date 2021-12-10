@@ -66,8 +66,8 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: apigee-discovery-agent
-          path: discovery/bin/discovery_agent
+          name: apigee_discovery_agent
+          path: discovery/bin/apigee_discovery_agent
 
   buildTraceabilityAgent:
     env:
@@ -90,5 +90,10 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: apigee-traceability-agent
-          path: traceability/bin/traceability_agent
+          name: apigee_traceability_agent
+          path: traceability/bin/apigee_traceability_agent
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: apigee_traceability_agent.yml
+          path: traceability/apigee_traceability_agent.yml
