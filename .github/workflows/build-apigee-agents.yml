@@ -9,7 +9,6 @@ on:
 jobs:
   buildDiscoveryAgent:
     env:
-      GOPATH: ${{ github.workspace }}
       GOFLAGS: "-mod=mod"
     defaults:
       run:
@@ -33,7 +32,6 @@ jobs:
 
   buildTraceabilityAgent:
     env:
-      GOPATH: ${{ github.workspace }}
       GOFLAGS: "-mod=mod"
     defaults:
       run:
