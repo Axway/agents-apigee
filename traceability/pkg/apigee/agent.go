@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"time"
 
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/util/log"
@@ -16,6 +17,10 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/config"
 
 	logglycfg "github.com/Axway/agents-apigee/traceability/pkg/config"
+)
+
+const (
+	sharedFlow = "amplify-central-logging"
 )
 
 // AgentConfig - represents the config for agent
@@ -45,12 +50,15 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		envToURLs:    make(map[string][]string),
 	}
 
+	go func() {
+		for !agent.apigeeClient.IsReady() {
+			time.Sleep(time.Second)
+		}
+		agent.addSharedFlow()
+	}()
+
 	return agent, nil
 }
-
-const (
-	sharedFlow = "amplify-central-logging"
-)
 
 // addSharedFlow - checks to see if the logging flow has been added and adds if it hasn't
 func (a *Agent) addSharedFlow() {
