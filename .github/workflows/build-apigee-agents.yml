@@ -2,9 +2,9 @@ name: Build Apigee discovery agent
 
 on:
   push:
-    branches: [main, bootstrap, "APIGOV-*"]
+    branches: [main, "APIGOV-*"]
   pull_request:
-    branches: [main, bootstrap]
+    branches: [main]
 
 jobs:
   testDiscoveryAgent:
