@@ -150,11 +150,13 @@ CENTRAL_AUTH_PUBLICKEY=/keys/public_key.pem              # path to the key file 
 APIGEE_ORGANIZATION=<Apigee Organization>                # created in Prepare Apigee step
 APIGEE_AUTH_USERNAME=<Apigee Username>                   # created in Prepare Apigee step
 APIGEE_AUTH_PASSWORD=<Apigee Password>                   # created in Prepare Apigee step
-APIGEE_LOGGLY_SUBDOMAIN=<Loggly Subdomain>               # created in Prepare Loggly step
-APIGEE_LOGGLY_CUSTOMERTOKEN=<Loggly Customer Token>      # created in Prepare Loggly step
-APIGEE_LOGGLY_APITOKEN=<Loggly API Token>                # created in Prepare Loggly step
-APIGEE_LOGGLY_HOST=logs-01.loggly.com
-APIGEE_LOGGLY_PORT=514
+
+# Traceability agent only
+LOGGLY_SUBDOMAIN=<Loggly Subdomain>               # created in Prepare Loggly step
+LOGGLY_CUSTOMERTOKEN=<Loggly Customer Token>      # created in Prepare Loggly step
+LOGGLY_APITOKEN=<Loggly API Token>                # created in Prepare Loggly step
+LOGGLY_HOST=logs-01.loggly.com
+LOGGLY_PORT=514
 
 LOG_LEVEL=info
 LOG_OUTPUT=stdout
