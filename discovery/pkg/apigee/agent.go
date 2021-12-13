@@ -1,6 +1,7 @@
 package apigee
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -34,7 +35,7 @@ func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
 		return nil, err
 	}
 
-	agent := &Agent{
+	newAgent := &Agent{
 		apigeeClient: apigeeClient,
 		cfg:          apigeeCfg,
 		pollInterval: apigeeCfg.GetPollInterval(),
@@ -42,14 +43,21 @@ func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
 	}
 
 	// Start the agent jobs
-	err = agent.registerJobs()
+	err = newAgent.registerJobs()
 	if err != nil {
 		return nil, err
 	}
 
-	agent.handleSubscriptions()
+	newAgent.handleSubscriptions()
 
-	return agent, nil
+	// delay the start of the API validator
+	go func() {
+		// allow 2 poll intervals before starting validator
+		time.Sleep(newAgent.pollInterval * 2)
+		agent.RegisterAPIValidator(newAgent.apiValidator)
+	}()
+
+	return newAgent, nil
 }
 
 // registerJobs - registers the agent jobs
@@ -89,6 +97,21 @@ func (a *Agent) AgentRunning() {
 // Stop - signals the agent to stop
 func (a *Agent) Stop() {
 	a.stopChan <- struct{}{}
+}
+
+// apiValidator - registers the agent jobs
+func (a *Agent) apiValidator(productName, portalName string) bool {
+	// get the api with the product name and portal name
+	cacheKey := fmt.Sprintf("%s-%s", portalName, productName)
+
+	tmp := cache.GetCache()
+	_, err := cache.GetCache().GetBySecondaryKey(cacheKey)
+	if err != nil {
+		return false // api has been removed
+	}
+	_ = tmp
+
+	return true
 }
 
 // registerSubscriptionSchema - create a subscription schema on Central

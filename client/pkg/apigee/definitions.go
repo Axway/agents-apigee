@@ -76,6 +76,7 @@ type APIDocDataResponse struct {
 	Data      []*APIDocData `json:"data"`
 }
 
+// APIDocData - the data returned from teh call to get portal apis
 type APIDocData struct {
 	ID               int     `json:"id"`
 	PortalID         string  `json:"siteId"`
@@ -91,9 +92,11 @@ type APIDocData struct {
 	SnapshotModified int     `json:"snapshotModified"`
 	ImageURL         *string `json:"imageUrl"`
 	CategoryIds      []int   `json:"categoryIds"`
+	Visibility       bool    `json:"visibility"`
 	PortalTitle      string
 }
 
+// SetPortalTitle - set the portal title in the api doc data
 func (a *APIDocData) SetPortalTitle(title string) {
 	a.PortalTitle = title
 }

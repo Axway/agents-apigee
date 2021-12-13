@@ -64,7 +64,6 @@ func (j *pollPortalAPIsJob) Execute() error {
 		}
 		changed, err := cache.GetCache().HasItemChanged(id, *api)
 		if err != nil || changed {
-			cache.GetCache().Set(id, *api) // set in cache
 			api.SetPortalTitle(j.portalName)
 			// send to new api handler
 			j.processAPIChan <- api

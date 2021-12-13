@@ -2,6 +2,7 @@ package apigee
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
@@ -136,6 +137,11 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic
 	attributes[catalogIDKey] = apiID
 	attributes["PortalID"] = newAPI.PortalID
 
+	state := apic.UnpublishedState
+	if newAPI.Visibility {
+		state = apic.PublishedState
+	}
+
 	sb, err := apic.NewServiceBodyBuilder().
 		SetID(newAPI.ProductName).
 		SetAPIName(newAPI.ProductName).
@@ -146,6 +152,8 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic
 		SetImage(image).
 		SetImageContentType(imageContentType).
 		SetAuthPolicy(j.determineAuthPolicyFromSpec(spec)).
+		SetState(state).
+		SetStatus(state).
 		SetTitle(newAPI.Title).
 		SetSubscriptionName(defaultSubscriptionSchema).
 		SetRevisionAttribute(attributes).
@@ -180,7 +188,9 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 		j.publishAPI(newAPI, serviceBody, serviceBodyHash)
 	}
 	// update the cache
-	cache.GetCache().Set(fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName), *newAPI)
+	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
+	cache.GetCache().SetWithSecondaryKey(cacheKey, strconv.Itoa(newAPI.ID), *newAPI)
+	cache.GetCache().SetSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.PortalTitle, newAPI.ProductName))
 }
 
 func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
@@ -206,9 +216,17 @@ func (j *newPortalAPIHandler) publishAPI(newAPI *apigee.APIDocData, serviceBody 
 }
 
 func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
-	log.Tracef("Handling removed api %s", removedAPIID)
+	log.Tracef("handling removed api %s", removedAPIID)
 
-	// TODO - handle removed API
+	// find api by id in cache
+	_, err := cache.GetCache().GetBySecondaryKey(removedAPIID)
+	if err != nil {
+		log.Errorf("could not find the removed api, %s, in the cache", removedAPIID)
+		return
+	}
+
+	// remove from the cache
+	cache.GetCache().DeleteBySecondaryKey(removedAPIID)
 }
 
 func (j *newPortalAPIHandler) determineAuthPolicyFromSpec(swagger []byte) string {

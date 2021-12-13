@@ -18,8 +18,9 @@ code.cloudfoundry.org/go-loggregator v7.4.0+incompatible/go.mod h1:KPBTRqj+y738N
 code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f/go.mod h1:sk5LnIjB/nIEU7yP5sDQExVm62wu0pBh3yrElngUisI=
 code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a/go.mod h1:tkZo8GtzBjySJ7USvxm4E36lNQw1D3xM6oKHGqdaAJ4=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/Axway/agent-sdk v1.1.12-0.20211210140325-e5d172937b72 h1:mgYhwKZaR8oOjmOPjdNmBqkYd74XLzB3Y7hcZtZRDFQ=
 github.com/Axway/agent-sdk v1.1.12-0.20211210140325-e5d172937b72/go.mod h1:KY4NBY8ZkVPcB+WYZFBvHcNoSy+gNQjPZSa1S9kW4T8=
+github.com/Axway/agent-sdk v1.1.12-0.20211213160640-9d1bd955be65 h1:0yCM9recdAj1PWUXa2o0WrSiqhBBsetZXKNaiaj4Zeo=
+github.com/Axway/agent-sdk v1.1.12-0.20211213160640-9d1bd955be65/go.mod h1:KY4NBY8ZkVPcB+WYZFBvHcNoSy+gNQjPZSa1S9kW4T8=
 github.com/Azure/azure-amqp-common-go/v3 v3.0.0/go.mod h1:SY08giD/XbhTz07tJdpw1SoxQXHPN30+DI3Z04SYqyg=
 github.com/Azure/azure-event-hubs-go/v3 v3.1.2/go.mod h1:hR40byNJjKkS74+3RhloPQ8sJ8zFQeJ920Uk3oYY0+k=
 github.com/Azure/azure-pipeline-go v0.1.8/go.mod h1:XA1kFWRVhSK+KNFiOhfv83Fv8L9achrP7OxIzeTn1Yg=
@@ -419,8 +420,6 @@ github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
 github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6/go.mod h1:BtxoFyWECRxE4U/7sNtV5W15zMzWCbyJoFRP3s7yZA0=
 github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYrxe9dPLANfrWvHYVTgc=
-github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3 h1:SIHa1eb8CJDqFu8potgn0n7grPG2cf2WEKekk/nSz5g=
-github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3/go.mod h1:odkMeLkWS8G6+WP2z3Pn2vkzhPSvBtFhAUYTKXAtZMQ=
 github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2/go.mod h1:L3UMQOThbttwfYRNFOWLLVXMhk5Lkio4GGOtw5UrxS0=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=

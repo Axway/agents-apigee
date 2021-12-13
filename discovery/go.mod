@@ -6,10 +6,8 @@ go 1.16
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.12-0.20211210140325-e5d172937b72
+	github.com/Axway/agent-sdk v1.1.12-0.20211213160640-9d1bd955be65
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
-	github.com/getkin/kin-openapi v0.67.0
-	github.com/oriser/regroup v0.0.0-20201024192559-010c434ff8f3
 	github.com/tidwall/gjson v1.12.1
 )
 
