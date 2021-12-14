@@ -2,7 +2,7 @@ package apigee
 
 const (
 	defaultSubscriptionSchema = "apigee-subscription-schema"
-	appNameKey                = "appName"
+	appDisplayNameKey         = "appDisplayName"
 )
 
 // grantType values

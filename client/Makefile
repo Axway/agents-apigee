@@ -35,3 +35,6 @@ dep-sdk:
 update-sdk:
 	@echo "Updating SDK dependencies"
 	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@${version}"
+
+apigee-generate: ## generate apigee resources
+	./scripts/apigee_generate.sh

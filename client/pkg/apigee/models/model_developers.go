@@ -9,8 +9,7 @@
 
 package models
 
-// InlineObject struct for InlineObject
-type InlineObject struct {
-	// Value of attribute.
-	Value string `json:"value,omitempty"`
+// Developers List of developer details.
+type Developers struct {
+	Developer []Developer `json:"developer,omitempty"`
 }

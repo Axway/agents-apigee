@@ -1,5 +1,7 @@
 package apigee
 
+import "github.com/Axway/agents-apigee/client/pkg/apigee/models"
+
 const (
 	defaultSubscriptionSchema = "apigee-subscription-schema"
 	appNameKey                = "appName"
@@ -12,6 +14,11 @@ const (
 	password grantType = iota
 	refresh
 )
+
+var ApigeeAgentAttribute = models.Attribute{
+	Name:  "createdBy",
+	Value: "apigee-agent",
+}
 
 func (g grantType) String() string {
 	return [...]string{"password", "refresh_token"}[g]
