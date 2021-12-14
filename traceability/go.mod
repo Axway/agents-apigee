@@ -6,7 +6,7 @@ go 1.16
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.12-0.20211210140325-e5d172937b72
+	github.com/Axway/agent-sdk v1.1.12-0.20211214184939-292ad20674c5
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/Shopify/sarama v1.26.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect

@@ -15,10 +15,18 @@ dep:
 	@go mod tidy
 	@echo "Package dependencies completed"
 
+dep-branch:
+	@make sdk=`git branch --show-current` dep-version
+
+dep-version:
+	@export version=$(sdk) && make update-sdk && make dep
+
+dep-sdk: 
+	@make sdk=main dep-version
+
 update-sdk:
 	@echo "Updating SDK dependencies"
 	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@main"
-
 
 ${WORKSPACE}/apigee_traceability_agent: dep
 	@export time=`date +%Y%m%d%H%M%S` && \
