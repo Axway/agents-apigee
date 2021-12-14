@@ -4,12 +4,12 @@ apigee_traceability_agent:
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}
-    loggly:
-      organization: ${APIGEE_LOGGLY_ORGANIZATION}
-      apitoken: ${APIGEE_LOGGLY_APITOKEN}
-      customertoken: ${APIGEE_LOGGLY_CUSTOMERTOKEN}
-      host: ${APIGEE_LOGGLY_HOST:logs-01.loggly.com}
-      port: ${APIGEE_LOGGLY_PORT:514}
+  loggly:
+    organization: ${LOGGLY_ORGANIZATION}
+    apitoken: ${LOGGLY_APITOKEN}
+    customertoken: ${LOGGLY_CUSTOMERTOKEN}
+    host: ${LOGGLY_HOST:logs-01.loggly.com}
+    port: ${LOGGLY_PORT:514}
   # Defines how often an event is sent to the output
   central:
     url: "${CENTRAL_URL:https://apicentral.axway.com}"

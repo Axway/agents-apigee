@@ -1,0 +1,75 @@
+name: Build Apigee discovery agent
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  buildDiscoveryAgent:
+    env:
+      GOFLAGS: "-mod=mod"
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/discovery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Build discovery agent
+        working-directory: discovery
+        run: make build
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: discovery/bin/apigee_discovery_agent
+          asset_name: apigee_discovery_agent
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Apigee Discovery Agent - ${{ github.ref }}"
+
+  buildTraceabilityAgent:
+    env:
+      GOFLAGS: "-mod=mod"
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/traceability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Build traceability agent
+        working-directory: traceability
+        run: make build
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: traceability/bin/apigee_traceability_agent
+          asset_name: apigee_traceability_agent
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Apigee Traceability Agent - ${{ github.ref }}"
+
+      - name: Upload release yaml
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: traceability/apigee_traceability_agent.yml
+          asset_name: apigee_traceability_agent.yml
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
