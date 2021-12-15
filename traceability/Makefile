@@ -1,14 +1,25 @@
-.PHONY: all dep test lint build 
+.PHONY: all dep test lint build
 
 WORKSPACE ?= $$(pwd)
 
-GO_PKG_LIST := $(shell go list ./... | grep -v /vendor/)
+GO_PKG_LIST := $(shell go list ./...)
 
 export GOFLAGS := -mod=mod
 export GOPRIVATE := git.ecd.axway.org
 
 lint:
 	@golint -set_exit_status ${GO_PKG_LIST}
+
+all: clean package
+	@echo "Done"
+
+clean:
+	@rm -rf ./bin/
+	@mkdir -p ./bin
+	@echo "Clean complete"
+
+dep-check:
+	@go mod verify
 
 dep:
 	@echo "Resolving go package dependencies"
@@ -28,6 +39,14 @@ update-sdk:
 	@echo "Updating SDK dependencies"
 	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@${version}"
 
+test: dep
+	@go vet ${GO_PKG_LIST}
+	@go test -race -v -short -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST}
+
+test-sonar: dep
+	@go vet ${GO_PKG_LIST}
+	@go test -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
+
 ${WORKSPACE}/apigee_traceability_agent: dep
 	@export time=`date +%Y%m%d%H%M%S` && \
 	export version=`cat version` && \
@@ -40,6 +59,7 @@ ${WORKSPACE}/apigee_traceability_agent: dep
 		-ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
+				-X 'github.com/Axway/agent-sdk/pkg/cmd.SDKBuildVersion=$${sdk_version}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeTraceabilityAgent'" \
 		-a -o ${WORKSPACE}/bin/apigee_traceability_agent ${WORKSPACE}/main.go
 
