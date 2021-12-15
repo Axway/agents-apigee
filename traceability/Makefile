@@ -26,7 +26,7 @@ dep-sdk:
 
 update-sdk:
 	@echo "Updating SDK dependencies"
-	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@main"
+	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@${version}"
 
 ${WORKSPACE}/apigee_traceability_agent: dep
 	@export time=`date +%Y%m%d%H%M%S` && \
