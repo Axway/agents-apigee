@@ -121,24 +121,17 @@ func (a *Agent) processSubscribe(sub apic.Subscription) {
 	apiKey := createdApp.Credentials[0].ConsumerKey
 
 	// success
-	// sub.UpdateState(apic.SubscriptionActive, "Successfully processed the subscription")
+	sub.UpdateState(apic.SubscriptionActive, "Successfully subscribed")
 
 	// send notification
 	a.sendSubscriptionNotification(sub, apiKey, apic.SubscriptionActive, "")
-	return
 }
 
 func (a *Agent) processUnsubscribe(sub apic.Subscription) {
 	log.Tracef("received unsubscribe event for subscription id %s", sub.GetID())
-	apiAttributes := sub.GetRemoteAPIAttributes()
-	c := cache.GetCache()
-	api, err := cache.GetCache().Get(apiAttributes[catalogIDKey])
-	_ = c
-	_ = api
-	_ = err
 
-	// get product by name
+	// delete the application using the subscription id
+	a.apigeeClient.RemoveDeveloperApp(sub.GetID(), a.apigeeClient.GetDeveloperID())
 
-	// get app by name
-	return
+	sub.UpdateState(apic.SubscriptionUnsubscribed, "Successfully unsubscribed")
 }

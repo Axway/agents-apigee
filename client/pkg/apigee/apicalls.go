@@ -79,6 +79,18 @@ func (a *ApigeeClient) putRequest(url string, data []byte) (*coreapi.Response, e
 	return a.apiClient.Send(request)
 }
 
+func (a *ApigeeClient) deleteRequest(url string) (*coreapi.Response, error) {
+	// create the put request
+	request := coreapi.Request{
+		Method:  coreapi.DELETE,
+		URL:     url,
+		Headers: a.defaultHeaders(),
+	}
+
+	// return the api response
+	return a.apiClient.Send(request)
+}
+
 //GetDevelopers - get the list of developers for the org
 func (a *ApigeeClient) GetDevelopers() []string {
 	// Get the developers
@@ -141,6 +153,20 @@ func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.D
 	}
 
 	return &devApp, err
+}
+
+//RemoveDeveloperApp - create an app for the developer
+func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
+	// create a new developer app
+	response, err := a.deleteRequest(fmt.Sprintf(orgURL+"developers/%s/apps/%s", a.cfg.Organization, developerID, appName))
+	if err != nil {
+		return err
+	}
+	if response.Code != http.StatusOK {
+		return fmt.Errorf("received an unexpected response code %d from Apigee when deleting the app", response.Code)
+	}
+
+	return nil
 }
 
 //GetProducts - get the list of products for the org
