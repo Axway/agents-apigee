@@ -17,7 +17,7 @@ type ApiProxyRevision struct {
 	// Revision number, app name, and organization for the API proxy.
 	ContextInfo string `json:"contextInfo,omitempty"`
 	// Time when the API proxy revision was created in milliseconds since epoch.
-	CreatedAt int32 `json:"createdAt,omitempty"`
+	CreatedAt int `json:"createdAt,omitempty"`
 	// Email address of developer that created the API proxy revision.
 	CreatedBy string `json:"createdBy,omitempty"`
 	// Description of the API proxy revision.
@@ -26,7 +26,7 @@ type ApiProxyRevision struct {
 	DisplayName                string                                     `json:"displayName,omitempty"`
 	EntityMetaDataAsProperties ApiProxyRevisionEntityMetaDataAsProperties `json:"entityMetaDataAsProperties,omitempty"`
 	// Time when the API proxy version was last modified in millisenconds since epoch.
-	LastModifiedAt int32 `json:"lastModifiedAt,omitempty"`
+	LastModifiedAt int `json:"lastModifiedAt,omitempty"`
 	// Email address of developer that last modified the API proxy.
 	LastModifiedBy string `json:"lastModifiedBy,omitempty"`
 	// Manifest version.

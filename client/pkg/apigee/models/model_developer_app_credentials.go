@@ -20,9 +20,9 @@ type DeveloperAppCredentials struct {
 	// Consumer secret.
 	ConsumerSecret string `json:"consumerSecret,omitempty"`
 	// Time the credentials expire in milliseconds since epoch.
-	ExpiresAt int32 `json:"expiresAt,omitempty"`
+	ExpiresAt int `json:"expiresAt,omitempty"`
 	// Time the credentials were issued in milliseconds since epoch.
-	IssuedAt int32 `json:"issuedAt,omitempty"`
+	IssuedAt int `json:"issuedAt,omitempty"`
 	// OAuth scopes.
 	Scopes []string `json:"scopes,omitempty"`
 	// Status of the credentials.

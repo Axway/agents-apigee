@@ -21,7 +21,7 @@ type AgentConfig struct {
 
 // Agent - Represents the Gateway client
 type Agent struct {
-	cfg          *config.ApigeeConfig
+	cfg          *AgentConfig
 	apigeeClient *apigee.ApigeeClient
 	pollInterval time.Duration
 	stopChan     chan struct{}
@@ -29,16 +29,16 @@ type Agent struct {
 }
 
 // NewAgent - Creates a new Agent
-func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
-	apigeeClient, err := apigee.NewClient(apigeeCfg)
+func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
+	apigeeClient, err := apigee.NewClient(agentCfg.ApigeeCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	newAgent := &Agent{
 		apigeeClient: apigeeClient,
-		cfg:          apigeeCfg,
-		pollInterval: apigeeCfg.GetPollInterval(),
+		cfg:          agentCfg,
+		pollInterval: agentCfg.ApigeeCfg.GetPollInterval(),
 		stopChan:     make(chan struct{}),
 	}
 
@@ -68,7 +68,7 @@ func (a *Agent) registerJobs() error {
 
 	// create the portals/portal poller job and register it
 	portals := newPollPortalsJob(a.apigeeClient, newPortalChan, removedPortalChan)
-	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
+	jobs.RegisterIntervalJobWithName(portals, a.pollInterval, "Poll Portals")
 
 	// create the channel for the portal api jobs to handler communication
 	processAPIChan := make(chan *apigee.APIDocData)

@@ -17,7 +17,7 @@ type SharedFlowRevision struct {
 	// Revision number, app name, and organization for the shared flow.
 	ContextInfo string `json:"contextInfo,omitempty"`
 	// Time when the shared flow revision was created in milliseconds since epoch.
-	CreatedAt int32 `json:"createdAt,omitempty"`
+	CreatedAt int `json:"createdAt,omitempty"`
 	// Email address of developer that created the shared flow.
 	CreatedBy string `json:"createdBy,omitempty"`
 	// Description of the shared flow.
@@ -26,7 +26,7 @@ type SharedFlowRevision struct {
 	DisplayName                string                                       `json:"displayName,omitempty"`
 	EntityMetaDataAsProperties SharedFlowRevisionEntityMetaDataAsProperties `json:"entityMetaDataAsProperties,omitempty"`
 	// Time when the shared flow version was last modified in milliseconds since epoch.
-	LastModifiedAt int32 `json:"lastModifiedAt,omitempty"`
+	LastModifiedAt int `json:"lastModifiedAt,omitempty"`
 	// Email address of developer that last modified the shared flow.
 	LastModifiedBy string `json:"lastModifiedBy,omitempty"`
 	// Manifest version of the bundle.

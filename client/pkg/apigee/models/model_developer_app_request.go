@@ -18,7 +18,7 @@ type DeveloperAppRequest struct {
 	// Callback URL used by OAuth 2.0 authorization servers to communicate authorization codes back to apps. See the OAuth 2.0 documentation for more details.
 	CallbackUrl string `json:"callbackUrl,omitempty"`
 	// Lifetime of the consumer key that will be generated for the developer app, in milliseconds. The default value, `-1`, indicates an infinite validity period. Once set, the expiration can't be updated.
-	KeyExpiresIn int32 `json:"keyExpiresIn,omitempty"`
+	KeyExpiresIn int `json:"keyExpiresIn,omitempty"`
 	// Name of the developer app. Required when creating a developer app; not required when updating a developer app.   The name is used to uniquely identify the app for this organization and developer. Names must begin with an alphanumeric character and can contain letters, numbers, spaces, and the following characters: `. _ # - $ %`. While you can use spaces in the name, we recommend that you use camel case, underscores, or hyphens instead. Otherwise, you will have to URL-encode the app name when you need to include it in the URL of other Edge API calls. See the <a href=\"https://docs.apigee.com/api-platform/reference/naming-guidelines\">naming restrictions</a>.
 	Name string `json:"name"`
 	// Scopes to apply to the app. The specified scope names must already exist on the API product that you associate with the app.

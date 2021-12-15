@@ -111,7 +111,7 @@ func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Develop
 	data, _ := json.Marshal(newDev)
 	response, err := a.postRequest(fmt.Sprintf(orgURL+"developers", a.cfg.Organization), data)
 	if err != nil {
-
+		return nil, err
 	}
 	developer := models.Developer{}
 	err = json.Unmarshal(response.Body, &developer)
@@ -123,12 +123,24 @@ func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Develop
 }
 
 //CreateDeveloperApp - create an app for the developer
-func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) error {
-	// Get the developers
+func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
+	// create a new developer app
 	data, _ := json.Marshal(newApp)
-	_, err := a.postRequest(fmt.Sprintf(orgURL+"developers/%s/apps", a.cfg.Organization, newApp.DeveloperId), data)
+	response, err := a.postRequest(fmt.Sprintf(orgURL+"developers/%s/apps", a.cfg.Organization, newApp.DeveloperId), data)
+	if err != nil {
+		return nil, err
+	}
+	if response.Code != http.StatusCreated {
+		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when creating the app", response.Code)
+	}
 
-	return err
+	devApp := models.DeveloperApp{}
+	err = json.Unmarshal(response.Body, &devApp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &devApp, err
 }
 
 //GetProducts - get the list of products for the org
@@ -209,7 +221,11 @@ func (a *ApigeeClient) GetImageWithURL(imageURL, portalURL string) (string, stri
 //GetSpecContent - get the spec content for an api product
 func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 	// Get the spec content file
-	response, _ := a.getRequest(fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID))
+	response, err := a.getRequest(fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID))
+
+	if err != nil {
+		return []byte{}
+	}
 
 	return response.Body
 }

@@ -12,11 +12,11 @@ package models
 // SharedFlowMetadata Shared flow metadata.
 type SharedFlowMetadata struct {
 	// Time when the shared flow was created in milliseconds since epoch.
-	CreatedAt int32 `json:"createdAt,omitempty"`
+	CreatedAt int `json:"createdAt,omitempty"`
 	// Email address of developer that created the shared flow.
 	CreatedBy string `json:"createdBy,omitempty"`
 	// Time when the shared flow was last modified in milliseconds since epoch.
-	LastModifiedAt int32 `json:"lastModifiedAt,omitempty"`
+	LastModifiedAt int `json:"lastModifiedAt,omitempty"`
 	// Email address of developer that last modified the shared flow.
 	LastModifiedBy string `json:"lastModifiedBy,omitempty"`
 }

@@ -1,9 +1,12 @@
 package apigee
 
 import (
+	"fmt"
+
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/cache"
+	"github.com/Axway/agent-sdk/pkg/notify"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
@@ -30,6 +33,36 @@ func (a *Agent) handleSubscriptions() {
 	agent.GetCentralClient().GetSubscriptionManager().RegisterProcessor(apic.SubscriptionApproved, a.processSubscribe)
 	agent.GetCentralClient().GetSubscriptionManager().RegisterProcessor(apic.SubscriptionUnsubscribeInitiated, a.processUnsubscribe)
 	// agent.GetCentralClient().GetSubscriptionManager().RegisterValidator(a.validateSubscription)
+}
+
+func (a *Agent) sendSubscriptionNotification(subscription apic.Subscription, key string, newState apic.SubscriptionState, message string) {
+	// Verify that at least 1 notification type was set.  If none was set, then do not attempt to gather user info or send notification
+	if len(a.cfg.CentralCfg.GetSubscriptionConfig().GetNotificationTypes()) == 0 {
+		log.Debug("No subscription notifications are configured.")
+		return
+	}
+
+	catalogItemName, _ := agent.GetCentralClient().GetCatalogItemName(subscription.GetCatalogItemID())
+
+	createdUserID := subscription.GetCreatedUserID()
+
+	recipient, err := agent.GetCentralClient().GetUserEmailAddress(createdUserID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	catalogItemURL := fmt.Sprintf(a.cfg.CentralCfg.GetURL()+"/catalog/explore/%s", subscription.GetCatalogItemID())
+	subNotif := notify.NewSubscriptionNotification(recipient, message, newState)
+	subNotif.SetCatalogItemInfo(subscription.GetCatalogItemID(), catalogItemName, catalogItemURL)
+	subNotif.SetAPIKeyInfo(key, "apikey")
+
+	// force to apikey, since that is the only auth type available
+	subNotif.SetAuthorizationTemplate(notify.Apikeys)
+
+	err = subNotif.NotifySubscriber(recipient)
+	if err != nil {
+		return
+	}
 }
 
 func (a *Agent) processSubscribe(sub apic.Subscription) {
@@ -74,18 +107,24 @@ func (a *Agent) processSubscribe(sub apic.Subscription) {
 		Name:        sub.GetID(),
 	}
 
-	err = a.apigeeClient.CreateDeveloperApp(newApp)
+	createdApp, err := a.apigeeClient.CreateDeveloperApp(newApp)
 	if err != nil {
 		log.Errorf("error attempting to create an app %s (%s): %s", displayName, sub.GetID(), err.Error())
 		sub.UpdateState(apic.SubscriptionFailedToSubscribe, "Could not process the subscription, contact the administrator")
 		return
 	}
+	if len(createdApp.Credentials) < 1 {
+		log.Errorf("error getting credentials from new app %s (%s)", displayName, sub.GetID())
+		sub.UpdateState(apic.SubscriptionFailedToSubscribe, "Could not process the subscription, contact the administrator")
+		return
+	}
+	apiKey := createdApp.Credentials[0].ConsumerKey
 
 	// success
-	sub.UpdateState(apic.SubscriptionActive, "Successfully processed the subscription")
+	// sub.UpdateState(apic.SubscriptionActive, "Successfully processed the subscription")
 
 	// send notification
-
+	a.sendSubscriptionNotification(sub, apiKey, apic.SubscriptionActive, "")
 	return
 }
 

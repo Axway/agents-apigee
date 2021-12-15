@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	gatewayType  = "APIGEE"
+	gatewayType  = "Apigee"
 	catalogIDKey = "PortalCatalogID"
 )
 
