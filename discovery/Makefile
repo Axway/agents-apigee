@@ -66,7 +66,7 @@ ${WORKSPACE}/discovery_agent:
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.SDKBuildVersion=$${sdk_version}' \
-				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEEDiscoveryAgent'" \
+				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeDiscoveryAgent'" \
 		-a -o ${WORKSPACE}/bin/apigee_discovery_agent ${WORKSPACE}/main.go
 
 build: dep ${WORKSPACE}/discovery_agent	

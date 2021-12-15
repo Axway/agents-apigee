@@ -36,7 +36,7 @@ ${WORKSPACE}/apigee_traceability_agent: dep
 		-ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
-				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEETraceabilityAgent'" \
+				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeTraceabilityAgent'" \
 		-a -o ${WORKSPACE}/bin/apigee_traceability_agent ${WORKSPACE}/main.go
 
 build:${WORKSPACE}/apigee_traceability_agent
