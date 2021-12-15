@@ -31,7 +31,11 @@ update-sdk:
 ${WORKSPACE}/apigee_traceability_agent: dep
 	@export time=`date +%Y%m%d%H%M%S` && \
 	export version=`cat version` && \
-	export commit_id=`git rev-parse --short HEAD` && \
+	export commit_id=`cat commit_id` && \
+	export sdk_version=`go list -m github.com/Axway/agent-sdk | awk '{print $$2}' | awk -F'-' '{print substr($$1, 2)}'` && \
+	export GOOS=linux && \
+	export CGO_ENABLED=0 && \
+	export GOARCH=amd64 && \
 	go build -tags static_all \
 		-ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
 				-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
