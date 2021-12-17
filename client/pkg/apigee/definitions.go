@@ -1,6 +1,8 @@
 package apigee
 
-import "github.com/Axway/agents-apigee/client/pkg/apigee/models"
+import (
+	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+)
 
 const (
 	defaultSubscriptionSchema = "apigee-subscription-schema"
@@ -71,39 +73,4 @@ type PortalData struct {
 	DefaultURL           string `json:"defaultURL"`
 	CurrentURL           string `json:"currentURL"`
 	CurrentDomain        string `json:"currentDomain"`
-}
-
-// APIDocDataResponse
-type APIDocDataResponse struct {
-	Status    string        `json:"status"`
-	Message   string        `json:"message"`
-	Code      string        `json:"code"`
-	ErrorCode string        `json:"error_code"`
-	RequestID string        `json:"request_id"`
-	Data      []*APIDocData `json:"data"`
-}
-
-// APIDocData - the data returned from teh call to get portal apis
-type APIDocData struct {
-	ID               int     `json:"id"`
-	PortalID         string  `json:"siteId"`
-	Title            string  `json:"title"`
-	Description      string  `json:"description"`
-	APIID            string  `json:"apiId"`
-	ProductName      string  `json:"edgeAPIProductName"`
-	SpecContent      string  `json:"specContent"`
-	SpecTitle        string  `json:"specTitle"`
-	SpecID           string  `json:"specId"`
-	ProductExists    bool    `json:"productExists"`
-	Modified         int     `json:"modified"`
-	SnapshotModified int     `json:"snapshotModified"`
-	ImageURL         *string `json:"imageUrl"`
-	CategoryIds      []int   `json:"categoryIds"`
-	Visibility       bool    `json:"visibility"`
-	PortalTitle      string
-}
-
-// SetPortalTitle - set the portal title in the api doc data
-func (a *APIDocData) SetPortalTitle(title string) {
-	a.PortalTitle = title
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
-	"github.com/tidwall/gjson"
 )
 
 const (
@@ -145,13 +144,12 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic
 	sb, err := apic.NewServiceBodyBuilder().
 		SetID(newAPI.ProductName).
 		SetAPIName(newAPI.ProductName).
-		SetStage(newAPI.PortalTitle).
+		SetStage(newAPI.GetPortalTitle()).
 		SetStageDescriptor("Portal").
 		SetDescription(newAPI.Description).
 		SetAPISpec(spec).
 		SetImage(image).
 		SetImageContentType(imageContentType).
-		SetAuthPolicy(j.determineAuthPolicyFromSpec(spec)).
 		SetState(state).
 		SetStatus(state).
 		SetTitle(newAPI.Title).
@@ -173,6 +171,10 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 
 	serviceBodyHash, _ := coreutil.ComputeHash(*serviceBody)
 
+	// add auth info to cached api for subscriptions
+	newAPI.SetAPIKeyInfo(serviceBody.GetAPIKeyInfo())
+	newAPI.SetSecurityPolicies(serviceBody.GetAuthPolicies())
+
 	// Check DiscoveryCache for API
 	if !agent.IsAPIPublishedByID(newAPI.ProductName) {
 		// call new API
@@ -190,7 +192,7 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	// update the cache
 	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
 	cache.GetCache().SetWithSecondaryKey(cacheKey, strconv.Itoa(newAPI.ID), *newAPI)
-	cache.GetCache().SetSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.PortalTitle, newAPI.ProductName))
+	cache.GetCache().SetSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.GetPortalTitle(), newAPI.ProductName))
 }
 
 func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
@@ -227,39 +229,4 @@ func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
 
 	// remove from the cache
 	cache.GetCache().DeleteBySecondaryKey(removedAPIID)
-}
-
-func (j *newPortalAPIHandler) determineAuthPolicyFromSpec(swagger []byte) string {
-	// Check for a security definition in the PAS spec
-	var authPolicy = apic.Passthrough
-	const (
-		apiKey = "apiKey"
-		oauth  = "oauth2"
-	)
-
-	// OAS2
-	securityDefs := gjson.GetBytes(swagger, "securityDefinitions.*.type")
-	for _, def := range securityDefs.Array() {
-		if def.String() == apiKey {
-			authPolicy = apic.Apikey
-			return authPolicy
-		}
-		if def.String() == oauth {
-			authPolicy = apic.Oauth
-		}
-	}
-
-	// OAS3
-	securityDefs = gjson.GetBytes(swagger, "components.securitySchemes.*.type")
-	for _, def := range securityDefs.Array() {
-		if def.String() == apiKey {
-			authPolicy = apic.Apikey
-			return authPolicy
-		}
-		if def.String() == oauth {
-			authPolicy = apic.Oauth
-		}
-	}
-
-	return authPolicy
 }

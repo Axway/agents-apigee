@@ -35,7 +35,7 @@ func (a *Agent) handleSubscriptions() {
 	// agent.GetCentralClient().GetSubscriptionManager().RegisterValidator(a.validateSubscription)
 }
 
-func (a *Agent) sendSubscriptionNotification(subscription apic.Subscription, key string, newState apic.SubscriptionState, message string) {
+func (a *Agent) sendSubscriptionNotification(subscription apic.Subscription, api apigee.APIDocData, key, secret string, newState apic.SubscriptionState, message string) {
 	// Verify that at least 1 notification type was set.  If none was set, then do not attempt to gather user info or send notification
 	if len(a.cfg.CentralCfg.GetSubscriptionConfig().GetNotificationTypes()) == 0 {
 		log.Debug("No subscription notifications are configured.")
@@ -54,10 +54,13 @@ func (a *Agent) sendSubscriptionNotification(subscription apic.Subscription, key
 	catalogItemURL := fmt.Sprintf(a.cfg.CentralCfg.GetURL()+"/catalog/explore/%s", subscription.GetCatalogItemID())
 	subNotif := notify.NewSubscriptionNotification(recipient, message, newState)
 	subNotif.SetCatalogItemInfo(subscription.GetCatalogItemID(), catalogItemName, catalogItemURL)
-	subNotif.SetAPIKeyInfo(key, "apikey")
-
-	// force to apikey, since that is the only auth type available
-	subNotif.SetAuthorizationTemplate(notify.Apikeys)
+	if api.HasAPIKey() {
+		subNotif.SetAuthorizationTemplate(notify.Apikeys)
+		subNotif.SetAPIKeyInfoAndLocation(key, api.GetAPIKeyInfo()[0].Name, api.GetAPIKeyInfo()[0].Location)
+	}
+	if api.HasOauth() {
+		subNotif.SetOauthInfo(key, secret)
+	}
 
 	err = subNotif.NotifySubscriber(recipient)
 	if err != nil {
@@ -66,6 +69,8 @@ func (a *Agent) sendSubscriptionNotification(subscription apic.Subscription, key
 }
 
 func (a *Agent) processSubscribe(sub apic.Subscription) {
+	// TODO: add rollback handling
+
 	log.Tracef("received subscribe event for subscription id %s", sub.GetID())
 	apiAttributes := sub.GetRemoteAPIAttributes()
 
@@ -118,13 +123,14 @@ func (a *Agent) processSubscribe(sub apic.Subscription) {
 		sub.UpdateState(apic.SubscriptionFailedToSubscribe, "Could not process the subscription, contact the administrator")
 		return
 	}
-	apiKey := createdApp.Credentials[0].ConsumerKey
+	key := createdApp.Credentials[0].ConsumerKey
+	secret := createdApp.Credentials[0].ConsumerSecret
 
 	// success
 	sub.UpdateState(apic.SubscriptionActive, "Successfully subscribed")
 
 	// send notification
-	a.sendSubscriptionNotification(sub, apiKey, apic.SubscriptionActive, "")
+	a.sendSubscriptionNotification(sub, api, key, secret, apic.SubscriptionActive, "")
 }
 
 func (a *Agent) processUnsubscribe(sub apic.Subscription) {

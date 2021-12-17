@@ -7,9 +7,9 @@ go 1.16
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.13-0.20211214195614-7f46c1019c8a
+	github.com/Axway/agent-sdk v1.1.13-0.20211216153644-a8561a02d710
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
-	github.com/tidwall/gjson v1.12.1
+	github.com/tidwall/gjson v1.12.1 // indirect
 )
 
 replace (
