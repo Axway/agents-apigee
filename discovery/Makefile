@@ -48,6 +48,7 @@ test-sonar: dep
 	@go test -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 
 ${WORKSPACE}/discovery_agent: dep
+	@echo ${WORKSPACE}
 	@export time=`date +%Y%m%d%H%M%S` && \
 	export version=`cat version` && \
 	export commit_id=`cat commit_id` && \
@@ -67,5 +68,5 @@ build: ${WORKSPACE}/discovery_agent
 	@echo "Build complete"
 
 docker-build:
-	@docker build -t apigee-discovery-agent:latest -f ${WORKSPACE}/docker/Dockerfile .
+	@docker build -t apigee-discovery-agent:latest -f ${WORKSPACE}/docker/Dockerfile ../
 	@echo "Docker build complete"
