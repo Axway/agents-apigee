@@ -1,26 +1,46 @@
 # Build image
-# golang:1.16.2-alpine3.13 linux/amd64
-FROM docker.io/golang@sha256:12d5f94cd4d2840e538e82e26a5dfddf711b30cc98a9f6e01bcf65d7aaf7ccd8 as builder
+# golang:1.16.12-alpine3.15 linux/amd64
+FROM docker.io/golang@sha256:2fe2a23a4d219139bf3e0cdffdefe3588dd25c2e6af7517de27169aab6f5cc26 as builder
 
-RUN mkdir -p /go/src/github.com/Axway/agents-apigee/discovery
-
-WORKDIR /go/src/github.com/Axway/agents-apigee/discovery
-
-# Copy necessary files
-COPY . . 
+ENV GOFLAGS "-mod=mod"
 
 RUN apk --no-cache update && \
   apk --no-cache add -U bash build-base git
 
-RUN make build
+ENV BASEPATH=/go/src/github.com/Axway/agents-apigee
+ENV AGENT=${BASEPATH}/discovery
+
+RUN mkdir -p ${BASEPATH}
+
+WORKDIR ${BASEPATH}
+
+# Copy necessary files
+COPY . .
+
+WORKDIR ${AGENT}
+
+RUN export time=`date +%Y%m%d%H%M%S` && \
+  export version=`cat version` && \
+  export commit_id=`git rev-parse --short HEAD` && \
+  export sdk_version=`go list -m github.com/Axway/agent-sdk | awk '{print $2}' | awk -F'-' '{print substr($1, 2)}'` && \
+  export GOOS=linux && \
+  export CGO_ENABLED=0 && \
+  export GOARCH=amd64 && \
+  go build -tags static_all \
+  -ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=${time}' \
+  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=${version}' \
+  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=${commit_id}' \
+  -X 'github.com/Axway/agent-sdk/pkg/cmd.SDKBuildVersion=${sdk_version}' \
+  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeDiscoveryAgent'" \
+  -a -o ${AGENT}/bin/apigee_discovery_agent ${AGENT}/main.go
 
 # Create non-root user
 RUN addgroup -g 2500 axway && adduser -u 2500 -D -G axway axway
 RUN chown -R axway:axway /go/src/github.com/Axway/agents-apigee/discovery/bin/apigee_discovery_agent
 USER axway
 
-# alpine 3.13.2
-FROM docker.io/alpine@sha256:4661fb57f7890b9145907a1fe2555091d333ff3d28db86c3bb906f6a2be93c87
+# alpine 3.15.0
+FROM docker.io/alpine@sha256:e7d88de73db3d3fd9b2d63aa7f447a10fd0220b7cbf39803c803f2af9ba256b3
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd

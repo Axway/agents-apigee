@@ -67,5 +67,5 @@ build:${WORKSPACE}/apigee_traceability_agent
 	@echo "Build complete"
 
 docker-build:
-	@docker build -t apigee-traceability-agent:latest -f ${WORKSPACE}/docker/Dockerfile .
+	@docker build -t apigee-traceability-agent:latest -f ${WORKSPACE}/docker/Dockerfile ..
 	@echo "Docker build complete"
