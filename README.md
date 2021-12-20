@@ -15,7 +15,7 @@ In this section we'll:
 
 ### Create an environment in Central
 
-* Log into [Amplify Central](https://apicentral.axwya.com)
+* Log into [Amplify Central](https://apicentral.axway.com)
 * Navigate to "Topology" then "Environments"
 * Click "+ Environment"
   * Select a name
@@ -30,13 +30,17 @@ openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits: 20
 openssl rsa -in private_key.pem -pubout -out public_key.pem
 ```
 
-* Log into [Amplify Central](https://apicentral.axwya.com)
-* Navigate to "Access" then "Service Accounts"
+* Log into the [Amplify Platform](https://platform.axway.com)
+* Navigate to "Organization" then "Service Accounts"
 * Click "+ Service Account"
   * Select a name
-  * Copy and Paste the public key created with the openssl command
+  * Optionally add a description
+  * Select "Client Certificate"
+  * Select "Provide public key"
+  * Select or paste the contents of the public_key.pem file
+  * Select "Central admin"
   * Click "Save"
-* Note the DOSA_XXXXX value, this and the key files will be needed for the agents
+* Note the Client ID value, this and the key files will be needed for the agents
 
 ## Prepare Apigee
 
