@@ -3,8 +3,6 @@ name: Build Apigee Discovery Agent
 on:
   push:
     branches: [main, "APIGOV-*"]
-  pull_request:
-    branches: [main]
 
 jobs:
   testDiscoveryAgent:
