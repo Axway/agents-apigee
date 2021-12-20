@@ -12,13 +12,13 @@ package models
 // Environment Environment details.
 type Environment struct {
 	// Output only. Time the environment was created in milliseconds since epoch.
-	CreatedAt int32 `json:"createdAt,omitempty"`
+	CreatedAt int `json:"createdAt,omitempty"`
 	// Output only. Email address of the admin that created the environment.
 	CreatedBy string `json:"createdBy,omitempty"`
 	// Description of the environment.
 	Description string `json:"description,omitempty"`
 	// Output only. Time the environment was last modified in milliseconds since epoch.
-	LastModifiedAt int32 `json:"lastModifiedAt,omitempty"`
+	LastModifiedAt int `json:"lastModifiedAt,omitempty"`
 	// Output only. Email of admin that last modified the environment.
 	LastModifiedBy string `json:"lastModifiedBy,omitempty"`
 	// Name of the environment. Valid characters include: `a-zA-Z0-9._\\-$ %`.

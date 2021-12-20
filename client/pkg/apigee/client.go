@@ -14,6 +14,7 @@ type ApigeeClient struct {
 	cfg          *config.ApigeeConfig
 	apiClient    coreapi.Client
 	accessToken  string
+	developerID  string
 	pollInterval time.Duration
 	envToURLs    map[string][]string
 	isReady      bool
@@ -27,6 +28,7 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 		pollInterval: apigeeCfg.GetPollInterval(),
 		envToURLs:    make(map[string][]string),
 		isReady:      false,
+		developerID:  "",
 	}
 
 	// create the auth job and register it
@@ -39,6 +41,16 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 func (a *ApigeeClient) setAccessToken(token string) {
 	a.accessToken = token
 	a.isReady = true
+}
+
+//SetDeveloperID - set the developer id to be used when creating apps
+func (a *ApigeeClient) SetDeveloperID(id string) {
+	a.developerID = id
+}
+
+//GetDeveloperID - get the developer id to be used when creating apps
+func (a *ApigeeClient) GetDeveloperID() string {
+	return a.developerID
 }
 
 //GetConfig - return the apigee client config

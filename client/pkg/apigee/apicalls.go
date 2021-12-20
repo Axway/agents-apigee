@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
@@ -46,6 +47,11 @@ func (a *ApigeeClient) getRequestWithQuery(url string, queryParams map[string]st
 	return a.apiClient.Send(request)
 }
 
+func (a *ApigeeClient) postRequest(url string, data []byte) (*coreapi.Response, error) {
+	// return the api response
+	return a.postRequestWithQuery(url, map[string]string{}, data)
+}
+
 func (a *ApigeeClient) postRequestWithQuery(url string, queryParams map[string]string, data []byte) (*coreapi.Response, error) {
 	// create the post request
 	request := coreapi.Request{
@@ -53,6 +59,7 @@ func (a *ApigeeClient) postRequestWithQuery(url string, queryParams map[string]s
 		URL:         url,
 		Headers:     a.defaultHeaders(),
 		QueryParams: queryParams,
+		Body:        data,
 	}
 
 	// return the api response
@@ -70,6 +77,96 @@ func (a *ApigeeClient) putRequest(url string, data []byte) (*coreapi.Response, e
 
 	// return the api response
 	return a.apiClient.Send(request)
+}
+
+func (a *ApigeeClient) deleteRequest(url string) (*coreapi.Response, error) {
+	// create the put request
+	request := coreapi.Request{
+		Method:  coreapi.DELETE,
+		URL:     url,
+		Headers: a.defaultHeaders(),
+	}
+
+	// return the api response
+	return a.apiClient.Send(request)
+}
+
+//GetDevelopers - get the list of developers for the org
+func (a *ApigeeClient) GetDevelopers() []string {
+	// Get the developers
+	response, _ := a.getRequest(fmt.Sprintf(orgURL+"developers", a.cfg.Organization))
+	developers := []string{}
+	json.Unmarshal(response.Body, &developers)
+
+	return developers
+}
+
+//GetDeveloper - get the developer by email
+func (a *ApigeeClient) GetDeveloper(devEmail string) (*models.Developer, error) {
+	// Get the developers
+	response, err := a.getRequest(fmt.Sprintf(orgURL+"developers/%s", a.cfg.Organization, strings.ToLower(devEmail)))
+	if err != nil {
+		return nil, err
+	}
+	developer := models.Developer{}
+	err = json.Unmarshal(response.Body, &developer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &developer, err
+}
+
+//CreateDeveloper - get the list of developers for the org
+func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Developer, error) {
+	// Get the developers
+	data, _ := json.Marshal(newDev)
+	response, err := a.postRequest(fmt.Sprintf(orgURL+"developers", a.cfg.Organization), data)
+	if err != nil {
+		return nil, err
+	}
+	developer := models.Developer{}
+	err = json.Unmarshal(response.Body, &developer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &developer, err
+}
+
+//CreateDeveloperApp - create an app for the developer
+func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
+	// create a new developer app
+	data, _ := json.Marshal(newApp)
+	response, err := a.postRequest(fmt.Sprintf(orgURL+"developers/%s/apps", a.cfg.Organization, newApp.DeveloperId), data)
+	if err != nil {
+		return nil, err
+	}
+	if response.Code != http.StatusCreated {
+		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when creating the app", response.Code)
+	}
+
+	devApp := models.DeveloperApp{}
+	err = json.Unmarshal(response.Body, &devApp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &devApp, err
+}
+
+//RemoveDeveloperApp - create an app for the developer
+func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
+	// create a new developer app
+	response, err := a.deleteRequest(fmt.Sprintf(orgURL+"developers/%s/apps/%s", a.cfg.Organization, developerID, appName))
+	if err != nil {
+		return err
+	}
+	if response.Code != http.StatusOK {
+		return fmt.Errorf("received an unexpected response code %d from Apigee when deleting the app", response.Code)
+	}
+
+	return nil
 }
 
 //GetProducts - get the list of products for the org
@@ -150,7 +247,11 @@ func (a *ApigeeClient) GetImageWithURL(imageURL, portalURL string) (string, stri
 //GetSpecContent - get the spec content for an api product
 func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 	// Get the spec content file
-	response, _ := a.getRequest(fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID))
+	response, err := a.getRequest(fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID))
+
+	if err != nil {
+		return []byte{}
+	}
 
 	return response.Body
 }

@@ -12,11 +12,11 @@ package models
 // ApiProxyMetaData API proxy metadata.
 type ApiProxyMetaData struct {
 	// Time when the API proxy was created in milliseconds since epoch.
-	CreatedAt int32 `json:"createdAt,omitempty"`
+	CreatedAt int `json:"createdAt,omitempty"`
 	// Email address of developer that created the API proxy.
 	CreatedBy string `json:"createdBy,omitempty"`
 	// Time when the API proxy was last modified in milliseconds since epoch.
-	LastModifiedAt int32 `json:"lastModifiedAt,omitempty"`
+	LastModifiedAt int `json:"lastModifiedAt,omitempty"`
 	// Email address of developer that last modified the API proxy.
 	LastModifiedBy string `json:"lastModifiedBy,omitempty"`
 	// Set to `null`.

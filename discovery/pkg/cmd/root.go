@@ -3,6 +3,7 @@ package cmd
 import (
 	corecmd "github.com/Axway/agent-sdk/pkg/cmd"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
+	"github.com/Axway/agent-sdk/pkg/notify"
 
 	"github.com/Axway/agents-apigee/client/pkg/config"
 
@@ -11,7 +12,7 @@ import (
 
 // RootCmd - Agent root command
 var RootCmd corecmd.AgentRootCmd
-var apigeeConfig *config.ApigeeConfig
+var agentConfig *apigee.AgentConfig
 
 func init() {
 	// Create new root command with callbacks to initialize the agent config and command execution.
@@ -31,7 +32,7 @@ func init() {
 
 // Callback that agent will call to process the execution
 func run() error {
-	apigeeClient, err := apigee.NewAgent(apigeeConfig)
+	apigeeClient, err := apigee.NewAgent(agentConfig)
 	if err == nil {
 		apigeeClient.AgentRunning()
 	}
@@ -43,16 +44,10 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
-	apigeeConfig = config.ParseConfig(rootProps)
-
-	agentConfig := apigee.AgentConfig{
+	agentConfig = &apigee.AgentConfig{
 		CentralCfg: centralConfig,
-		ApigeeCfg:  apigeeConfig,
+		ApigeeCfg:  config.ParseConfig(rootProps),
 	}
+	notify.SetSubscriptionConfig(centralConfig.GetSubscriptionConfig())
 	return agentConfig, nil
-}
-
-// GetAgentConfig - Returns the agent config
-func GetAgentConfig() *config.ApigeeConfig {
-	return apigeeConfig
 }

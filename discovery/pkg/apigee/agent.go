@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
-	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/jobs"
@@ -22,23 +21,24 @@ type AgentConfig struct {
 
 // Agent - Represents the Gateway client
 type Agent struct {
-	cfg          *config.ApigeeConfig
+	cfg          *AgentConfig
 	apigeeClient *apigee.ApigeeClient
 	pollInterval time.Duration
 	stopChan     chan struct{}
+	devCreated   bool
 }
 
 // NewAgent - Creates a new Agent
-func NewAgent(apigeeCfg *config.ApigeeConfig) (*Agent, error) {
-	apigeeClient, err := apigee.NewClient(apigeeCfg)
+func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
+	apigeeClient, err := apigee.NewClient(agentCfg.ApigeeCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	newAgent := &Agent{
 		apigeeClient: apigeeClient,
-		cfg:          apigeeCfg,
-		pollInterval: apigeeCfg.GetPollInterval(),
+		cfg:          agentCfg,
+		pollInterval: agentCfg.ApigeeCfg.GetPollInterval(),
 		stopChan:     make(chan struct{}),
 	}
 
@@ -68,7 +68,7 @@ func (a *Agent) registerJobs() error {
 
 	// create the portals/portal poller job and register it
 	portals := newPollPortalsJob(a.apigeeClient, newPortalChan, removedPortalChan)
-	jobs.RegisterIntervalJobWithName(portals, a.cfg.GetPollInterval(), "Poll Portals")
+	jobs.RegisterIntervalJobWithName(portals, a.pollInterval, "Poll Portals")
 
 	// create the channel for the portal api jobs to handler communication
 	processAPIChan := make(chan *apigee.APIDocData)
@@ -82,9 +82,11 @@ func (a *Agent) registerJobs() error {
 	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, processAPIChan, removedAPIChan)
 	jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
 
-	// create job that gets the developers
+	// create job that creates the developer profile used by the agent
+	jobs.RegisterSingleRunJobWithName(newCreateDeveloperJob(a.apigeeClient, a.apigeeClient.SetDeveloperID), "Create Developer")
 
-	// create job that gets the apps
+	// create job that start the subscription manager
+	jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
 
 	return nil
 }
@@ -114,39 +116,11 @@ func (a *Agent) apiValidator(productName, portalName string) bool {
 	return true
 }
 
-// registerSubscriptionSchema - create a subscription schema on Central
-func (a *Agent) registerSubscriptionSchema() {
-	apic.NewSubscriptionSchemaBuilder(agent.GetCentralClient()).
-		SetName(defaultSubscriptionSchema).
-		AddProperty(apic.NewSubscriptionSchemaPropertyBuilder().
-			SetName(appNameKey).
-			SetRequired().
-			IsString()).
-		Register()
+// setDeveloperCreated - once the developer creation job runs and sets that it is created
+func (a *Agent) setDeveloperCreated() {
+	a.devCreated = true
 }
 
-// handleSubscriptions - setup all things necessary to handle subscriptions from Central
-func (a *Agent) handleSubscriptions() {
-	a.registerSubscriptionSchema()
-
-	agent.GetCentralClient().GetSubscriptionManager()
-
-	agent.GetCentralClient().GetSubscriptionManager().RegisterProcessor(apic.SubscriptionApproved, a.processSubscribe)
-	// agent.GetCentralClient().GetSubscriptionManager().RegisterProcessor(apic.SubscriptionUnsubscribeInitiated, a.processUnsubscribe)
-	// agent.GetCentralClient().GetSubscriptionManager().RegisterValidator(a.validateSubscription)
-	agent.GetCentralClient().GetSubscriptionManager().Start()
-}
-
-func (a *Agent) processSubscribe(sub apic.Subscription) {
-	apiAttributes := sub.GetRemoteAPIAttributes()
-	c := cache.GetCache()
-	api, err := cache.GetCache().Get(apiAttributes[catalogIDKey])
-	_ = c
-	_ = api
-	_ = err
-
-	// get product by name
-
-	// get app by name
-	return
+func (a *Agent) isDevCreated() bool {
+	return a.devCreated
 }

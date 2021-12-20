@@ -18,7 +18,7 @@ type ApiProduct struct {
 	// Array of attributes that may be used to extend the default API product profile with customer-specific metadata. With Edge for Public Cloud, you can specify a maximum of 18 attributes. Use this property to specify the access level of the API product as either `public`, `private`, or `internal`. Only products marked `public` are available to developers in the Apigee developer portal. For example, you can set a product to `internal` while it is in development and then change access to `public` when it is ready to release on the portal. API products marked as `private` do not appear on the portal but can be accessed by external developers.  For monetization, you can use the attributes field to: * <a href=\"https://docs.apigee.com/api-platform/monetization/create-transaction-recording-policy#spectrpsuccessapi\">Specify transaction success criteria</a> * <a href=\"https://docs.apigee.com/api-platform/monetization/create-transaction-recording-policy#spectrpcaapi\">Specify custom attributes</a> on which you base rate plan charges</a>
 	Attributes []Attribute `json:"attributes,omitempty"`
 	// Output only. Creation date specified as milliseconds since epoch.
-	CreatedAt int32 `json:"createdAt,omitempty"`
+	CreatedAt int `json:"createdAt,omitempty"`
 	// Output only. Email address of the user that created the API product.
 	CreatedBy string `json:"createdBy,omitempty"`
 	// Description of the API product. Include key information about the API product.
@@ -28,7 +28,7 @@ type ApiProduct struct {
 	// Comma-separated list of environment names to which the API product is bound. Requests to environments that are not listed are rejected. By specifying one or more environments, you can bind the resources listed in the API product to a specific environment, preventing developers from accessing those resources through API proxies deployed in another environment. This setting is used, for example, to prevent resources associated with API proxies in `prod` from being accessed by API proxies deployed in `test`.
 	Environments []string `json:"environments,omitempty"`
 	// Output only. Last modified date specified as milliseconds since epoch.
-	LastModifiedAt int32 `json:"lastModifiedAt,omitempty"`
+	LastModifiedAt int `json:"lastModifiedAt,omitempty"`
 	// Output only. Email address of the user that last modified the API product.
 	LastModifiedBy string `json:"lastModifiedBy,omitempty"`
 	// Internal name of the API Product. Valid characters include: `A-Z0-9._\\-$ %`.  **Note**: The name is required when creating an API product. It cannot be edited when <a href=\"/docs/api-products/1/routes/organizations/%7Borg_name%7D/apiproducts/%7Bapiproduct_name%7D/put\">updating the API product</a>.

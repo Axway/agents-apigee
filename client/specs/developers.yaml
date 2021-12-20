@@ -1,0 +1,661 @@
+openapi: 3.0.0
+servers:
+  - url: https://api.enterprise.apigee.com/v1
+info:
+  title: Developers API
+  description: >-
+    Developers must register with an organization on Apigee Edge. After they are registered, developers register their apps,
+    choose the APIs they want to use, and receive the unique API credentials (consumer keys and secrets) needed to access your APIs.
+  version: "1.0"
+security:
+  - Basic: []
+  - OAuth: []
+paths:
+  "/organizations/{org_name}/developers":
+    get:
+      tags: ["Developer"]
+      summary: List developers
+      description: >-
+        Lists all developers in an organization by email address. This call does not list any company developers who are a part of the organization.
+
+
+        To get the developers associated with a specific app, specify the name of the app using the `app` query parameter.
+
+
+        With Apigee Edge for Public Cloud:
+
+
+        * The limit on the number of developers returned is 1000.
+
+        * Paginate the list of developers returned using the `startKey` and `count` query parameters.
+
+      operationId: listDevelopers
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/count"
+        - $ref: "#/components/parameters/startKey"
+        - $ref: "#/components/parameters/app"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      type: string
+                  - $ref: "#/components/schemas/Developers"
+              example:
+                - developer1
+                - developer2
+        "400":
+          description: Bad request
+    post:
+      tags: ["Developer"]
+      summary: Create developer
+      description: >-
+        Creates a profile for a developer in an organization. After the developer is created, they can register an app and receive an API key.
+
+
+        The developer is always created with a status of `active`. To set the status explicitly, use the <a href="/docs/developers/1/routes/organizations/%7Borg_name%7D/developers/%7Bdeveloper_email%7D/post">Set developer status API</a>.
+
+
+        When creating a developer, you can define one or more monetization attributes as custom attributes. For more information about the monetization attributes, see <a href="https://docs.apigee.com/api-platform/publish/adding-developers-your-api-product#monetization-attributes">Configuring monetization attributes</a>. For example:
+
+
+
+        ```
+
+        {
+          "email" : "developer_email",
+          "firstName" : "first_name",
+          "lastName" : "last_name",
+          "userName" : "user_name",
+          "attributes" : [{
+             "name": "MINT_BILLING_TYPE",
+             "value": "one of PREPAID | POSTPAID"
+          }]
+        }
+
+        ```
+
+      operationId: createDeveloper
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Developer"
+              example:
+                apps:
+                  - app1
+                  - app2
+                companies: []
+                email: ahamilton@example.com
+                developerId: 4707ceee-1234-abcd
+                firstName: Alex
+                lastName: Hamilton
+                userName: ahamilton@example.com
+                organizationName: myorg
+                status: active
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                createdAt: 1486474235912
+                createdBy: admin@example.com
+                lastModifiedAt: 1486474783590
+                lastModifiedBy: admin@example.com
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer details.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperRequest"
+            example:
+              email: ahamilton@example.com
+              firstName: Alex
+              lastName: Hamilton
+              userName: ahamilton@example.com
+              attributes:
+                - name: ADMIN_EMAIL
+                  value: admin@example.com
+  "/organizations/{org_name}/developers/{developer_email}":
+    get:
+      tags: ["Developer"]
+      summary: Get developer
+      description: >-
+        Gets the profile for a developer by email address. With Apigee Edge for Public Cloud, the response includes only the first 100 apps.
+      operationId: getDeveloper
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Developer"
+              example:
+                apps:
+                  - app1
+                  - app2
+                companies: []
+                email: ahamilton@example.com
+                developerId: 4707ceee-1234-abcd
+                firstName: Alex
+                lastName: Hamilton
+                userName: ahamilton@example.com
+                organizationName: myorg
+                status: active
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                createdAt: 1486474235912
+                createdBy: admin@example.com
+                lastModifiedAt: 1486474783590
+                lastModifiedBy: admin@example.com
+        "400":
+          description: Bad request
+    delete:
+      tags: ["Developer"]
+      summary: Delete developer
+      description: >-
+        Deletes a developer from an organization. All apps and API keys associated with the developer are also removed from the organization.
+
+
+        **Note**: To avoid permanently deleting developers and their artifacts, consider deactivating developers instead using the <a href="/docs/developers/1/routes/organizations/%7Borg_name%7D/developers/%7Bdeveloper_email%7D/post">Set developer status API</a>.
+
+
+        With Apigee Edge for Public Cloud, deletion of the developer and associated artifacts happens asynchronously. The developer is deleted immediately, but the resources associated with that developer, such as apps, may take anywhere from a few seconds to a few minutes to be deleted.
+      operationId: deleteDeveloper
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Developer"
+              example:
+                apps:
+                  - app1
+                  - app2
+                companies: []
+                email: ahamilton@example.com
+                developerId: 4707ceee-1234-abcd
+                firstName: Alex
+                lastName: Hamilton
+                userName: ahamilton@example.com
+                organizationName: myorg
+                status: active
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                createdAt: 1486474235912
+                createdBy: admin@example.com
+                lastModifiedAt: 1486474783590
+                lastModifiedBy: admin@example.com
+        "400":
+          description: Bad request
+    post:
+      tags: ["Developer"]
+      summary: Set developer status
+      description: >-
+        Sets a developer's status to `active` or `inactive` for a specific organization. Run this API for each organization where you want to change the developer's status.
+
+
+        By default, the status of a developer is set to `active`. If you set a developer's status to `inactive`, the API keys assigned to the developer's apps are no longer valid even though keys continue to show a status of "Approved". Inactive developers can still sign in to the developer portal and create apps; however, the new keys that get created won't be valid until the developer is set to `active`.
+
+
+        The HTTP status code for success is: `204 No Content`
+      operationId: setDeveloperStatus
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/action"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad request
+    put:
+      tags: ["Developer"]
+      summary: Update developer
+      description: >-
+        Update an existing developer profile.
+
+
+        To add new values or update existing values, submit the new or updated portion of the developer profile along with the rest of the existing developer profile, even if no values are changing.
+
+
+        To delete attributes from a developer profile, submit the entire profile without the attributes that you want to delete.
+
+
+        **Apigee Edge for Public Cloud only**: OAuth access tokens and Key Management Service (KMS) entities (apps, developers, and API products) are cached for 180 seconds (current default). Any custom attributes associated with these entities also get cached for at least 180 seconds after the entity is accessed at runtime. Therefore, an ExpiresIn element on the OAuthV2 policy won't be able to expire an access token in less than 180 seconds.
+      operationId: updateDeveloper
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Developer"
+              example:
+                apps:
+                  - app1
+                  - app2
+                companies: []
+                email: ahamilton@example.com
+                developerId: 4707ceee-1234-abcd
+                firstName: Alex
+                lastName: Hamilton
+                userName: ahamilton@example.com
+                organizationName: myorg
+                status: active
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                createdAt: 1486474235912
+                createdBy: admin@example.com
+                lastModifiedAt: 1486474783590
+                lastModifiedBy: admin@example.com
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer details.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperRequest"
+            example:
+              email: ahamilton@example.com
+              firstName: Alex
+              lastName: Hamilton
+              userName: ahamilton@example.com
+              attributes:
+                - name: ADMIN_EMAIL
+                  value: admin@example.com
+  "/organizations/{org_name}/developers/{developer_email}/attributes":
+    get:
+      tags: ["Developer"]
+      summary: Get developer attributes
+      description: >-
+        Gets developer attributes and their values.
+      operationId: getDeveloperAttributes
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attributes"
+              example:
+                attribute:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+        "400":
+          description: Bad request
+    post:
+      tags: ["Developer"]
+      summary: Update developer attributes
+      description: >-
+        Updates or creates developer attributes.
+
+
+        This API replaces the current list of attributes with the attributes specified in the request body. This lets you update existing attributes, add new attributes, or delete existing attributes by omitting them from the request body.
+
+
+        **Apigee Edge for Public Cloud only**: OAuth access tokens and Key Management Service (KMS) entities (apps, developers, and API products) are cached for 180 seconds (current default). Any custom attributes associated with these entities also get cached for at least 180 seconds after the entity is accessed at runtime. Therefore, an ExpiresIn element on the OAuthV2 policy won't be able to expire an access token in less than 180 seconds.
+      operationId: updateDeveloperAttributes
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attributes"
+              example:
+                attribute:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer attributes.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Attributes"
+            example:
+              attribute:
+                - name: ADMIN_EMAIL
+                  value: admin@example.com
+  ? "/organizations/{org_name}/developers/{developer_email}/attributes/{attribute_name}"
+  : get:
+      tags: ["Developer"]
+      summary: Get developer attribute
+      description: >-
+        Gets the value of a developer attribute.
+      operationId: getDeveloperAttribute
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/attribute_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribute"
+              example:
+                name: ADMIN_EMAIL
+                value: admin@example.com
+        "400":
+          description: Bad request
+    delete:
+      tags: ["Developer"]
+      summary: Delete developer attribute
+      description: >-
+        Deletes a developer attribute.
+      operationId: deleteDeveloperAttribute
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/attribute_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribute"
+              example:
+                name: ADMIN_EMAIL
+                value: admin@example.com
+        "400":
+          description: Bad request
+    post:
+      tags: ["Developer"]
+      summary: Update developer attribute
+      description: >-
+        Update the value of a developer attribute.
+
+
+        **Apigee Edge for Public Cloud only**: OAuth access tokens and Key Management Service (KMS) entities (apps, developers, and API products) are cached for 180 seconds (current default). Any custom attributes associated with these entities also get cached for at least 180 seconds after the entity is accessed at runtime. Therefore, an ExpiresIn element on the OAuthV2 policy won't be able to expire an access token in less than 180 seconds.
+      operationId: updateDeveloperAttribute
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/attribute_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribute"
+              example:
+                name: ADMIN_EMAIL
+                value: admin@example.com
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer attribute.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: Value of attribute.
+            example:
+              value: admin@example.com
+components:
+  securitySchemes:
+    Basic:
+      type: http
+      scheme: basic
+    OAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+  parameters:
+    org_name:
+      in: path
+      name: org_name
+      required: true
+      schema:
+        type: string
+      description: Organization name.
+    developer_email:
+      in: path
+      name: developer_email
+      required: true
+      schema:
+        type: string
+      description: Email address for the developer.
+    attribute_name:
+      in: path
+      name: attribute_name
+      required: true
+      schema:
+        type: string
+      description: Name of the attribute.
+    action:
+      in: query
+      name: action
+      required: true
+      schema:
+        type: string
+      description: Status of developer. Set to `active` or `inactive`.
+    app:
+      in: query
+      name: app
+      required: false
+      schema:
+        type: string
+      description: Name of the app for which you want to return associated developers.
+    count:
+      in: query
+      name: count
+      required: false
+      schema:
+        type: integer
+      description: >-
+        **Apigee Edge for Public Cloud only**. Number of developers to return in the API call. The limit is 1000. Use with the `startKey` parameter to provide more targeted filtering.
+    expand:
+      in: query
+      name: expand
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Flag that specifies whether to view expanded details for each developer. Set to `true` to view expanded details. Defaults to `false`.
+    startKey:
+      in: query
+      name: startKey
+      required: false
+      schema:
+        type: string
+      description: >-
+        **Apigee Edge for Public Cloud only**. Email of a developer from which to start displaying the list of developers.
+
+
+        For example, if the an unfiltered list returns:
+
+
+        ```
+
+        westley@example.com
+
+        fezzik@example.com
+
+        buttercup@example.com
+
+        ```
+
+
+        If your `startKey` is `fezzik@example.com`, the returned list will be:
+
+
+        ```
+
+        fezzik@example.com
+
+        buttercup@example.com
+
+        ```
+  schemas:
+    Developers:
+      description: List of developer details.
+      type: object
+      properties:
+        developer:
+          type: array
+          items:
+            $ref: "#/components/schemas/Developer"
+      example:
+        developer:
+          - apps:
+              - app1
+              - app2
+            companies: []
+            email: ahamilton@example.com
+            developerId: 4707ceee-1234-abcd
+            firstName: Alex
+            lastName: Hamilton
+            userName: ahamilton@example.com
+            organizationName: myorg
+            status: active
+            attributes:
+              - name: ADMIN_EMAIL
+                value: admin@example.com
+            createdAt: 1486474235912
+            createdBy: admin@example.com
+            lastModifiedAt: 1486474783590
+            lastModifiedBy: admin@excample.com
+    Developer:
+      description: Developer details.
+      type: object
+      properties:
+        apps:
+          description: >-
+            Output only. List of apps associated with the developer.
+          type: array
+          items:
+            type: string
+        attributes:
+          description: >-
+            List of attributes that can be used to extend the default developer profile. With Apigee Edge for Public Cloud, the custom attribute limit is 18.
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+        companies:
+          description: >-
+            Output only. List of companies associated with the developer.
+          type: array
+          items:
+            type: string
+        createdAt:
+          format: int
+          description: Output only. Time the developer was created in milliseconds since epoch.
+          type: integer
+        createdBy:
+          description: Output only. Email address of the developer that created the developer.
+          type: string
+        developerId:
+          description: >-
+            ID of the developer. Generated internally by Apigee and not guaranteed to stay consistent over time.
+          type: string
+        email:
+          description: >-
+            Email address of the developer. This value is used to uniquely identify the developer in Apigee Edge.
+          type: string
+        firstName:
+          description: First name of the developer.
+          type: string
+        lastName:
+          description: Last name of the developer.
+          type: string
+        lastModifiedAt:
+          format: int
+          description: Output only. Last modified time as milliseconds since epoch.
+          type: integer
+        lastModifiedBy:
+          description: Output only. Email of developer that last modified the app.
+          type: string
+        organizationName:
+          description: Output only. Name of the organization associated with the developer.
+          type: string
+        status:
+          description: Status of the developer. Valid values are `active` and `inactive`.
+        userName:
+          description: Username. Not used by Apigee.
+          type: string
+    DeveloperRequest:
+      description: Developer request.
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+        - userName
+      properties:
+        attributes:
+          description: >-
+            List of attributes that can be used to extend the default developer profile. With Apigee Edge for Public Cloud, the custom attribute limit is 18.
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+        email:
+          description: >-
+            Email address of the developer. This value is used to uniquely identify the developer in Apigee Edge.
+          type: string
+        firstName:
+          description: First name of the developer.
+          type: string
+        lastName:
+          description: Last name of the developer.
+          type: string
+        userName:
+          description: Username. Not used by Apigee.
+          type: string
+    Attributes:
+      description: Developer attributes.
+      type: object
+      properties:
+        attribute:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+    Attribute:
+      description: Developer attribute name and value.
+      type: object
+      properties:
+        name:
+          description: Name of attribute.
+          type: string
+        value:
+          description: Value of attribute.
+          type: string

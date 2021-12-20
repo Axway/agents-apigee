@@ -12,7 +12,7 @@ package models
 // ApiProxyRevisionConfigurationVersion Version of the API proxy configuration schema to which this API proxy conforms. This setting may be used in the future to track the evolution of the API proxy format.
 type ApiProxyRevisionConfigurationVersion struct {
 	// Major version of the API proxy configuration schema. The only supported value is '4'.
-	MajorVersion int32 `json:"majorVersion,omitempty"`
+	MajorVersion int `json:"majorVersion,omitempty"`
 	// Minor version of the API proxy configuration schema. The only supported value is '0'.
-	MinorVersion int32 `json:"minorVersion,omitempty"`
+	MinorVersion int `json:"minorVersion,omitempty"`
 }

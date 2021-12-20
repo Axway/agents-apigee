@@ -1,0 +1,897 @@
+openapi: 3.0.0
+servers:
+  - url: https://api.enterprise.apigee.com/v1
+info:
+  title: Developer apps API
+  description: >-
+    Manage developers that register apps.
+  version: "1.0"
+security:
+  - Basic: []
+  - OAuth: []
+paths:
+  "/organizations/{org_name}/developers/{developer_email}/apps":
+    post:
+      tags: ["Developer", "Developer App"]
+      summary: Create developer app
+      description: >-
+        Creates an app associated with a developer, associates the app with an API product, and auto-generates an API key for the app to use in calls to API proxies inside the API product.
+
+
+        The name is the unique ID of the app that you can use in Edge API calls. The `DisplayName` (set with an attribute) is what appears in the Edge UI. If you don't provide a `DisplayName`, the name is used.
+
+
+        The `keyExpiresIn` property sets the expiration on the API key. If you don't set a value or set the value to `-1`, the API key never expires.
+
+
+        **Ensure optimal API product and app security**
+
+
+        An organization-level property, `features.keymanagement.disable.unbounded.permissions`, strengthens the security of API products in verifying API calls. When the property is set to `true`, the following features are enforced.
+
+
+        * **App creation**: When creating a developer or company app, the Edge API requires that the app be associated with an API product. (The Edge UI already enforces this.)
+
+
+
+        * **API product configuration**: To create or update an API product, the API product must include at least one API proxy or a resource path in its definition.
+
+
+        * **Runtime security**: API calls are rejected by an API product in the following situations:
+
+          * An API product doesn't include at least one API proxy or resource path. 
+
+          * If the `flow.resource.name` variable in the message doesn't include a resource path that the API product can evaluate.
+
+          * If the app making the API call isn't associated with an API product.
+
+
+        **Note:** Setting this organization property requires system administrator privileges. Edge for Private Cloud system administrators can add this property when <a href="/docs/organizations/1/routes/organizations/%7Borg_name%7D/post">updating organization properties</a>. If you are an Edge for Public Cloud user, contact Apigee Support to set the organization property.
+      operationId: "createDeveloperApp"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperApp"
+              example:
+                appFamily: default
+                appId: 123abc-456-def
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+                  - name: Notes
+                    value: "Notes for developer app"
+                  - name: MINT_BILLING_TYPE
+                    value: POSTPAID
+                callbackUrl: example.com
+                createdAt: 1568312504191
+                createdBy: ahamilton@example.com
+                credentials:
+                  - apiProducts:
+                      - apiproduct: myproduct
+                        status: approved
+                    attributes: []
+                    consumerKey: F91jQrfX6CKhyEheXFBL3gxxxxx
+                    consumerSecret: TLbUJFyzOlLxxxx
+                    expiresAt: -1
+                    issuedAt: 1568312504682
+                    scopes: []
+                    status: approved
+                developerId: 1234-abcd
+                lastModifiedAt: 1568313405903
+                lastModifiedBy: ahamilton@example.com
+                name: myapp
+                scopes: []
+                status: approved
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer app details.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperAppRequest"
+            example:
+              apiProducts: ["myProduct"]
+              attributes:
+                - name: ADMIN_EMAIL
+                  value: admin@example.com
+                - name: DisplayName
+                  value: "My App"
+                - name: Notes
+                  value: "Notes for developer app"
+                - name: MINT_BILLING_TYPE
+                  value: POSTPAID
+              callbackUrl: example.com
+              name: myapp
+              scopes: []
+              status: approved
+    get:
+      tags: ["Developer", "Developer App"]
+      summary: List developer apps
+      description: >-
+        Lists all apps created by a developer in an organization. Optionally, you can expand the response to include the profile for each app.
+
+
+        With Apigee Edge for Public Cloud:
+
+        * A maximum of 100 developer apps are returned per API call.
+
+        * You can paginate the list of developer apps returned using the `startKey` and `count` query parameters.
+      operationId: "listDeveloperApps"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/count"
+        - $ref: "#/components/parameters/startKey"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "400":
+          description: Bad request
+  "/organizations/{org_name}/developers/{developer_email}/apps/{app_name}":
+    get:
+      tags: ["Developer", "Developer App"]
+      summary: Get developer app details
+      description: >-
+        Gets the profile of a specific developer app.
+      operationId: "getDeveloperApp"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+        - $ref: "#/components/parameters/query"
+        - $ref: "#/components/parameters/entity"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperApp"
+              example:
+                appFamily: default
+                appId: 123abc-456-def
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+                  - name: Notes
+                    value: "Notes for developer app"
+                  - name: MINT_BILLING_TYPE
+                    value: POSTPAID
+                callbackUrl: example.com
+                createdAt: 1568312504191
+                createdBy: ahamilton@example.com
+                credentials:
+                  - apiProducts:
+                      - apiproduct: myproduct
+                        status: approved
+                    attributes: []
+                    consumerKey: F91jQrfX6CKhyEheXFBL3gxxxxx
+                    consumerSecret: TLbUJFyzOlLxxxx
+                    expiresAt: -1
+                    issuedAt: 1568312504682
+                    scopes: []
+                    status: approved
+                developerId: 1234-abcd
+                lastModifiedAt: 1568313405903
+                lastModifiedBy: ahamilton@example.com
+                name: myapp
+                scopes: []
+                status: approved
+        "400":
+          description: Bad request
+    put:
+      tags: ["Developer", "Developer App"]
+      summary: Update developer app
+      description: >-
+        Updates an existing developer app.
+
+        You can add an app to an API product with this API, which automatically generates an API key for the app to use when calling APIs in the product. (Alternatively, you can <a href="/docs/organizations/1/routes/organizations/%7Borg_name%7D/developers/%7Bdeveloper_email%7D/apps/%7app_name%7D/keys/%7Bconsumer_key%7D/post">add an API product to an existing key</a>.)
+
+
+        **Note**: You must include all current attribute, API product, and callback values in the payload along with any changes you want to make; otherwise, the existing values are removed. To display the current values, <a href="/docs/developer-apps/1/routes/organizations/%7Borg_name%7D/developers/%7Bdeveloper_email%7D/apps/%7Bapp_name%7D/get">get the developer app profile</a>. You cannot update the scopes associated with the app by using this API. Instead, use Update app scope API.
+
+
+        **Apigee Edge for Public Cloud only**: OAuth access tokens and Key Management Service (KMS) entities (apps, developers, and API products) are cached for 180 seconds (current default). Any custom attributes associated with these entities also get cached for at least 180 seconds after the entity is accessed at runtime. Therefore, an `ExpiresIn` element on the OAuthV2 policy won't be able to expire an access token in less than 180 seconds.
+      operationId: "udpateDeveloperApp"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperApp"
+              example:
+                appFamily: default
+                appId: 123abc-456-def
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+                  - name: Notes
+                    value: "Notes for developer app"
+                  - name: MINT_BILLING_TYPE
+                    value: POSTPAID
+                callbackUrl: example.com
+                createdAt: 1568312504191
+                createdBy: ahamilton@example.com
+                credentials:
+                  - apiProducts:
+                      - apiproduct: myproduct
+                        status: approved
+                    attributes: []
+                    consumerKey: F91jQrfX6CKhyEheXFBL3gxxxxx
+                    consumerSecret: TLbUJFyzOlLxxxx
+                    expiresAt: -1
+                    issuedAt: 1568312504682
+                    scopes: []
+                    status: approved
+                developerId: 1234-abcd
+                lastModifiedAt: 1568313405903
+                lastModifiedBy: ahamilton@example.com
+                name: myapp
+                scopes: []
+                status: approved
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer app details.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperAppRequest"
+            example:
+              apiProducts: ["myProduct"]
+              attributes:
+                - name: ADMIN_EMAIL
+                  value: admin@example.com
+                - name: DisplayName
+                  value: "My App"
+                - name: Notes
+                  value: "Notes for developer app"
+                - name: MINT_BILLING_TYPE
+                  value: POSTPAID
+              callbackUrl: example.com
+              name: myapp
+              scopes: []
+              status: approved
+    delete:
+      tags: ["Developer", "Developer App"]
+      summary: Delete developer app
+      description: >-
+        Deletes a developer app.
+
+
+        With Apigee Edge for Public Cloud, deletion of the developer app and associated artifacts happens asynchronously. The developer app is deleted immediately, but the resources associated with that developer app, such as app keys or access tokens, may take anywhere from a few seconds to a few minutes to be automatically deleted.
+      operationId: "deleteDeveloperApp"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperApp"
+              example:
+                appFamily: default
+                appId: 123abc-456-def
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+                  - name: Notes
+                    value: "Notes for developer app"
+                  - name: MINT_BILLING_TYPE
+                    value: POSTPAID
+                callbackUrl: example.com
+                createdAt: 1568312504191
+                createdBy: ahamilton@example.com
+                credentials:
+                  - apiProducts:
+                      - apiproduct: myproduct
+                        status: approved
+                    attributes: []
+                    consumerKey: F91jQrfX6CKhyEheXFBL3gxxxxx
+                    consumerSecret: TLbUJFyzOlLxxxx
+                    expiresAt: -1
+                    issuedAt: 1568312504682
+                    scopes: []
+                    status: approved
+                developerId: 1234-abcd
+                lastModifiedAt: 1568313405903
+                lastModifiedBy: ahamilton@example.com
+                name: myapp
+                scopes: []
+                status: approved
+        "400":
+          description: Bad request
+    post:
+      tags: ["Developer", "Developer App"]
+      summary: Approve, revoke, or generate API key for developer app
+      description: >-
+        Approves, revokes, or generates an API key for a developer app. 
+
+
+        To approve or revoke the API key for a developer app, set `status` to `approve` or `revoke` in the request body. 
+
+
+        **Note**: As a convenience, you can call the API with the `action` query parameter set to `approve` or `revoke` (with no request body) and set the `Content-type` header to `application/octet-stream`. In this case, the HTTP status code for success is: `204 No Content`
+
+
+        To generate a new consumer key and consumer secret for the developer app, pass the required details, such as API products, in the request body. Rather than replace an existing key, the API generates a new key. 
+
+
+        For example, if you're using API key rotation, you can generate new keys with expiration times that overlap keys that will be out of rotation when they expire. You might also generate a new key/secret if the security of the original key/secret is compromised. After the new API key is generated, multiple key pairs will be associated with a single app. Each key pair has an independent status (revoked or approved) and an independent expiration time. Any non-expired, approved key can be used in an API call. You should revoke an API key that has been compromised.
+
+
+        **Note**: You must include all current attribute and callback values in the payload; otherwise, the existing values are removed.
+
+
+        If you want to set the consumer key and consumer secret rather than having Edge generate them randomly, see <a href="https://docs.apigee.com/api-platform/publish/import-existing-consumer-keys-and-secrets">Import existing consumer keys and secrets</a>. (However, that API does not let you set an expiration time.)
+      operationId: "approveRevokeGenerateAPIKey"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperApp"
+              example:
+                appFamily: default
+                appId: 123abc-456-def
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+                  - name: Notes
+                    value: "Notes for developer app"
+                  - name: MINT_BILLING_TYPE
+                    value: POSTPAID
+                callbackUrl: example.com
+                createdAt: 1568312504191
+                createdBy: ahamilton@example.com
+                credentials:
+                  - apiProducts:
+                      - apiproduct: myproduct
+                        status: approved
+                    attributes: []
+                    consumerKey: F91jQrfX6CKhyEheXFBL3gxxxxx
+                    consumerSecret: TLbUJFyzOlLxxxx
+                    expiresAt: -1
+                    issuedAt: 1568312504682
+                    scopes: []
+                    status: approved
+                developerId: 1234-abcd
+                lastModifiedAt: 1568313405903
+                lastModifiedBy: ahamilton@example.com
+                name: myapp
+                scopes: []
+                status: approved
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer app details.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperApp"
+              example:
+                appFamily: default
+                appId: 123abc-456-def
+                attributes:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+                  - name: Notes
+                    value: "Notes for developer app"
+                  - name: MINT_BILLING_TYPE
+                    value: POSTPAID
+                callbackUrl: example.com
+                createdAt: 1568312504191
+                createdBy: ahamilton@example.com
+                credentials:
+                  - apiProducts:
+                      - apiproduct: myproduct
+                        status: approved
+                    attributes: []
+                    consumerKey: F91jQrfX6CKhyEheXFBL3gxxxxx
+                    consumerSecret: TLbUJFyzOlLxxxx
+                    expiresAt: -1
+                    issuedAt: 1568312504682
+                    scopes: []
+                    status: approved
+                developerId: 1234-abcd
+                lastModifiedAt: 1568313405903
+                lastModifiedBy: ahamilton@example.com
+                name: myapp
+                scopes: []
+                status: approved
+  ? "/organizations/{org_name}/developers/{developer_email}/apps/{app_name}/attributes"
+  : post:
+      tags: ["Developer", "Developer App"]
+      summary: Update app attributes
+      description: >-
+        Updates app attributes.
+
+
+        This API replaces the current list of attributes with the attributes specified in the request body. This lets you update existing attributes, add new attributes, or delete existing attributes by omitting them from the request body.
+
+
+        **Apigee Edge for Public Cloud only**: OAuth access tokens and Key Management Service (KMS) entities (apps, developers, and API products) are cached for 180 seconds (current default). Any custom attributes associated with these entities also get cached for at least 180 seconds after the entity is accessed at runtime. Therefore, an `ExpiresIn` element on the OAuthV2 policy won't be able to expire an access token in less than 180 seconds.
+      operationId: "updateDeveloperAppAttributes"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attributes"
+              example:
+                attribute:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer app attributes.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Attributes"
+            example:
+              attribute:
+                - name: ADMIN_EMAIL
+                  value: admin@example.com
+                - name: DisplayName
+                  value: "My App"
+    get:
+      tags: ["Developer", "Developer App"]
+      summary: Get developer app attributes
+      description: >-
+        Gets developer app attributes and their values.
+      operationId: "getDeveloperAppAttributes"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attributes"
+              example:
+                attribute:
+                  - name: ADMIN_EMAIL
+                    value: admin@example.com
+                  - name: DisplayName
+                    value: "My App"
+        "400":
+          description: Bad request
+  ? "/organizations/{org_name}/developers/{developer_email}/apps/{app_name}/attributes/{attribute_name}"
+  : post:
+      tags: ["Developer", "Developer App"]
+      summary: Update an App Attribute
+      description: >-
+        Updates a developer app attribute. 
+
+
+        **Apigee Edge for Public Cloud only**: OAuth access tokens and Key Management Service (KMS) entities (apps, developers, and API products) are cached for 180 seconds (current default). Any custom attributes associated with these entities also get cached for at least 180 seconds after the entity is accessed at runtime. Therefore, an `ExpiresIn` element on the OAuthV2 policy won't be able to expire an access token in less than 180 seconds.
+      operationId: "updateDeveloperAppAttribute"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+        - $ref: "#/components/parameters/attribute_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribute"
+              example:
+                name: DisplayName
+                value: "My App"
+        "400":
+          description: Bad request
+      requestBody:
+        description: Developer app attribute.
+        content:
+          application/json:
+            schema:
+              properties:
+                value:
+                  type: string
+                  description: Value of attribute.
+            example:
+              name: DisplayName
+              value: "MyApp"
+    delete:
+      tags: ["Developer", "Developer App"]
+      summary: Delete app attribute
+      description: >-
+        Deletes a developer app attribute.
+      operationId: "deleteDeveloperAppAttribute"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+        - $ref: "#/components/parameters/attribute_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribute"
+              example:
+                name: DisplayName
+                value: "My App"
+        "400":
+          description: Bad request
+    get:
+      tags: ["Developer", "Developer App"]
+      summary: Get developer app attribute
+      description: Gets a developer app attribute.
+      operationId: "getDeveloperAppAttribute"
+      parameters:
+        - $ref: "#/components/parameters/org_name"
+        - $ref: "#/components/parameters/developer_email"
+        - $ref: "#/components/parameters/app_name"
+        - $ref: "#/components/parameters/attribute_name"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribute"
+              example:
+                name: DisplayName
+                value: "My App"
+        "400":
+          description: Bad request
+components:
+  securitySchemes:
+    Basic:
+      type: http
+      scheme: basic
+      description: >-
+        Multi-factor authentication is not supported.
+    OAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    org_name:
+      in: path
+      name: org_name
+      required: true
+      schema:
+        type: string
+      description: Organization name.
+    developer_email:
+      in: path
+      name: developer_email
+      required: true
+      schema:
+        type: string
+      description: Email address for the developer.
+    app_name:
+      in: path
+      name: app_name
+      required: true
+      schema:
+        type: string
+      description: Name of the application.
+    attribute_name:
+      in: path
+      name: attribute_name
+      required: true
+      schema:
+        type: string
+      description: Name of the attribute.
+    count:
+      in: query
+      name: count
+      required: false
+      schema:
+        type: integer
+      description: >-
+        **Apigee Edge for Public Cloud only**. Number of developer apps to return in the API call. The limit is 100. Use with the `startKey` parameter to provide more targeted filtering.
+    keyStatus:
+      in: query
+      name: keyStatus
+      required: false
+      schema:
+        type: string
+      description: >-
+        **Apigee Edge for Private Cloud only**. Filter list to apps with specific key status. Valid values
+        include `approved`, `pending`, or `revoked`.
+    expand:
+      in: query
+      name: expand
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Flag that specifies whether to view expanded details for each app. Set to `true` to view expanded details. Defaults to `false`. Not applicable if you use the `count` or `startKey` query parameters.
+    startKey:
+      in: query
+      name: startKey
+      required: false
+      schema:
+        type: string
+      description: >-
+        **Apigee Edge for Public Cloud only**. ID of the app from which to start displaying the list of apps.
+
+
+        For example, if the unfiltered list includes the following app names:
+
+
+        ```
+
+        "developerApp1",
+
+        "developerApp2",
+
+        "developerApp3"
+
+        ```
+
+
+        If you set the `startKey` to `developerApp2`, the list will include:
+
+
+        ```
+
+        "developerApp2",
+
+        "developerApp3"
+
+        ```
+    query:
+      in: query
+      name: query
+      required: false
+      schema:
+        type: string
+      description: >-
+        **Apigee Edge for Private Cloud**: Set to `count` and use in conjuction with 
+        `entity` to return number of API resources that have been approved for access by a developer app.
+    entity:
+      in: query
+      name: entity
+      required: false
+      schema:
+        type: string
+      description: >-
+        **Apigee Edge for Private Cloud**: Set to `apiresources` and use in conjuction with `count` to return number of API resources that have been approved for access by a developer app.
+  schemas:
+    DeveloperApp:
+      description: Developer app details.
+      type: object
+      required:
+        - name
+      properties:
+        appFamily:
+          description: Output only. App family.
+          type: string
+        apiProducts:
+          description: List of API products to which the app is associated (when creating or updating an app). The name of the API product is the name returned when you <a href="/docs/api-products/1/routes/organizations/%7Borg_name%7D/apiproducts/get">list API products</a>. For example, if the Display Name of the API product in the Edge UI is `Premium API Product`, then the name is `premium-api-product` (all lowercase with spaces replaced by hyphens). You can add API products later when you <a href="/docs/developer-apps/1/routes/organizations/%7Borg_name%7D/developers/%7Bdeveloper_email%7D/apps/%7Bapp_name%7D/put">update the developer app</a>. Existing API products are listed in the `credentials` array.
+          type: array
+          items:
+            type: string
+        appId:
+          description: Output only. ID of the app.
+          type: string
+        attributes:
+          description: >-
+            List of attributes used for customizing profile information or for app-specific processing. With Apigee Edge for Public Cloud, the custom attribute limit is 18. Note the folowing:
+
+
+            * `DisplayName` is an attribute that provides the app name in the Edge UI. This can be different from the name (unique ID) of the app.
+
+            * `Notes` attribute lets you add notes about the developer app.
+
+            * Any other arbitrary name/value pairs you create are included as custom attributes.
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+        callbackUrl:
+          description: >-
+            Callback URL used by OAuth 2.0 authorization servers to communicate authorization codes back to apps. See the OAuth 2.0 documentation for more details.
+          type: string
+        createdAt:
+          format: int32
+          description: Output only. Time the app was created in milliseconds since epoch.
+          type: integer
+        createdBy:
+          description: Output only. Email address of the developer that created the app.
+          type: string
+        credentials:
+          description: >-
+            Output only. Set of credentials for the app. Credentials are API key/secret pairs associated with API products.
+          type: array
+          items:
+            type: object
+            properties:
+              apiProducts:
+                description: Name and status of API products associated with the app.
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/APIProductRef"
+              attributes:
+                description: List of attributes.
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attribute"
+              consumerKey:
+                description: Consumer API key.
+                type: string
+              consumerSecret:
+                description: Consumer secret.
+                type: string
+              expiresAt:
+                description: Time the credentials expire in milliseconds since epoch.
+                format: int32
+                type: integer
+              issuedAt:
+                format: int32
+                description: Time the credentials were issued in milliseconds since epoch.
+                type: integer
+              scopes:
+                description: OAuth scopes.
+                type: array
+                items:
+                  type: string
+              status:
+                description: Status of the credentials.
+                type: string
+        developerId:
+          description: Output only. ID of the developer.
+          type: string
+        keyExpiresIn:
+          type: integer
+          format: int32
+          description: Lifetime of the consumer key that will be generated for the developer app, in milliseconds. The default value, `-1`, indicates an infinite validity period. Once set, the expiration can't be updated.
+        lastModifiedAt:
+          format: int32
+          description: Output only. Last modified time as milliseconds since epoch.
+          type: integer
+        lastModifiedBy:
+          description: Output only. Email of developer that last modified the app.
+          type: string
+        name:
+          description: >-
+            Name of the developer app. Required when creating a developer app; not required when updating a developer app. 
+
+
+            The name is used to uniquely identify the app for this organization and developer. Names must begin with an alphanumeric character and can contain letters, numbers, spaces, and the following characters: `. _ # - $ %`. While you can use spaces in the name, we recommend that you use camel case, underscores, or hyphens instead. Otherwise, you will have to URL-encode the app name when you need to include it in the URL of other Edge API calls. See the <a href="https://docs.apigee.com/api-platform/reference/naming-guidelines">naming restrictions</a>.
+          type: string
+        scopes:
+          description: >-
+            Scopes to apply to the app. The specified scope names must already exist on the API product that you associate with the app.
+          type: array
+          items:
+            type: string
+        status:
+          description: Status of the credential.
+          type: string
+    DeveloperAppRequest:
+      description: Developer app request.
+      type: object
+      required:
+        - name
+      properties:
+        apiProducts:
+          description: List of API products to which the app is associated (when creating or updating an app). The name of the API product is the name returned when you <a href="/docs/api-products/1/routes/organizations/%7Borg_name%7D/apiproducts/get">list API products</a>. For example, if the Display Name of the API product in the Edge UI is `Premium API Product`, then the name is `premium-api-product` (all lowercase with spaces replaced by hyphens). You can add API products later when you <a href="/docs/developer-apps/1/routes/organizations/%7Borg_name%7D/developers/%7Bdeveloper_email%7D/apps/%7Bapp_name%7D/put">update the developer app</a>. Existing API products are listed in the `credentials` array.
+          type: array
+          items:
+            type: string
+        attributes:
+          description: >-
+            List of attributes used for customizing profile information or for app-specific processing. With Apigee Edge for Public Cloud, the custom attribute limit is 18. Note the folowing:
+
+
+            * `DisplayName` is an attribute that provides the app name in the Edge UI. This can be different from the name (unique ID) of the app.
+
+            * `Notes` attribute lets you add notes about the developer app.
+
+            * Any other arbitrary name/value pairs you create are included as custom attributes.
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+        callbackUrl:
+          description: >-
+            Callback URL used by OAuth 2.0 authorization servers to communicate authorization codes back to apps. See the OAuth 2.0 documentation for more details.
+          type: string
+        keyExpiresIn:
+          type: integer
+          format: int32
+          description: Lifetime of the consumer key that will be generated for the developer app, in milliseconds. The default value, `-1`, indicates an infinite validity period. Once set, the expiration can't be updated.
+        name:
+          description: >-
+            Name of the developer app. Required when creating a developer app; not required when updating a developer app. 
+
+
+            The name is used to uniquely identify the app for this organization and developer. Names must begin with an alphanumeric character and can contain letters, numbers, spaces, and the following characters: `. _ # - $ %`. While you can use spaces in the name, we recommend that you use camel case, underscores, or hyphens instead. Otherwise, you will have to URL-encode the app name when you need to include it in the URL of other Edge API calls. See the <a href="https://docs.apigee.com/api-platform/reference/naming-guidelines">naming restrictions</a>.
+          type: string
+        scopes:
+          description: >-
+            Scopes to apply to the app. The specified scope names must already exist on the API product that you associate with the app.
+          type: array
+          items:
+            type: string
+        status:
+          description: Status of the credential.
+          type: string
+    Attributes:
+      description: Developer app attributes.
+      type: object
+      properties:
+        attribute:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+    Attribute:
+      description: Developer app attribute name and value.
+      type: object
+      properties:
+        name:
+          description: Name of attribute.
+          type: string
+        value:
+          description: Value of attribute.
+          type: string
+    APIProductRef:
+      description: API product information.
+      type: object
+      properties:
+        apiproduct:
+          description: Name of API product.
+          type: string
+        status:
+          description: Status of API product.
+          type: string
