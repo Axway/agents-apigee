@@ -15,7 +15,7 @@ type portalHandler struct {
 	apigeeClient      *apigee.ApigeeClient
 	newPortalChan     chan string
 	removedPortalChan chan string
-	newAPIChan        chan *apigee.APIDocData
+	processAPIChan    chan *apigee.APIDocData
 	removedAPIChan    chan string
 	stopChan          chan interface{}
 	isRunning         bool
@@ -23,15 +23,15 @@ type portalHandler struct {
 	jobsMap           map[string]*pollPortalAPIsJob // keep map of all jobs created for the portals
 }
 
-func newPortalHandlerJob(apigeeClient *apigee.ApigeeClient, newPortalChan, removedPortalChan, removedAPIChan chan string, newAPIChan chan *apigee.APIDocData) *portalHandler {
+func newPortalHandlerJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels) *portalHandler {
 	job := &portalHandler{
 		apigeeClient:      apigeeClient,
-		newPortalChan:     newPortalChan,
-		removedPortalChan: removedPortalChan,
+		newPortalChan:     channels.newPortalChan,
+		removedPortalChan: channels.removedPortalChan,
 		stopChan:          make(chan interface{}),
 		isRunning:         false,
-		newAPIChan:        newAPIChan,
-		removedAPIChan:    removedAPIChan,
+		processAPIChan:    channels.processAPIChan,
+		removedAPIChan:    channels.removedAPIChan,
 		runningChan:       make(chan bool),
 		jobsMap:           make(map[string]*pollPortalAPIsJob),
 	}
@@ -101,7 +101,7 @@ func (j *portalHandler) handleNewPortal(newPortal string) {
 	}
 
 	// register a new job to poll for apis in this portal
-	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, portalName, j.newAPIChan, j.removedAPIChan)
+	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, portalName, j.processAPIChan, j.removedAPIChan)
 	err = portalAPIsJob.Register()
 	if err != nil {
 		log.Errorf("error hit starting job for portal ID %s", newPortal)

@@ -28,16 +28,20 @@ type newPortalAPIHandler struct {
 	stopChan       chan interface{}
 	isRunning      bool
 	runningChan    chan bool
+	productChan    chan productRequest
+	shouldPushAPI  func(map[string]string) bool
 }
 
-func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, processAPIChan chan *apigee.APIDocData, removedAPIChan chan string) *newPortalAPIHandler {
+func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels, shouldPushAPI func(map[string]string) bool) *newPortalAPIHandler {
 	job := &newPortalAPIHandler{
 		apigeeClient:   apigeeClient,
 		stopChan:       make(chan interface{}),
 		isRunning:      false,
-		processAPIChan: processAPIChan,
-		removedAPIChan: removedAPIChan,
+		processAPIChan: channels.processAPIChan,
+		removedAPIChan: channels.removedAPIChan,
 		runningChan:    make(chan bool),
+		productChan:    channels.productChan,
+		shouldPushAPI:  shouldPushAPI,
 	}
 	go job.statusUpdate()
 	return job
@@ -112,7 +116,7 @@ func (j *newPortalAPIHandler) getPortalData(portalID string) (*apigee.PortalData
 	return nil, fmt.Errorf("portal with ID %s not found", portalID)
 }
 
-func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic.ServiceBody, error) {
+func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, productAtts map[string]string) (*apic.ServiceBody, error) {
 	// get the spec to build the service body
 	spec := j.getAPISpec(newAPI.SpecContent)
 
@@ -132,7 +136,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic
 	apiID := fmt.Sprint(newAPI.ID)
 
 	// create attributes to be added to revision and instance
-	attributes := make(map[string]string)
+	attributes := productAtts
 	attributes[catalogIDKey] = apiID
 	attributes["PortalID"] = newAPI.PortalID
 
@@ -154,6 +158,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic
 		SetStatus(state).
 		SetTitle(newAPI.Title).
 		SetSubscriptionName(defaultSubscriptionSchema).
+		SetServiceAttribute(productAtts).
 		SetRevisionAttribute(attributes).
 		SetInstanceAttribute(attributes).
 		Build()
@@ -163,7 +168,14 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData) (*apic
 func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	log.Tracef("handling api %v from portal %v", newAPI.Title, newAPI.PortalID)
 
-	serviceBody, err := j.buildServiceBody(newAPI)
+	// check if the APIs product can be discovered
+	discover, atts := j.checkProduct(newAPI.ProductName)
+	if !discover {
+		log.Infof("Skipping API %s in Portal %s as the attached Product %s did not match the discovery filter", newAPI.Title, newAPI.GetPortalTitle(), newAPI.ProductName)
+		return
+	}
+
+	serviceBody, err := j.buildServiceBody(newAPI, atts)
 	if err != nil {
 		log.Error(err)
 		return
@@ -229,4 +241,21 @@ func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
 
 	// remove from the cache
 	cache.GetCache().DeleteBySecondaryKey(removedAPIID)
+}
+
+func (j *newPortalAPIHandler) checkProduct(productName string) (bool, map[string]string) {
+	// get the product attributes
+	attributesChan := make(chan map[string]string)
+	j.productChan <- productRequest{
+		name:     productName,
+		response: attributesChan,
+	}
+	attributes := <-attributesChan
+
+	if !j.shouldPushAPI(attributes) {
+		// product should not be discovered
+		return false, map[string]string{}
+	}
+
+	return true, attributes
 }

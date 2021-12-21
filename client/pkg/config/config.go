@@ -14,24 +14,35 @@ type ApigeeConfig struct {
 	Organization string        `config:"organization"`
 	Auth         *AuthConfig   `config:"auth"`
 	PollInterval time.Duration `config:"pollInterval"`
+	Filter       string        `config:"filter"`
 }
+
+const (
+	pathOrganization = "apigee.organization"
+	pathAuthUsername = "apigee.auth.username"
+	pathAuthPassword = "apigee.auth.password"
+	pathInterval     = "apigee.pollInterval"
+	pathFilter       = "apigee.filter"
+)
 
 // AddProperties - adds config needed for apigee client
 func AddProperties(rootProps properties.Properties) {
-	rootProps.AddStringProperty("apigee.organization", "", "APIGEE Organization")
-	rootProps.AddStringProperty("apigee.auth.username", "", "Username to use to authenticate to APIGEE")
-	rootProps.AddStringProperty("apigee.auth.password", "", "Password for the user to authenticate to APIGEE")
-	rootProps.AddDurationProperty("apigee.pollInterval", 30*time.Second, "The time interval between checking for new APIGEE resources")
+	rootProps.AddStringProperty(pathOrganization, "", "APIGEE Organization")
+	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
+	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
+	rootProps.AddDurationProperty(pathInterval, 30*time.Second, "The time interval between checking for new APIGEE resources")
+	rootProps.AddStringProperty(pathFilter, "", "Filter used on discovering Apigee products")
 }
 
 // ParseConfig - parse the config on startup
 func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 	return &ApigeeConfig{
-		Organization: rootProps.StringPropertyValue("apigee.organization"),
-		PollInterval: rootProps.DurationPropertyValue("apigee.pollInterval"),
+		Organization: rootProps.StringPropertyValue(pathOrganization),
+		PollInterval: rootProps.DurationPropertyValue(pathInterval),
+		Filter:       rootProps.StringPropertyValue(pathFilter),
 		Auth: &AuthConfig{
-			Username: rootProps.StringPropertyValue("apigee.auth.username"),
-			Password: rootProps.StringPropertyValue("apigee.auth.password"),
+			Username: rootProps.StringPropertyValue(pathAuthUsername),
+			Password: rootProps.StringPropertyValue(pathAuthPassword),
 		},
 	}
 }

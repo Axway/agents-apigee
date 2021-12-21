@@ -7,6 +7,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
+	"github.com/Axway/agent-sdk/pkg/filter"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
@@ -21,11 +22,12 @@ type AgentConfig struct {
 
 // Agent - Represents the Gateway client
 type Agent struct {
-	cfg          *AgentConfig
-	apigeeClient *apigee.ApigeeClient
-	pollInterval time.Duration
-	stopChan     chan struct{}
-	devCreated   bool
+	cfg             *AgentConfig
+	apigeeClient    *apigee.ApigeeClient
+	discoveryFilter filter.Filter
+	pollInterval    time.Duration
+	stopChan        chan struct{}
+	devCreated      bool
 }
 
 // NewAgent - Creates a new Agent
@@ -35,11 +37,17 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		return nil, err
 	}
 
+	discoveryFilter, err := filter.NewFilter(agentCfg.ApigeeCfg.Filter)
+	if err != nil {
+		return nil, err
+	}
+
 	newAgent := &Agent{
-		apigeeClient: apigeeClient,
-		cfg:          agentCfg,
-		pollInterval: agentCfg.ApigeeCfg.GetPollInterval(),
-		stopChan:     make(chan struct{}),
+		apigeeClient:    apigeeClient,
+		cfg:             agentCfg,
+		discoveryFilter: discoveryFilter,
+		pollInterval:    agentCfg.ApigeeCfg.GetPollInterval(),
+		stopChan:        make(chan struct{}),
 	}
 
 	// Start the agent jobs
@@ -62,33 +70,53 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 
 // registerJobs - registers the agent jobs
 func (a *Agent) registerJobs() error {
-	// create the channel for portal poller to handler communication
-	newPortalChan := make(chan string)
-	removedPortalChan := make(chan string)
+	var err error
+	// create the communication channels
+	channels := &agentChannels{
+		productChan:       make(chan productRequest),
+		newPortalChan:     make(chan string),
+		removedPortalChan: make(chan string),
+		processAPIChan:    make(chan *apigee.APIDocData),
+		removedAPIChan:    make(chan string),
+	}
+
+	// create the product handler job and register it
+	productHandler := newProductHandlerJob(a.apigeeClient, channels)
+	_, err = jobs.RegisterChannelJobWithName(productHandler, productHandler.stopChan, "Product Handler")
+	if err != nil {
+		return err
+	}
 
 	// create the portals/portal poller job and register it
-	portals := newPollPortalsJob(a.apigeeClient, newPortalChan, removedPortalChan)
-	jobs.RegisterIntervalJobWithName(portals, a.pollInterval, "Poll Portals")
-
-	// create the channel for the portal api jobs to handler communication
-	processAPIChan := make(chan *apigee.APIDocData)
-	removedAPIChan := make(chan string)
+	_, err = jobs.RegisterIntervalJobWithName(newPollPortalsJob(a.apigeeClient, channels), a.pollInterval, "Poll Portals")
+	if err != nil {
+		return err
+	}
 
 	// create the portal handler job and register it
-	portalHandler := newPortalHandlerJob(a.apigeeClient, newPortalChan, removedPortalChan, removedAPIChan, processAPIChan)
-	jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
+	portalHandler := newPortalHandlerJob(a.apigeeClient, channels)
+	_, err = jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
+	if err != nil {
+		return err
+	}
 
 	// create the api handler job and register it
-	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, processAPIChan, removedAPIChan)
-	jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
+	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, channels, a.shouldPushAPI)
+	_, err = jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
+	if err != nil {
+		return err
+	}
 
 	// create job that creates the developer profile used by the agent
-	jobs.RegisterSingleRunJobWithName(newCreateDeveloperJob(a.apigeeClient, a.apigeeClient.SetDeveloperID), "Create Developer")
+	_, err = jobs.RegisterSingleRunJobWithName(newCreateDeveloperJob(a.apigeeClient, a.apigeeClient.SetDeveloperID), "Create Developer")
+	if err != nil {
+		return err
+	}
 
-	// create job that start the subscription manager
-	jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
+	// create job that starts the subscription manager
+	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
 
-	return nil
+	return err
 }
 
 // AgentRunning - waits for a signal to stop the agent
@@ -123,4 +151,10 @@ func (a *Agent) setDeveloperCreated() {
 
 func (a *Agent) isDevCreated() bool {
 	return a.devCreated
+}
+
+// shouldPushAPI - callback used determine if the Product should be pushed to Central or not
+func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
+	// Evaluate the filter condition
+	return a.discoveryFilter.Evaluate(attributes)
 }
