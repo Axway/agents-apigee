@@ -116,7 +116,7 @@ func (j *newPortalAPIHandler) getPortalData(portalID string) (*apigee.PortalData
 	return nil, fmt.Errorf("portal with ID %s not found", portalID)
 }
 
-func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, productAtts map[string]string) (*apic.ServiceBody, error) {
+func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, productAttributes map[string]string) (*apic.ServiceBody, error) {
 	// get the spec to build the service body
 	spec := j.getAPISpec(newAPI.SpecContent)
 
@@ -136,9 +136,14 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	apiID := fmt.Sprint(newAPI.ID)
 
 	// create attributes to be added to revision and instance
-	attributes := productAtts
-	attributes[catalogIDKey] = apiID
-	attributes["PortalID"] = newAPI.PortalID
+	serviceAttributes := make(map[string]string)
+	revisionAttributes := make(map[string]string)
+	for k, v := range productAttributes {
+		serviceAttributes[k] = v
+		revisionAttributes[k] = v
+	}
+	revisionAttributes[catalogIDKey] = apiID
+	revisionAttributes["PortalID"] = newAPI.PortalID
 
 	state := apic.UnpublishedState
 	if newAPI.Visibility {
@@ -158,9 +163,9 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 		SetStatus(state).
 		SetTitle(newAPI.Title).
 		SetSubscriptionName(defaultSubscriptionSchema).
-		SetServiceAttribute(productAtts).
-		SetRevisionAttribute(attributes).
-		SetInstanceAttribute(attributes).
+		SetServiceAttribute(serviceAttributes).
+		SetRevisionAttribute(revisionAttributes).
+		SetInstanceAttribute(revisionAttributes).
 		Build()
 	return &sb, err
 }
@@ -169,37 +174,38 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	log.Tracef("handling api %v from portal %v", newAPI.Title, newAPI.PortalID)
 
 	// check if the APIs product can be discovered
-	discover, atts := j.checkProduct(newAPI.ProductName)
+	discover, attributes := j.checkProduct(newAPI.ProductName)
 	if !discover {
 		log.Infof("Skipping API %s in Portal %s as the attached Product %s did not match the discovery filter", newAPI.Title, newAPI.GetPortalTitle(), newAPI.ProductName)
 		return
 	}
 
-	serviceBody, err := j.buildServiceBody(newAPI, atts)
+	serviceBody, err := j.buildServiceBody(newAPI, attributes)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-
 	serviceBodyHash, _ := coreutil.ComputeHash(*serviceBody)
 
 	// add auth info to cached api for subscriptions
 	newAPI.SetAPIKeyInfo(serviceBody.GetAPIKeyInfo())
 	newAPI.SetSecurityPolicies(serviceBody.GetAuthPolicies())
 
+	hashString := util.ConvertUnitToString(serviceBodyHash)
+
 	// Check DiscoveryCache for API
 	if !agent.IsAPIPublishedByID(newAPI.ProductName) {
 		// call new API
-		j.publishAPI(newAPI, serviceBody, serviceBodyHash)
+		j.publishAPI(newAPI, *serviceBody, hashString)
 		return
 	}
 
 	// Check to see if the API has changed
-	if value := agent.GetAttributeOnPublishedAPIByID(newAPI.ProductName, fmt.Sprintf("%s-hash", newAPI.PortalID)); value != fmt.Sprint(serviceBodyHash) {
+	if value := agent.GetAttributeOnPublishedAPIByID(newAPI.ProductName, fmt.Sprintf("%s-hash", newAPI.PortalID)); value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", newAPI.ProductName)
 		serviceBody.APIUpdateSeverity = "Major"
-		j.publishAPI(newAPI, serviceBody, serviceBodyHash)
+		j.publishAPI(newAPI, *serviceBody, hashString)
 	}
 	// update the cache
 	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
@@ -217,13 +223,13 @@ func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
 	return specData
 }
 
-func (j *newPortalAPIHandler) publishAPI(newAPI *apigee.APIDocData, serviceBody *apic.ServiceBody, serviceBodyHash uint64) {
+func (j *newPortalAPIHandler) publishAPI(newAPI *apigee.APIDocData, serviceBody apic.ServiceBody, hashString string) {
 
 	// Add a few more attributes to the service body
-	serviceBody.ServiceAttributes[fmt.Sprintf("%s-hash", newAPI.PortalID)] = util.ConvertUnitToString(serviceBodyHash)
+	serviceBody.ServiceAttributes[fmt.Sprintf("%s-hash", newAPI.PortalID)] = hashString
 	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
 
-	err := agent.PublishAPI(*serviceBody)
+	err := agent.PublishAPI(serviceBody)
 	if err == nil {
 		log.Infof("Published API %s to AMPLIFY Central", serviceBody.NameToPush)
 	}

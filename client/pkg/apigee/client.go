@@ -23,12 +23,11 @@ type ApigeeClient struct {
 // NewClient - Creates a new Gateway Client
 func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 	client := &ApigeeClient{
-		apiClient:    coreapi.NewClient(nil, ""),
-		cfg:          apigeeCfg,
-		pollInterval: apigeeCfg.GetPollInterval(),
-		envToURLs:    make(map[string][]string),
-		isReady:      false,
-		developerID:  "",
+		apiClient:   coreapi.NewClient(nil, ""),
+		cfg:         apigeeCfg,
+		envToURLs:   make(map[string][]string),
+		isReady:     false,
+		developerID: "",
 	}
 
 	// create the auth job and register it

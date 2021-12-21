@@ -11,18 +11,27 @@ import (
 // ApigeeConfig - represents the config for gateway
 type ApigeeConfig struct {
 	corecfg.IConfigValidator
-	Organization string        `config:"organization"`
-	Auth         *AuthConfig   `config:"auth"`
-	PollInterval time.Duration `config:"pollInterval"`
-	Filter       string        `config:"filter"`
+	Organization string           `config:"organization"`
+	Auth         *AuthConfig      `config:"auth"`
+	Intervals    *ApigeeIntervals `config:"intervals"`
+	Filter       string           `config:"filter"`
+}
+
+// ApigeeIntervals - intervals for the apigee agent to use
+type ApigeeIntervals struct {
+	Product time.Duration `config:"product"`
+	Portal  time.Duration `config:"portal"`
+	API     time.Duration `config:"api"`
 }
 
 const (
-	pathOrganization = "apigee.organization"
-	pathAuthUsername = "apigee.auth.username"
-	pathAuthPassword = "apigee.auth.password"
-	pathInterval     = "apigee.pollInterval"
-	pathFilter       = "apigee.filter"
+	pathOrganization    = "apigee.organization"
+	pathAuthUsername    = "apigee.auth.username"
+	pathAuthPassword    = "apigee.auth.password"
+	pathProductInterval = "apigee.interval.product"
+	pathPortalInterval  = "apigee.interval.portal"
+	pathAPIInterval     = "apigee.interval.api"
+	pathFilter          = "apigee.filter"
 )
 
 // AddProperties - adds config needed for apigee client
@@ -30,7 +39,9 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddStringProperty(pathOrganization, "", "APIGEE Organization")
 	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
-	rootProps.AddDurationProperty(pathInterval, 30*time.Second, "The time interval between checking for new APIGEE resources")
+	rootProps.AddDurationProperty(pathProductInterval, 5*time.Minute, "The time interval between updating a products attributes")
+	rootProps.AddDurationProperty(pathPortalInterval, 1*time.Minute, "The time interval between checking for new Apigee portals")
+	rootProps.AddDurationProperty(pathAPIInterval, 30*time.Second, "The time interval between checking for new APIs in an Apigee portal")
 	rootProps.AddStringProperty(pathFilter, "", "Filter used on discovering Apigee products")
 }
 
@@ -38,8 +49,12 @@ func AddProperties(rootProps properties.Properties) {
 func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 	return &ApigeeConfig{
 		Organization: rootProps.StringPropertyValue(pathOrganization),
-		PollInterval: rootProps.DurationPropertyValue(pathInterval),
 		Filter:       rootProps.StringPropertyValue(pathFilter),
+		Intervals: &ApigeeIntervals{
+			Product: rootProps.DurationPropertyValue(pathProductInterval),
+			Portal:  rootProps.DurationPropertyValue(pathPortalInterval),
+			API:     rootProps.DurationPropertyValue(pathAPIInterval),
+		},
 		Auth: &AuthConfig{
 			Username: rootProps.StringPropertyValue(pathAuthUsername),
 			Password: rootProps.StringPropertyValue(pathAuthPassword),
@@ -66,6 +81,6 @@ func (a *ApigeeConfig) GetAuth() *AuthConfig {
 }
 
 // GetPollInterval - Returns the Poll Interval
-func (a *ApigeeConfig) GetPollInterval() time.Duration {
-	return a.PollInterval
+func (a *ApigeeConfig) GetIntervals() *ApigeeIntervals {
+	return a.Intervals
 }

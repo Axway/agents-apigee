@@ -25,7 +25,6 @@ type Agent struct {
 	cfg             *AgentConfig
 	apigeeClient    *apigee.ApigeeClient
 	discoveryFilter filter.Filter
-	pollInterval    time.Duration
 	stopChan        chan struct{}
 	devCreated      bool
 }
@@ -46,7 +45,6 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		apigeeClient:    apigeeClient,
 		cfg:             agentCfg,
 		discoveryFilter: discoveryFilter,
-		pollInterval:    agentCfg.ApigeeCfg.GetPollInterval(),
 		stopChan:        make(chan struct{}),
 	}
 
@@ -61,7 +59,7 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 	// delay the start of the API validator
 	go func() {
 		// allow 2 poll intervals before starting validator
-		time.Sleep(newAgent.pollInterval * 2)
+		time.Sleep(apigeeClient.GetConfig().GetIntervals().API * 2)
 		agent.RegisterAPIValidator(newAgent.apiValidator)
 	}()
 
@@ -81,14 +79,14 @@ func (a *Agent) registerJobs() error {
 	}
 
 	// create the product handler job and register it
-	productHandler := newProductHandlerJob(a.apigeeClient, channels)
+	productHandler := newProductHandlerJob(a.apigeeClient, channels, a.apigeeClient.GetConfig().GetIntervals().Product)
 	_, err = jobs.RegisterChannelJobWithName(productHandler, productHandler.stopChan, "Product Handler")
 	if err != nil {
 		return err
 	}
 
 	// create the portals/portal poller job and register it
-	_, err = jobs.RegisterIntervalJobWithName(newPollPortalsJob(a.apigeeClient, channels), a.pollInterval, "Poll Portals")
+	_, err = jobs.RegisterIntervalJobWithName(newPollPortalsJob(a.apigeeClient, channels), a.apigeeClient.GetConfig().GetIntervals().Portal, "Poll Portals")
 	if err != nil {
 		return err
 	}

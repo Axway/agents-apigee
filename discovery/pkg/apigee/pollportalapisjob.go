@@ -34,7 +34,7 @@ func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalNam
 }
 
 func (j *pollPortalAPIsJob) Register() error {
-	jobID, err := jobs.RegisterIntervalJobWithName(j, j.apigeeClient.GetConfig().GetPollInterval(), fmt.Sprintf("%s Portal Poller", j.portalName))
+	jobID, err := jobs.RegisterIntervalJobWithName(j, j.apigeeClient.GetConfig().GetIntervals().API, fmt.Sprintf("%s Portal Poller", j.portalName))
 	if err != nil {
 		return err
 	}
