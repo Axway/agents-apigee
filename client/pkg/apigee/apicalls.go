@@ -210,13 +210,16 @@ func (a *ApigeeClient) GetPortalAPIs(portalID string) []*APIDocData {
 }
 
 //GetProduct - get details of the product
-func (a *ApigeeClient) GetProduct(productName string) models.ApiProduct {
+func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error) {
 	// Get the product
-	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apiproducts/%s", a.cfg.Organization, productName))
-	product := models.ApiProduct{}
-	json.Unmarshal(response.Body, &product)
+	response, err := a.getRequest(fmt.Sprintf(orgURL+"apiproducts/%s", a.cfg.Organization, productName))
+	if err != nil {
+		return nil, err
+	}
+	product := &models.ApiProduct{}
+	json.Unmarshal(response.Body, product)
 
-	return product
+	return product, nil
 }
 
 //GetImageWithURL - get the list of portals for the org

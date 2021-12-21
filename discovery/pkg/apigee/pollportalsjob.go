@@ -20,12 +20,12 @@ type pollPortalsJob struct {
 	removedPortalChan chan string
 }
 
-func newPollPortalsJob(apigeeClient *apigee.ApigeeClient, newPortalChan, removedPortalChan chan string) *pollPortalsJob {
+func newPollPortalsJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels) *pollPortalsJob {
 	return &pollPortalsJob{
 		apigeeClient:      apigeeClient,
 		portalsMap:        make(map[string]apigee.PortalData),
-		newPortalChan:     newPortalChan,
-		removedPortalChan: removedPortalChan,
+		newPortalChan:     channels.newPortalChan,
+		removedPortalChan: channels.removedPortalChan,
 	}
 }
 

@@ -67,13 +67,12 @@ go build -tags static_all \
 
 ## Discovery agent variables
 
-| Environment Variable        | Description                               | Default (if applicable) |
-|-----------------------------|-------------------------------------------|-------------------------|
-| APIGEE_ORGANIZATION         | The Apigee organization name              |                         |
-| APIGEE_AUTH_USERNAME        | The Apigee account username/email address |                         |
-| APIGEE_AUTH_PASSWORD        | The Apigee account password               |                         |
-| APIGEE_LOGGLY_SUBDOMAIN     | The Loggly subdomain name                 |                         |
-| APIGEE_LOGGLY_CUSTOMERTOKEN | The Loggly customer token                 |                         |
-| APIGEE_LOGGLY_APITOKEN      | The Loggly API token                      |                         |
-| APIGEE_LOGGLY_HOST          | The Loggly host address                   | logs-01.loggly.com      |
-| APIGEE_LOGGLY_PORT          | The Loggly host port                      | 514                     |
+| Environment Variable    | Description                                                  | Default (if applicable) |
+|-------------------------|--------------------------------------------------------------|-------------------------|
+| APIGEE_ORGANIZATION     | The Apigee organization name                                 |                         |
+| APIGEE_AUTH_USERNAME    | The Apigee account username/email address                    |                         |
+| APIGEE_AUTH_PASSWORD    | The Apigee account password                                  |                         |
+| APIGEE_FILTER           | The tag filter to use against an Apigee product's attributes |                         |
+| APIGEE_INTERVAL_PRODUCT | The time between getting a products attributes from Apigee   | 5m (5 minutes)          |
+| APIGEE_INTERVAL_PORTAL  | The polling interval for new portals on Apigee               | 1m (1 minute)           |
+| APIGEE_INTERVAL_API     | The polling interval for APIs in an Apigee portal            | 30s (30 seconds)        |
