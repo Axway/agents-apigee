@@ -200,13 +200,18 @@ func (a *ApigeeClient) GetPortal(portalID string) PortalData {
 }
 
 //GetPortalAPIs - get the list of portals for the org
-func (a *ApigeeClient) GetPortalAPIs(portalID string) []*APIDocData {
+func (a *ApigeeClient) GetPortalAPIs(portalID string) ([]*APIDocData, error) {
 	// Get the apidocs
-	response, _ := a.getRequest(fmt.Sprintf("%s/%s/apidocs", portalsURL, portalID))
+	response, err := a.getRequest(fmt.Sprintf("%s/%s/apidocs", portalsURL, portalID))
+
+	if response.Code != 200 {
+		return nil, err
+	}
+
 	apiDocRes := APIDocDataResponse{}
 	json.Unmarshal(response.Body, &apiDocRes)
 
-	return apiDocRes.Data
+	return apiDocRes.Data, err
 }
 
 //GetProduct - get details of the product

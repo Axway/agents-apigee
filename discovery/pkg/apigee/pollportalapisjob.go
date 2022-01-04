@@ -13,13 +13,14 @@ import (
 // job that will poll for any new apis in the portal on APIGEE Edge
 type pollPortalAPIsJob struct {
 	jobs.Job
-	apigeeClient   *apigee.ApigeeClient
-	portalID       string
-	portalName     string
-	portalAPIsMap  map[string]string
-	processAPIChan chan *apigee.APIDocData
-	removedAPIChan chan string
-	jobID          string
+	apigeeClient      *apigee.ApigeeClient
+	portalID          string
+	portalName        string
+	portalAPIsMap     map[string]string
+	processAPIChan    chan *apigee.APIDocData
+	removedAPIChan    chan string
+	jobID             string
+	consecutiveErrors int // job only fails after 3 consecutive execution errors
 }
 
 func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalName string, processAPIChan chan *apigee.APIDocData, removedAPIChan chan string) *pollPortalAPIsJob {
@@ -47,12 +48,22 @@ func (j *pollPortalAPIsJob) Ready() bool {
 }
 
 func (j *pollPortalAPIsJob) Status() error {
+	if j.consecutiveErrors >= 3 {
+		return fmt.Errorf("job failed to execute 3 or more consecutive times")
+	}
 	return nil
 }
 
 func (j *pollPortalAPIsJob) Execute() error {
 	log.Tracef("Executing %s Portal poller", j.portalName)
-	allPortalAPIs := j.apigeeClient.GetPortalAPIs(j.portalID)
+	allPortalAPIs, err := j.apigeeClient.GetPortalAPIs(j.portalID)
+	if err != nil {
+		log.Errorf("error getting APIs for portal %s: %s", j.portalID, err)
+		j.consecutiveErrors++
+		return nil
+	}
+	j.consecutiveErrors = 0
+
 	log.Tracef("%s Portal APIs: %+v", j.portalName, allPortalAPIs)
 	apisFound := make(map[string]string)
 	for _, api := range allPortalAPIs {

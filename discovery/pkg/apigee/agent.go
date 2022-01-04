@@ -132,12 +132,10 @@ func (a *Agent) apiValidator(productName, portalName string) bool {
 	// get the api with the product name and portal name
 	cacheKey := fmt.Sprintf("%s-%s", portalName, productName)
 
-	tmp := cache.GetCache()
 	_, err := cache.GetCache().GetBySecondaryKey(cacheKey)
 	if err != nil {
 		return false // api has been removed
 	}
-	_ = tmp
 
 	return true
 }
