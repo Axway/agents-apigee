@@ -48,7 +48,7 @@ func (j *productHandler) Ready() bool {
 
 func (j *productHandler) Status() error {
 	if !j.isRunning {
-		return fmt.Errorf("portal handler not running")
+		return fmt.Errorf("product handler not running")
 	}
 	return nil
 }
@@ -91,17 +91,21 @@ func (j *productHandler) Execute() error {
 func (j *productHandler) handleProductRequest(req productRequest) {
 	cacheKey := fmt.Sprintf("product-%s-attributes", req.name)
 
+	log.Tracef("Getting product attributes for %s", req.name)
+
 	// check if product attributes are in the cache
 	if itemInterface, err := cache.GetCache().Get(cacheKey); err == nil {
 		//item existed
 		cacheItem := itemInterface.(productCacheItem)
 		if time.Now().Sub(cacheItem.timestamp) < j.refreshInterval {
 			// return the existing attributes
+			log.Tracef("Product attributes for %s have not hit interval, sending what is in the cache", req.name)
 			req.response <- cacheItem.attribtues
 			return
 		}
 	}
 
+	log.Tracef("Product attributes for %s have hit interval, updating the cache", req.name)
 	// product is not in cache or its time to refresh
 	prod, err := j.apigeeClient.GetProduct(req.name)
 	if err != nil {

@@ -53,16 +53,10 @@ go build -tags static_all \
 
 ## Discovery agent proxy discovery
 
-* Find all deployed API proxies
-* Download the proxy bundle
-  * Find or generate a spec
-    * Associated spec
-      * Check for an association.json file in the apiproxy/resources/openapi path
-      * Open the file to find the spec url path
-      * Download the spec from Apigee
-    * Generate spec
-      * Read in all proxy endpoints
-      * Create OAS3 spec with information about endpoints and policies
+* Find all API portals within Apigee
+* Within each portal find all published APIs
+  * Using the published API get attributes from the attached product for filtering purposes
+  * Get the Spec attached to the published API
 * Create the Amplify Central API
 
 ## Discovery agent variables
