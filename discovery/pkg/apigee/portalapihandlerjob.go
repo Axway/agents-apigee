@@ -196,21 +196,18 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	// Check DiscoveryCache for API
 	if !agent.IsAPIPublishedByID(newAPI.ProductName) {
 		// call new API
-		j.publishAPI(newAPI, *serviceBody, hashString)
-		return
-	}
-
-	// Check to see if the API has changed
-	if value := agent.GetAttributeOnPublishedAPIByID(newAPI.ProductName, fmt.Sprintf("%s-hash", newAPI.PortalID)); value != hashString {
+		j.publishAPI(newAPI, *serviceBody, hashString)n
+	} else if value := agent.GetAttributeOnPublishedAPIByID(newAPI.ProductName, fmt.Sprintf("%s-hash", newAPI.PortalID)); value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", newAPI.ProductName)
 		serviceBody.APIUpdateSeverity = "Major"
 		j.publishAPI(newAPI, *serviceBody, hashString)
 	}
+
 	// update the cache
 	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
-	cache.GetCache().SetWithSecondaryKey(cacheKey, strconv.Itoa(newAPI.ID), *newAPI)
-	cache.GetCache().SetSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.GetPortalTitle(), newAPI.ProductName))
+	cache.GetCache().SetWithSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.GetPortalTitle(), newAPI.ProductName), *newAPI)
+	cache.GetCache().SetSecondaryKey(cacheKey, strconv.Itoa(newAPI.ID))
 }
 
 func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
