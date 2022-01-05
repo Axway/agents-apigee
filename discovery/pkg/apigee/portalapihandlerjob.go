@@ -202,6 +202,9 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 		log.Tracef("%s has been updated, push new revision", newAPI.ProductName)
 		serviceBody.APIUpdateSeverity = "Major"
 		j.publishAPI(newAPI, *serviceBody, hashString)
+	} else {
+		// no changes made do not update the cache
+		return
 	}
 
 	// update the cache
