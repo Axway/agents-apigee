@@ -196,7 +196,7 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	// Check DiscoveryCache for API
 	if !agent.IsAPIPublishedByID(newAPI.ProductName) {
 		// call new API
-		j.publishAPI(newAPI, *serviceBody, hashString)n
+		j.publishAPI(newAPI, *serviceBody, hashString)
 	} else if value := agent.GetAttributeOnPublishedAPIByID(newAPI.ProductName, fmt.Sprintf("%s-hash", newAPI.PortalID)); value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", newAPI.ProductName)
