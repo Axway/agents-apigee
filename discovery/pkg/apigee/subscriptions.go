@@ -26,6 +26,12 @@ func (a *Agent) registerSubscriptionSchema() {
 
 // handleSubscriptions - setup all things necessary to handle subscriptions from Central, but don't start the manager
 func (a *Agent) handleSubscriptions() {
+	err := agent.GetCentralClient().RegisterSubscriptionWebhook()
+	if err != nil {
+		log.Errorf("Unable to register subscription webhook: %s", err.Error())
+		return
+	}
+
 	a.registerSubscriptionSchema()
 
 	agent.GetCentralClient().GetSubscriptionManager()
