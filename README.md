@@ -20,6 +20,7 @@ In this section we'll:
 * Click "+ Environment"
   * Select a name
   * Click "Save"
+* To enable the viewing os the agent status in Amplify see [Visualize the agent status](https://docs.axway.com/bundle/amplify-central/page/docs/connect_manage_environ/environment_agent_resources/index.html#add-your-agent-resources-to-the-environment)
 
 ### Create a service account
 
