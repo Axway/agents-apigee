@@ -62,7 +62,7 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	agentConfig := &apigee.AgentConfig{
 		CentralCfg: centralConfig,
 		ApigeeCfg:  apigeeConfig,
-		LogglyCfg:  logglyConfig,
+		// LogglyCfg:  logglyConfig,
 	}
 
 	beater.SetLogglyConfig(logglyConfig)

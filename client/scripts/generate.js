@@ -22,3 +22,6 @@ execSync(
 execSync(
 	`openapi-generator generate -g go -i ./specs/developer_apps.yaml --package-name ${packagename} --output pkg/${pathname}/${group}/ --global-property modelDocs=false --global-property models --global-property apiDocs=false`
 );
+execSync(
+	`openapi-generator generate -g go -i ./specs/stats.yaml --package-name ${packagename} --output pkg/${pathname}/${group}/ --global-property modelDocs=false --global-property models --global-property apiDocs=false`
+);
