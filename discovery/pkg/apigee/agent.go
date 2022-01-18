@@ -58,8 +58,8 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 
 	// delay the start of the API validator
 	go func() {
-		// allow 2 poll intervals before starting validator
-		time.Sleep(apigeeClient.GetConfig().GetIntervals().API * 2)
+		// wait an hour before registering the API validator
+		time.Sleep(time.Hour)
 		agent.RegisterAPIValidator(newAgent.apiValidator)
 	}()
 
