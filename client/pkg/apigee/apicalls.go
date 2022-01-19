@@ -9,8 +9,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"time"
 
-	coreapi "github.com/Axway/agent-sdk/pkg/api"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
@@ -20,81 +20,13 @@ const (
 	orgDataAPIURL = "https://apigee.com/dapi/api/organizations/%s"
 )
 
-func (a *ApigeeClient) defaultHeaders() map[string]string {
-	// return the default headers
-	return map[string]string{
-		"Content-Type":  "application/json",
-		"Accept":        "application/json",
-		"Authorization": "Bearer " + a.accessToken,
-	}
-}
-
-func (a *ApigeeClient) getRequest(url string) (*coreapi.Response, error) {
-	// return the api response
-	return a.getRequestWithQuery(url, map[string]string{})
-}
-
-func (a *ApigeeClient) getRequestWithQuery(url string, queryParams map[string]string) (*coreapi.Response, error) {
-	// create the get request
-	request := coreapi.Request{
-		Method:      coreapi.GET,
-		URL:         url,
-		Headers:     a.defaultHeaders(),
-		QueryParams: queryParams,
-	}
-
-	// return the api response
-	return a.apiClient.Send(request)
-}
-
-func (a *ApigeeClient) postRequest(url string, data []byte) (*coreapi.Response, error) {
-	// return the api response
-	return a.postRequestWithQuery(url, map[string]string{}, data)
-}
-
-func (a *ApigeeClient) postRequestWithQuery(url string, queryParams map[string]string, data []byte) (*coreapi.Response, error) {
-	// create the post request
-	request := coreapi.Request{
-		Method:      coreapi.POST,
-		URL:         url,
-		Headers:     a.defaultHeaders(),
-		QueryParams: queryParams,
-		Body:        data,
-	}
-
-	// return the api response
-	return a.apiClient.Send(request)
-}
-
-func (a *ApigeeClient) putRequest(url string, data []byte) (*coreapi.Response, error) {
-	// create the put request
-	request := coreapi.Request{
-		Method:  coreapi.PUT,
-		URL:     url,
-		Headers: a.defaultHeaders(),
-		Body:    data,
-	}
-
-	// return the api response
-	return a.apiClient.Send(request)
-}
-
-func (a *ApigeeClient) deleteRequest(url string) (*coreapi.Response, error) {
-	// create the put request
-	request := coreapi.Request{
-		Method:  coreapi.DELETE,
-		URL:     url,
-		Headers: a.defaultHeaders(),
-	}
-
-	// return the api response
-	return a.apiClient.Send(request)
-}
-
 //GetDevelopers - get the list of developers for the org
 func (a *ApigeeClient) GetDevelopers() []string {
 	// Get the developers
-	response, _ := a.getRequest(fmt.Sprintf(orgURL+"developers", a.cfg.Organization))
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"developers", a.cfg.Organization),
+		WithDefaultHeaders(),
+	).Execute()
+
 	developers := []string{}
 	json.Unmarshal(response.Body, &developers)
 
@@ -104,10 +36,13 @@ func (a *ApigeeClient) GetDevelopers() []string {
 //GetDeveloper - get the developer by email
 func (a *ApigeeClient) GetDeveloper(devEmail string) (*models.Developer, error) {
 	// Get the developers
-	response, err := a.getRequest(fmt.Sprintf(orgURL+"developers/%s", a.cfg.Organization, strings.ToLower(devEmail)))
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"developers/%s", a.cfg.Organization, strings.ToLower(devEmail)),
+		WithDefaultHeaders(),
+	).Execute()
 	if err != nil {
 		return nil, err
 	}
+
 	developer := models.Developer{}
 	err = json.Unmarshal(response.Body, &developer)
 	if err != nil {
@@ -120,8 +55,15 @@ func (a *ApigeeClient) GetDeveloper(devEmail string) (*models.Developer, error) 
 //CreateDeveloper - get the list of developers for the org
 func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Developer, error) {
 	// Get the developers
-	data, _ := json.Marshal(newDev)
-	response, err := a.postRequest(fmt.Sprintf(orgURL+"developers", a.cfg.Organization), data)
+	data, err := json.Marshal(newDev)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"developers", a.cfg.Organization),
+		WithDefaultHeaders(),
+		WithBody(data),
+	).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +79,15 @@ func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Develop
 //CreateDeveloperApp - create an app for the developer
 func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
 	// create a new developer app
-	data, _ := json.Marshal(newApp)
-	response, err := a.postRequest(fmt.Sprintf(orgURL+"developers/%s/apps", a.cfg.Organization, newApp.DeveloperId), data)
+	data, err := json.Marshal(newApp)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"developers/%s/apps", a.cfg.Organization, newApp.DeveloperId),
+		WithDefaultHeaders(),
+		WithBody(data),
+	).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +107,10 @@ func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.D
 //RemoveDeveloperApp - create an app for the developer
 func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 	// create a new developer app
-	response, err := a.deleteRequest(fmt.Sprintf(orgURL+"developers/%s/apps/%s", a.cfg.Organization, developerID, appName))
+	response, err := a.newRequest(http.MethodDelete, fmt.Sprintf(orgURL+"developers/%s/apps/%s", a.cfg.Organization, developerID, appName),
+		WithDefaultHeaders(),
+	).Execute()
+
 	if err != nil {
 		return err
 	}
@@ -172,7 +124,9 @@ func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 //GetProducts - get the list of products for the org
 func (a *ApigeeClient) GetProducts() Products {
 	// Get the products
-	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apiproducts", a.cfg.Organization))
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"apiproducts", a.cfg.Organization),
+		WithDefaultHeaders(),
+	).Execute()
 	products := Products{}
 	json.Unmarshal(response.Body, &products)
 
@@ -182,17 +136,22 @@ func (a *ApigeeClient) GetProducts() Products {
 //GetPortals - get the list of portals for the org
 func (a *ApigeeClient) GetPortals() []PortalData {
 	// Get the portals
-	response, _ := a.getRequestWithQuery(portalsURL, map[string]string{"orgname": a.cfg.Organization})
+	response, _ := a.newRequest(http.MethodGet, portalsURL,
+		WithDefaultHeaders(),
+		WithQueryParam("orgname", a.cfg.Organization),
+	).Execute()
 	portalRes := PortalsResponse{}
 	json.Unmarshal(response.Body, &portalRes)
 
 	return portalRes.Data
 }
 
-//getPortals - get the list of portals for the org
+//GetPortal - get the list of portals for the org
 func (a *ApigeeClient) GetPortal(portalID string) PortalData {
 	// Get the portals
-	response, _ := a.getRequest(fmt.Sprintf("%s/%s/portal", portalsURL, portalID))
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf("%s/%s/portal", portalsURL, portalID),
+		WithDefaultHeaders(),
+	).Execute()
 	portalRes := PortalResponse{}
 	json.Unmarshal(response.Body, &portalRes)
 
@@ -202,9 +161,11 @@ func (a *ApigeeClient) GetPortal(portalID string) PortalData {
 //GetPortalAPIs - get the list of portals for the org
 func (a *ApigeeClient) GetPortalAPIs(portalID string) ([]*APIDocData, error) {
 	// Get the apidocs
-	response, err := a.getRequest(fmt.Sprintf("%s/%s/apidocs", portalsURL, portalID))
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/%s/apidocs", portalsURL, portalID),
+		WithDefaultHeaders(),
+	).Execute()
 
-	if response.Code != 200 {
+	if response.Code != http.StatusOK {
 		return nil, err
 	}
 
@@ -217,7 +178,9 @@ func (a *ApigeeClient) GetPortalAPIs(portalID string) ([]*APIDocData, error) {
 //GetProduct - get details of the product
 func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error) {
 	// Get the product
-	response, err := a.getRequest(fmt.Sprintf(orgURL+"apiproducts/%s", a.cfg.Organization, productName))
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"apiproducts/%s", a.cfg.Organization, productName),
+		WithDefaultHeaders(),
+	).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -230,11 +193,7 @@ func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error
 //GetImageWithURL - get the list of portals for the org
 func (a *ApigeeClient) GetImageWithURL(imageURL, portalURL string) (string, string) {
 	// Get the portal
-	request := coreapi.Request{
-		Method: coreapi.GET,
-		URL:    fmt.Sprintf("%s%s", portalURL, imageURL),
-	}
-	response, _ := a.apiClient.Send(request)
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf("%s%s", portalURL, imageURL)).Execute()
 
 	contentType := ""
 	if contentTypeArray, ok := response.Headers["Content-Type"]; ok {
@@ -255,7 +214,9 @@ func (a *ApigeeClient) GetImageWithURL(imageURL, portalURL string) (string, stri
 //GetSpecContent - get the spec content for an api product
 func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 	// Get the spec content file
-	response, err := a.getRequest(fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID))
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID),
+		WithDefaultHeaders(),
+	).Execute()
 
 	if err != nil {
 		return []byte{}
@@ -267,7 +228,9 @@ func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 //GetRevisionSpec - gets the resource file of type openapi for the org, api, revision, and spec file specified
 func (a *ApigeeClient) GetRevisionSpec(apiName, revisionNumber, specFile string) []byte {
 	// Get the openapi resource file
-	response, _ := a.getRequest(fmt.Sprintf(orgURL+"apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile))
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile),
+		WithDefaultHeaders(),
+	).Execute()
 
 	return response.Body
 }
@@ -275,7 +238,9 @@ func (a *ApigeeClient) GetRevisionSpec(apiName, revisionNumber, specFile string)
 //GetSwagger - downloads the specfile from apigee given the url path of its location
 func (a *ApigeeClient) GetSwagger(specPath string) []byte {
 	// Get the spec file
-	response, _ := a.getRequest(fmt.Sprintf("https://apigee.com%s", specPath))
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf("https://apigee.com%s", specPath),
+		WithDefaultHeaders(),
+	).Execute()
 
 	return response.Body
 }
@@ -283,7 +248,9 @@ func (a *ApigeeClient) GetSwagger(specPath string) []byte {
 //GetSharedFlow - gets the list of shared flows
 func (a *ApigeeClient) GetSharedFlow(name string) (*models.SharedFlowRevisionDeploymentDetails, error) {
 	// Get the shared flows list
-	response, err := a.getRequest(fmt.Sprintf(orgURL+"/sharedflows/%v", a.cfg.Organization, name))
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/sharedflows/%v", a.cfg.Organization, name),
+		WithDefaultHeaders(),
+	).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -321,14 +288,15 @@ func (a *ApigeeClient) CreateSharedFlow(data []byte, name string) error {
 	return err
 }
 
-//DeploySharedFlow - deploye the shared flow and revision to the environmnet
+//DeploySharedFlow - deploy the shared flow and revision to the environment
 func (a *ApigeeClient) DeploySharedFlow(env, name, revision string) error {
-	queryParams := map[string]string{
-		"override": "true",
-	}
 
 	// deploy the shared flow to the environment
-	_, err := a.postRequestWithQuery(fmt.Sprintf(orgURL+"/environments/%v/sharedflows/%v/revisions/%v/deployments", a.cfg.Organization, env, name, revision), queryParams, []byte{})
+	_, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"/environments/%v/sharedflows/%v/revisions/%v/deployments", a.cfg.Organization, env, name, revision),
+		WithDefaultHeaders(),
+		WithBody([]byte{}),
+		WithQueryParam("override", "true"),
+	).Execute()
 
 	if err != nil {
 		return err
@@ -337,7 +305,7 @@ func (a *ApigeeClient) DeploySharedFlow(env, name, revision string) error {
 	return nil
 }
 
-//createSharedFlow - gets the list of shared flows
+//PublishSharedFlowToEnvironment - publish the shared flow
 func (a *ApigeeClient) PublishSharedFlowToEnvironment(env, name string) error {
 	// This is the structure that is expected for adding a shared flow as a flow hook
 	type flowhook struct {
@@ -355,6 +323,37 @@ func (a *ApigeeClient) PublishSharedFlowToEnvironment(env, name string) error {
 	data, _ := json.Marshal(hook)
 
 	// Add the flow to the post proxy flow hook
-	_, err := a.putRequest(fmt.Sprintf(orgURL+"/environments/%v/flowhooks/PostProxyFlowHook", a.cfg.Organization, env), data)
+	_, err := a.newRequest(http.MethodPut, fmt.Sprintf(orgURL+"/environments/%v/flowhooks/PostProxyFlowHook", a.cfg.Organization, env),
+		WithDefaultHeaders(),
+		WithBody(data),
+	).Execute()
 	return err
+}
+
+//GetStats - get the api stats for a specific environment
+func (a *ApigeeClient) GetStats(env string, start, end time.Time) (*models.Metrics, error) {
+	// Get the spec content file
+	const dimension = "apiproxy" // https://docs.apigee.com/api-platform/analytics/analytics-reference#dimensions
+	const format = "01/02/2006 15:04"
+
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/environments/%v/stats/%s", a.cfg.Organization, env, dimension),
+		WithQueryParams(map[string]string{
+			"select":    "sum(message_count),sum(is_error)",
+			"timeUnit":  "minute",
+			"timeRange": fmt.Sprintf("%s~%s", start.Format(format), end.Format(format)),
+		}),
+		WithDefaultHeaders(),
+	).Execute()
+
+	if err != nil {
+		return nil, err
+	}
+
+	stats := &models.Metrics{}
+	err = json.Unmarshal(response.Body, stats)
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }

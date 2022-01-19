@@ -9,7 +9,6 @@ import (
 	"github.com/elastic/beats/v7/libbeat/common"
 
 	"github.com/Axway/agents-apigee/traceability/pkg/apigee"
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // customLogBeater configuration.
@@ -19,10 +18,12 @@ type customLogBeater struct {
 	eventProcessor *apigee.EventProcessor
 	client         beat.Client
 	eventChannel   chan []byte
+	statChannel    chan interface{}
 }
 
 var bt *customLogBeater
-var logglyConfig *config.LogglyConfig
+
+// var logglyConfig *config.LogglyConfig
 
 // New creates an instance of aws_apigw_traceability_agent.
 func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
@@ -33,8 +34,9 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 
 	var err error
 
-	bt.logglyClient, err = apigee.NewLogglyClient(logglyConfig, bt.eventChannel)
-	bt.eventProcessor = apigee.NewEventProcessor(logglyConfig)
+	// bt.logglyClient, err = apigee.NewLogglyClient(logglyConfig, bt.eventChannel)
+	// bt.eventProcessor = apigee.NewEventProcessor(logglyConfig)
+	bt.eventProcessor = apigee.NewEventProcessor()
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +50,14 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 }
 
 // SetLogglyConfig - set parsed gateway config
-func SetLogglyConfig(logglyCfg *config.LogglyConfig) {
-	logglyConfig = logglyCfg
-}
+// func SetLogglyConfig(logglyCfg *config.LogglyConfig) {
+// 	logglyConfig = logglyCfg
+// }
+
+// SetStat - set parsed gateway config
+// func SetLogglyConfig(logglyCfg *config.LogglyConfig) {
+// 	logglyConfig = logglyCfg
+// }
 
 // Run starts ApigeeTraceabilityAgent.
 func (bt *customLogBeater) Run(b *beat.Beat) error {
@@ -62,12 +69,14 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		return err
 	}
 
-	bt.logglyClient.Start()
+	// bt.logglyClient.Start()
 
 	for {
 		select {
 		case <-bt.done:
 			return nil
+		case statData := <-bt.statChannel:
+			log.Debugf("STAT TO PROCESS: %+v", statData)
 		case eventData := <-bt.eventChannel:
 			log.Debug("EVENT TO PROCESS : " + string(eventData))
 			eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)

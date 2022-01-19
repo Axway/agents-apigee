@@ -4,34 +4,41 @@ apigee_traceability_agent:
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}
-  loggly:
-    organization: ${LOGGLY_ORGANIZATION}
-    apitoken: ${LOGGLY_APITOKEN}
-    customertoken: ${LOGGLY_CUSTOMERTOKEN}
-    host: ${LOGGLY_HOST:logs-01.loggly.com}
-    port: ${LOGGLY_PORT:514}
-  # Defines how often an event is sent to the output
+  # Settings for connecting to Amplify Central
   central:
-    url: "${CENTRAL_URL:https://apicentral.axway.com}"
-    organizationID: "${CENTRAL_ORGANIZATIONID}"
+    url: ${CENTRAL_URL:https://apicentral.axway.com}
+    organizationID: ${CENTRAL_ORGANIZATIONID:""}
     team: ${CENTRAL_TEAM:""}
-    deployment: "${CENTRAL_DEPLOYMENT:prod}"
-    environment: "${CENTRAL_ENVIRONMENT}"
+    deployment: ${CENTRAL_DEPLOYMENT:prod}
+    environment: ${CENTRAL_ENVIRONMENT:""}
+    environmentID: ${CENTRAL_ENVIRONMENTID} # only required when CENTRAL_USAGEREPORTING_OFFLINE=true
     agentName: ${CENTRAL_AGENTNAME:""}
-    platformURL: "${CENTRAL_PLATFORMURL:https://platform.axway.com}"
+    platformURL: ${CENTRAL_PLATFORMURL:https://platform.axway.com}
+    reportActivityFrequency: ${CENTRAL_REPORTACTIVITYFREQUENCY:5m}
+    versionChecker: ${CENTRAL_VERSIONCHECKER:true}
+    usageReporting:
+      url: ${CENTRAL_USAGEREPORTING_URL}
+      publish: ${CENTRAL_USAGEREPORTING_PUBLISH}
+      publishMetric: ${CENTRAL_USAGEREPORTING_PUBLISHMETRIC}
+      interval: ${CENTRAL_USAGEREPORTING_INTERVAL}
+      offline: ${CENTRAL_USAGEREPORTING_OFFLINE}
+      offlineSchedule: ${CENTRAL_USAGEREPORTING_OFFLINESCHEDULE}
     auth:
-      url: "${CENTRAL_AUTH_URL:https://login.axway.com/auth}"
-      realm: "${CENTRAL_AUTH_REALM:Broker}"
-      clientId: "${CENTRAL_AUTH_CLIENTID}"
-      privateKey: "${CENTRAL_AUTH_PRIVATEKEY:/keys/private_key.pem}"
-      publicKey: "${CENTRAL_AUTH_PUBLICKEY:/keys/public_key.pem}"
+      url: ${CENTRAL_AUTH_URL:https://login.axway.com/auth}
+      realm: ${CENTRAL_AUTH_REALM:Broker}
+      clientId: ${CENTRAL_AUTH_CLIENTID:""}
+      privateKey: ${CENTRAL_AUTH_PRIVATEKEY:./private_key.pem}
+      publicKey: ${CENTRAL_AUTH_PUBLICKEY:./public_key.pem}
       keyPassword: ${CENTRAL_AUTH_KEYPASSWORD:""}
+      timeout: 10s
     ssl:
-      minVersion: ${CENTRAL_SSL_MINVERSION:"TLS1.2"}
-      maxVersion: ${CENTRAL_SSL_MAXVERSION:"TLS1.3"}
+      minVersion: ${CENTRAL_SSL_MINVERSION:""}
+      maxVersion: ${CENTRAL_SSL_MAXVERSION:""}
       nextProtos: ${CENTRAL_SSL_NEXTPROTOS:[]}
-      cipherSuites: ${CENTRAL_SSL_CIPHERSUITES:["ECDHE-ECDSA-AES-256-GCM-SHA384", "ECDHE-RSA-AES-256-GCM-SHA384", "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-CHACHA20-POLY1305", "ECDHE-ECDSA-AES-128-GCM-SHA256", "ECDHE-RSA-AES-128-GCM-SHA256", "ECDHE-ECDSA-AES-128-CBC-SHA256", "ECDHE-RSA-AES-128-CBC-SHA256"]}
+      cipherSuites: ${CENTRAL_SSL_CIPHERSUITES:[]}
       insecureSkipVerify: ${CENTRAL_SSL_INSECURESKIPVERIFY:false}
+    proxyUrl: ${CENTRAL_PROXYURL:""}
+    clientTimeout: ${CENTRAL_CLIENTTIMEOUT:60s}
   status:
     port: ${STATUS_PORT:8990}
     healthCheckPeriod: ${STATUS_HEALTHCHECKPERIOD:3m}
@@ -44,24 +51,55 @@ apigee_traceability_agent:
 # Condor Ingestion service
 output.traceability:
   enabled: true
-  hosts:
-    - ${TRACEABILITY_HOST:"ingestion-lumberjack.datasearch.axway.com:453"}
+  hosts: ${TRACEABILITY_HOST:ingestion.datasearch.axway.com:5044}
   protocol: ${TRACEABILITY_PROTOCOL:"tcp"}
   compression_level: ${TRACEABILITY_COMPRESSIONLEVEL:3}
+  bulk_max_size: ${TRACEABILITY_BULKMAXSIZE:100}
+  client_timeout: ${TRACEABILITY_CLIENTTIMEOUT:60s}
+  pipelining: ${TRACEABILITY_PIPELINING:0}
+  worker: ${TRACEABILITY_WORKER:1}
+  loadbalance: ${TRACEABILITY_LOADBALANCE:true}
+  slow_start: ${TRACEABILITY_SLOWSTART:true}
   ssl:
-    enabled: true
+    enabled: ${TRACEABILITY_ENABLE_SSL:true}
     verification_mode: none
     cipher_suites:
       - "ECDHE-ECDSA-AES-128-GCM-SHA256"
       - "ECDHE-ECDSA-AES-256-GCM-SHA384"
+      - "ECDHE-ECDSA-AES-128-CBC-SHA256"
       - "ECDHE-ECDSA-CHACHA20-POLY1305"
       - "ECDHE-RSA-AES-128-CBC-SHA256"
       - "ECDHE-RSA-AES-128-GCM-SHA256"
       - "ECDHE-RSA-AES-256-GCM-SHA384"
-      - "ECDHE-RSA-CHACHA20-POLY1205"
-  worker: 1
-  pipelining: 0
   proxy_url: ${TRACEABILITY_PROXYURL:""}
+  redaction:
+    path:
+      show: ${TRACEABILITY_REDACTION_PATH_SHOW:[]}
+    queryArgument:
+      show: ${TRACEABILITY_REDACTION_QUERYARGUMENT_SHOW:[]}
+      sanitize: ${TRACEABILITY_REDACTION_QUERYARGUMENT_SANITIZE:[]}
+    requestHeader:
+      show: ${TRACEABILITY_REDACTION_REQUESTHEADER_SHOW:[]}
+      sanitize: ${TRACEABILITY_REDACTION_REQUESTHEADER_SANITIZE:[]}
+    responseHeader:
+      show: ${TRACEABILITY_REDACTION_RESPONSEHEADER_SHOW:[]}
+      sanitize: ${TRACEABILITY_REDACTION_RESPONSEHEADER_SANITIZE:[]}
+    jmsProperties:
+      show: ${TRACEABILITY_REDACTION_JMSPROPERTIES_SHOW:[]}
+      sanitize: ${TRACEABILITY_REDACTION_JMSPROPERTIES_SANITIZE:[]}
+    maskingCharacters: ${TRACEABILITY_REDACTION_MASKING_CHARACTERS:"\u007B*\u007D"} # unicode for {*}
+  sampling:
+    percentage: ${TRACEABILITY_SAMPLING_PERCENTAGE:10}
+    per_api: ${TRACEABILITY_SAMPLING_PER_API:true}
+    reportAllErrors: ${TRACEABILITY_SAMPLING_REPORTALLERRORS:true}
+  apiExceptionsList: ${TRACEABILITY_EXCEPTION_LIST:[]}
+
+queue:
+  mem:
+    events: ${QUEUE_MEM_EVENTS:2048}
+    flush:
+      min_events: ${QUEUE_MEM_FLUSH_MINEVENTS:100}
+      timeout: ${QUEUE_MEM_FLUSH_TIMEOUT:1s}
 
 logging:
   metrics:
@@ -69,6 +107,6 @@ logging:
   files:
     permissions: 0600
     name: ${LOG_FILE_NAME:traceability_agent.log}
-    dir: ${LOG_FILE_PATH:logs}
+    path: ${LOG_FILE_PATH:logs}
     keepfiles: ${LOG_FILE_KEEPFILES:7}
     rotateeverybytes: ${LOG_FILE_ROTATEEVERYBYTES:10485760}

@@ -1,23 +1,31 @@
 package apigee
 
 import (
+	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
+	"github.com/Axway/agent-sdk/pkg/traceability"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/config"
+)
+
+const (
+	apiStatCacheFile = "stat-cache-data.json"
 )
 
 // AgentConfig - represents the config for agent
 type AgentConfig struct {
 	CentralCfg corecfg.CentralConfig `config:"central"`
 	ApigeeCfg  *config.ApigeeConfig  `config:"apigee"`
-	// LogglyCfg  *logglycfg.LogglyConfig `config:"loggly"`
 }
 
 // Agent - Represents the Gateway client
 type Agent struct {
-	cfg          *AgentConfig
-	apigeeClient *apigee.ApigeeClient
+	cfg           *AgentConfig
+	apigeeClient  *apigee.ApigeeClient
+	statCache     cache.Cache
+	statChannel   chan interface{}
+	cacheFilePath string
 }
 
 // NewAgent - Creates a new Agent
@@ -28,12 +36,21 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 	}
 
 	agent := &Agent{
-		apigeeClient: apigeeClient,
-		cfg:          agentCfg,
+		apigeeClient:  apigeeClient,
+		cfg:           agentCfg,
+		statCache:     cache.New(),
+		statChannel:   make(chan interface{}),
+		cacheFilePath: traceability.GetDataDirPath() + "/" + apiStatCacheFile,
 	}
+	agent.statCache.Load(agent.cacheFilePath)
 
-	// create job that registers the shared flow
-	// _, err = jobs.RegisterSingleRunJobWithName(newRegisterSharedFlowJob(agent.apigeeClient, agentCfg.LogglyCfg), "Register Shared Flow")
+	// Start the poll api stats job
+	// statPollJob := &pollApigeeStats{
+	// 	apigeeClient: apigeeClient,
+	// 	statChannel:  agent.statChannel,
+	// }
+	// jobs.RegisterIntervalJobWithName(statPollJob, 30*time.Second, "Apigee API Stats")
+	registerPollStatsJob(agent)
 
 	return agent, nil
 }

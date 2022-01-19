@@ -9,8 +9,6 @@ import (
 
 	"github.com/elastic/beats/v7/libbeat/beat"
 	"github.com/elastic/beats/v7/libbeat/publisher"
-
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // EventProcessor - represents the processor for received event to generate event(s) for AMPLIFY Central
@@ -23,15 +21,13 @@ import (
 // log entry and performs the mapping to structure expected for AMPLIFY Central Observer. The method returns the converted Events to
 // transport publisher which then produces the events over the transport.
 type EventProcessor struct {
-	cfg            *config.LogglyConfig
 	eventGenerator transaction.EventGenerator
 	eventMapper    *EventMapper
 }
 
 // NewEventProcessor - return a new EventProcessor
-func NewEventProcessor(gateway *config.LogglyConfig) *EventProcessor {
+func NewEventProcessor() *EventProcessor {
 	ep := &EventProcessor{
-		cfg:            gateway,
 		eventGenerator: transaction.NewEventGenerator(),
 		eventMapper:    &EventMapper{},
 	}

@@ -12,7 +12,7 @@ package models
 // MetricsValues struct for MetricsValues
 type MetricsValues struct {
 	// Timestamp in millieseconds since epoch.
-	Timestamp string `json:"timestamp,omitempty"`
+	Timestamp int64 `json:"timestamp,omitempty"`
 	// Value of metric.
 	Value string `json:"value,omitempty"`
 }

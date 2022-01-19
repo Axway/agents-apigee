@@ -102,7 +102,6 @@ func (m *EventMapper) processMapping(apigeeLogEntry LogEntry) ([]transaction.Log
 		*transInboundLogEventLeg,
 		*transOutboundLogEventLeg,
 	}, nil
-	return nil, nil
 }
 
 func (m *EventMapper) getTransactionStatus(code int) string {
@@ -147,7 +146,6 @@ func (m *EventMapper) createSummaryEvent(apigeeLogEntry LogEntry, teamID string)
 		// The Proxy.ID should be of format "remoteApiId_<ID Of the API on remote gateway>". Use transaction.FormatProxyID(<ID Of the API on remote gateway>) to get the formatted value.
 		SetProxy(transaction.FormatProxyID(apigeeLogEntry.APIName), apigeeLogEntry.APIName, 1).
 		Build()
-	return nil, nil
 }
 
 func makeTimestamp(timeString string) int64 {
