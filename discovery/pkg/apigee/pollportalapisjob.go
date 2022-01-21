@@ -19,19 +19,25 @@ type pollPortalAPIsJob struct {
 	portalAPIsMap     map[string]string
 	processAPIChan    chan *apigee.APIDocData
 	removedAPIChan    chan string
+	wgActionChan      chan wgAction
 	jobID             string
 	consecutiveErrors int // job only fails after 3 consecutive execution errors
+	firstRun          bool
 }
 
-func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalName string, processAPIChan chan *apigee.APIDocData, removedAPIChan chan string) *pollPortalAPIsJob {
-	return &pollPortalAPIsJob{
+func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalName string, channels *agentChannels) *pollPortalAPIsJob {
+	job := &pollPortalAPIsJob{
 		apigeeClient:   apigeeClient,
 		portalID:       portalID,
 		portalName:     portalName,
 		portalAPIsMap:  make(map[string]string),
-		processAPIChan: processAPIChan,
-		removedAPIChan: removedAPIChan,
+		processAPIChan: channels.processAPIChan,
+		removedAPIChan: channels.removedAPIChan,
+		wgActionChan:   channels.wgActionChan,
+		firstRun:       true,
 	}
+	job.wgActionChan <- wgAdd
+	return job
 }
 
 func (j *pollPortalAPIsJob) Register() error {
@@ -55,6 +61,12 @@ func (j *pollPortalAPIsJob) Status() error {
 }
 
 func (j *pollPortalAPIsJob) Execute() error {
+	if j.firstRun {
+		defer func() {
+			j.wgActionChan <- wgDone
+			j.firstRun = false
+		}()
+	}
 	log.Tracef("Executing %s Portal poller", j.portalName)
 	allPortalAPIs, err := j.apigeeClient.GetPortalAPIs(j.portalID)
 	if err != nil {

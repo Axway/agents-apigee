@@ -12,28 +12,22 @@ import (
 //portalHandler - job that waits for
 type portalHandler struct {
 	jobs.Job
-	apigeeClient      *apigee.ApigeeClient
-	newPortalChan     chan string
-	removedPortalChan chan string
-	processAPIChan    chan *apigee.APIDocData
-	removedAPIChan    chan string
-	stopChan          chan interface{}
-	isRunning         bool
-	runningChan       chan bool
-	jobsMap           map[string]*pollPortalAPIsJob // keep map of all jobs created for the portals
+	apigeeClient *apigee.ApigeeClient
+	channels     *agentChannels
+	stopChan     chan interface{}
+	isRunning    bool
+	runningChan  chan bool
+	jobsMap      map[string]*pollPortalAPIsJob // keep map of all jobs created for the portals
 }
 
 func newPortalHandlerJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels) *portalHandler {
 	job := &portalHandler{
-		apigeeClient:      apigeeClient,
-		newPortalChan:     channels.newPortalChan,
-		removedPortalChan: channels.removedPortalChan,
-		stopChan:          make(chan interface{}),
-		isRunning:         false,
-		processAPIChan:    channels.processAPIChan,
-		removedAPIChan:    channels.removedAPIChan,
-		runningChan:       make(chan bool),
-		jobsMap:           make(map[string]*pollPortalAPIsJob),
+		apigeeClient: apigeeClient,
+		channels:     channels,
+		stopChan:     make(chan interface{}),
+		isRunning:    false,
+		runningChan:  make(chan bool),
+		jobsMap:      make(map[string]*pollPortalAPIsJob),
 	}
 	go job.statusUpdate()
 	return job
@@ -72,13 +66,13 @@ func (j *portalHandler) Execute() error {
 	defer j.stopped()
 	for {
 		select {
-		case newPortal, ok := <-j.newPortalChan:
+		case newPortal, ok := <-j.channels.newPortalChan:
 			if !ok {
 				err := fmt.Errorf("New portal channel was closed")
 				return err
 			}
 			j.handleNewPortal(newPortal)
-		case removedPortal, ok := <-j.removedPortalChan:
+		case removedPortal, ok := <-j.channels.removedPortalChan:
 			if !ok {
 				err := fmt.Errorf("New portal channel was closed")
 				return err
@@ -101,7 +95,7 @@ func (j *portalHandler) handleNewPortal(newPortal string) {
 	}
 
 	// register a new job to poll for apis in this portal
-	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, portalName, j.processAPIChan, j.removedAPIChan)
+	portalAPIsJob := newPollPortalAPIsJob(j.apigeeClient, newPortal, portalName, j.channels)
 	err = portalAPIsJob.Register()
 	if err != nil {
 		log.Errorf("error hit starting job for portal ID %s", newPortal)

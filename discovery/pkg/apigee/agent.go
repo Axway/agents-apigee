@@ -2,9 +2,7 @@ package apigee
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/filter"
@@ -56,13 +54,6 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 
 	newAgent.handleSubscriptions()
 
-	// delay the start of the API validator
-	go func() {
-		// wait an hour before registering the API validator
-		time.Sleep(time.Hour)
-		agent.RegisterAPIValidator(newAgent.apiValidator)
-	}()
-
 	return newAgent, nil
 }
 
@@ -76,6 +67,7 @@ func (a *Agent) registerJobs() error {
 		removedPortalChan: make(chan string),
 		processAPIChan:    make(chan *apigee.APIDocData),
 		removedAPIChan:    make(chan string),
+		wgActionChan:      make(chan wgAction, 10),
 	}
 
 	// create the product handler job and register it
@@ -113,6 +105,9 @@ func (a *Agent) registerJobs() error {
 
 	// create job that starts the subscription manager
 	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
+
+	// create job that registers the api validator
+	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(channels.wgActionChan, a.apiValidator), "Register API Validator")
 
 	return err
 }
