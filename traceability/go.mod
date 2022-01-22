@@ -3,6 +3,7 @@ module github.com/Axway/agents-apigee/traceability
 go 1.16
 
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
+
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
@@ -23,6 +24,7 @@ require (
 	github.com/markbates/pkger v0.17.1
 	github.com/miekg/dns v1.1.29 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
+	github.com/stretchr/testify v1.6.1
 	gopkg.in/jcmturner/gokrb5.v7 v7.5.0 // indirect
 )
 

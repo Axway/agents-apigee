@@ -25,6 +25,17 @@ type AuthResponse struct {
 // Headers - Type for request/response headers
 type Headers map[string]string
 
+//
+type metricCache struct {
+	ProxyName       string `json:"proxy"`
+	Timestamp       int64  `json:"timestamp"`
+	Total           int    `json:"total"`
+	Error           int    `json:"error"`
+	Success         int    `json:"success"`
+	ReportedError   int    `json:"reportedError"`
+	ReportedSuccess int    `json:"reportedSuccess"`
+}
+
 // LogglyEvent - Event from loggly
 type LogglyEvent struct {
 	ID        string `json:"id"`

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	orgURL        = "https://api.enterprise.apigee.com/v1/organizations/%s/"
+	orgURL        = "https://api.enterprise.apigee.com/v1/organizations/%s"
 	portalsURL    = "https://apigee.com/portals/api/sites"
 	orgDataAPIURL = "https://apigee.com/dapi/api/organizations/%s"
 )
@@ -23,7 +23,7 @@ const (
 //GetDevelopers - get the list of developers for the org
 func (a *ApigeeClient) GetDevelopers() []string {
 	// Get the developers
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"developers", a.cfg.Organization),
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/developers", a.cfg.Organization),
 		WithDefaultHeaders(),
 	).Execute()
 
@@ -33,10 +33,23 @@ func (a *ApigeeClient) GetDevelopers() []string {
 	return developers
 }
 
+//GetEnvironments - get the list of environments for the org
+func (a *ApigeeClient) GetEnvironments() []string {
+	// Get the developers
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/environments", a.cfg.Organization),
+		WithDefaultHeaders(),
+	).Execute()
+
+	environments := []string{}
+	json.Unmarshal(response.Body, &environments)
+
+	return environments
+}
+
 //GetDeveloper - get the developer by email
 func (a *ApigeeClient) GetDeveloper(devEmail string) (*models.Developer, error) {
 	// Get the developers
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"developers/%s", a.cfg.Organization, strings.ToLower(devEmail)),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/developers/%s", a.cfg.Organization, strings.ToLower(devEmail)),
 		WithDefaultHeaders(),
 	).Execute()
 	if err != nil {
@@ -60,7 +73,7 @@ func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Develop
 		return nil, err
 	}
 
-	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"developers", a.cfg.Organization),
+	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"/developers", a.cfg.Organization),
 		WithDefaultHeaders(),
 		WithBody(data),
 	).Execute()
@@ -84,7 +97,7 @@ func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.D
 		return nil, err
 	}
 
-	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"developers/%s/apps", a.cfg.Organization, newApp.DeveloperId),
+	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"/developers/%s/apps", a.cfg.Organization, newApp.DeveloperId),
 		WithDefaultHeaders(),
 		WithBody(data),
 	).Execute()
@@ -107,7 +120,7 @@ func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.D
 //RemoveDeveloperApp - create an app for the developer
 func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 	// create a new developer app
-	response, err := a.newRequest(http.MethodDelete, fmt.Sprintf(orgURL+"developers/%s/apps/%s", a.cfg.Organization, developerID, appName),
+	response, err := a.newRequest(http.MethodDelete, fmt.Sprintf(orgURL+"/developers/%s/apps/%s", a.cfg.Organization, developerID, appName),
 		WithDefaultHeaders(),
 	).Execute()
 
@@ -124,7 +137,7 @@ func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 //GetProducts - get the list of products for the org
 func (a *ApigeeClient) GetProducts() Products {
 	// Get the products
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"apiproducts", a.cfg.Organization),
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apiproducts", a.cfg.Organization),
 		WithDefaultHeaders(),
 	).Execute()
 	products := Products{}
@@ -178,7 +191,7 @@ func (a *ApigeeClient) GetPortalAPIs(portalID string) ([]*APIDocData, error) {
 //GetProduct - get details of the product
 func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error) {
 	// Get the product
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"apiproducts/%s", a.cfg.Organization, productName),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apiproducts/%s", a.cfg.Organization, productName),
 		WithDefaultHeaders(),
 	).Execute()
 	if err != nil {
@@ -228,7 +241,7 @@ func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 //GetRevisionSpec - gets the resource file of type openapi for the org, api, revision, and spec file specified
 func (a *ApigeeClient) GetRevisionSpec(apiName, revisionNumber, specFile string) []byte {
 	// Get the openapi resource file
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile),
+	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile),
 		WithDefaultHeaders(),
 	).Execute()
 
@@ -340,7 +353,8 @@ func (a *ApigeeClient) GetStats(env string, start, end time.Time) (*models.Metri
 		WithQueryParams(map[string]string{
 			"select":    "sum(message_count),sum(is_error)",
 			"timeUnit":  "minute",
-			"timeRange": fmt.Sprintf("%s~%s", start.Format(format), end.Format(format)),
+			"timeRange": fmt.Sprintf("%s~%s", time.Time.UTC(start).Format(format), time.Time.UTC(end).Format(format)),
+			"sortby":    "sum(message_count),sum(is_error)",
 		}),
 		WithDefaultHeaders(),
 	).Execute()

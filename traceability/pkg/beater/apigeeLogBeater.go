@@ -71,6 +71,7 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 
 	// bt.logglyClient.Start()
 
+	apigee.GetAgent().BeatsReady()
 	for {
 		select {
 		case <-bt.done:

@@ -1,6 +1,8 @@
 package apigee
 
 import (
+	"path/filepath"
+
 	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/traceability"
@@ -19,6 +21,13 @@ type AgentConfig struct {
 	ApigeeCfg  *config.ApigeeConfig  `config:"apigee"`
 }
 
+var thisAgent *Agent
+
+// GetAgent - returns the agent
+func GetAgent() *Agent {
+	return thisAgent
+}
+
 // Agent - Represents the Gateway client
 type Agent struct {
 	cfg           *AgentConfig
@@ -26,6 +35,9 @@ type Agent struct {
 	statCache     cache.Cache
 	statChannel   chan interface{}
 	cacheFilePath string
+	envs          []string
+	catchUpDone   bool
+	ready         bool
 }
 
 // NewAgent - Creates a new Agent
@@ -35,22 +47,36 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		return nil, err
 	}
 
-	agent := &Agent{
-		apigeeClient:  apigeeClient,
-		cfg:           agentCfg,
-		statCache:     cache.New(),
-		statChannel:   make(chan interface{}),
-		cacheFilePath: traceability.GetDataDirPath() + "/" + apiStatCacheFile,
+	thisAgent = &Agent{
+		apigeeClient: apigeeClient,
+		cfg:          agentCfg,
+		statCache:    cache.New(),
+		statChannel:  make(chan interface{}),
+		catchUpDone:  false,
 	}
-	agent.statCache.Load(agent.cacheFilePath)
 
-	// Start the poll api stats job
-	// statPollJob := &pollApigeeStats{
-	// 	apigeeClient: apigeeClient,
-	// 	statChannel:  agent.statChannel,
-	// }
-	// jobs.RegisterIntervalJobWithName(statPollJob, 30*time.Second, "Apigee API Stats")
-	registerPollStatsJob(agent)
+	return thisAgent, nil
+}
 
-	return agent, nil
+//CatchUpDone - signal when the catch up job is complete
+func (a *Agent) CatchUpDone() {
+	a.catchUpDone = true
+}
+
+//BeatsReady - signal that the beats are ready
+func (a *Agent) BeatsReady() {
+	a.setupCache()
+	registerPollStatsJob(a)
+	a.ready = true
+}
+
+//getApigeeEnvironments -
+func (a *Agent) getApigeeEnvironments() {
+	a.envs = a.apigeeClient.GetEnvironments()
+}
+
+//setupCache -
+func (a *Agent) setupCache() {
+	a.cacheFilePath = filepath.Join(traceability.GetDataDirPath(), "cache", apiStatCacheFile)
+	a.statCache.Load(a.cacheFilePath)
 }
