@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
@@ -205,6 +206,63 @@ func TestCleanCache(t *testing.T) {
 			for _, key := range test.cleanedKeys {
 				_, err := agent.statCache.Get(key)
 				assert.NotNil(t, err)
+			}
+		})
+	}
+}
+
+func TestNewPollStatsJob(t *testing.T) {
+	testCases := []struct {
+		name       string
+		startTime  time.Time
+		endTime    time.Time
+		increment  time.Duration
+		cacheClean bool
+	}{
+		{
+			name: "No Options",
+		},
+		{
+			name:       "All Options",
+			startTime:  time.Now().Add(time.Hour * -1),
+			endTime:    time.Now(),
+			increment:  time.Hour,
+			cacheClean: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			opts := make([]func(*pollApigeeStats), 0)
+
+			if !test.startTime.IsZero() {
+				opts = append(opts, withStartTime(test.startTime))
+			}
+			if !test.endTime.IsZero() {
+				opts = append(opts, withEndTime(test.endTime))
+			}
+			if test.increment > 0 {
+				opts = append(opts, withIncrement(test.increment))
+			}
+			if test.cacheClean {
+				opts = append(opts, withCacheClean())
+			}
+
+			agent := &Agent{
+				statCache: cache.New(),
+			}
+			job := newPollStatsJob(agent, opts...)
+
+			assert.NotNil(t, job)
+			assert.Equal(t, test.startTime, job.startTime)
+			assert.Equal(t, test.endTime, job.endTime)
+			assert.Equal(t, test.increment, job.increment)
+			assert.Equal(t, []string{}, job.cacheKeys)
+			assert.NotNil(t, job.cacheKeysMutex)
+			if test.cacheClean {
+				assert.True(t, job.cacheClean)
+			} else {
+				assert.False(t, job.cacheClean)
 			}
 		})
 	}

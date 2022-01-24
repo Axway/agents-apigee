@@ -41,15 +41,17 @@ type pollApigeeStats struct {
 	lastTime       time.Time
 	increment      time.Duration // increment the end and start times by this amount
 	cacheKeys      []string
-	cacheKeysMutex sync.Mutex
+	cacheKeysMutex *sync.Mutex
 	cacheClean     bool
 	collector      metric.Collector
 }
 
 func newPollStatsJob(agent *Agent, options ...func(*pollApigeeStats)) *pollApigeeStats {
 	job := &pollApigeeStats{
-		agent:     agent,
-		collector: metric.GetMetricCollector(),
+		agent:          agent,
+		collector:      metric.GetMetricCollector(),
+		cacheKeys:      make([]string, 0),
+		cacheKeysMutex: &sync.Mutex{},
 	}
 	for _, o := range options {
 		o(job)
@@ -75,18 +77,16 @@ func withIncrement(increment time.Duration) func(p *pollApigeeStats) {
 	}
 }
 
-func withCacheClean(increment time.Duration) func(p *pollApigeeStats) {
+func withCacheClean() func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
-		p.cacheKeys = make([]string, 0)
 		p.cacheClean = true
-		p.cacheKeysMutex = sync.Mutex{}
 	}
 }
 
 func registerPollStatsJob(agent *Agent) (string, error) {
 	// create the job that runs every minute
 	job := newPollStatsJob(agent,
-		withCacheClean(time.Hour),
+		withCacheClean(),
 	)
 	lastStatTimeIface, err := agent.statCache.Get(lastStartTimeKey)
 	if err == nil {
