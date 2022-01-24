@@ -26,7 +26,7 @@ make docker-build
 ### Run (Docker)
 
 ```
-docker run --env-file env_vars -v `pwd`/keys:/keys apigee-traceability-agent:latest
+docker run --env-file env_vars  -v `pwd`/data:/data -v `pwd`/keys:/keys apigee-traceability-agent:latest
 ```
 
 ### Build (Windows)
