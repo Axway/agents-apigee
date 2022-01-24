@@ -17,8 +17,7 @@ type customLogBeater struct {
 	logglyClient   *apigee.LogglyClient
 	eventProcessor *apigee.EventProcessor
 	client         beat.Client
-	eventChannel   chan []byte
-	statChannel    chan interface{}
+	// eventChannel   chan []byte
 }
 
 var bt *customLogBeater
@@ -28,8 +27,7 @@ var bt *customLogBeater
 // New creates an instance of aws_apigw_traceability_agent.
 func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	bt := &customLogBeater{
-		done:         make(chan struct{}),
-		eventChannel: make(chan []byte),
+		done: make(chan struct{}),
 	}
 
 	var err error
@@ -76,14 +74,12 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		select {
 		case <-bt.done:
 			return nil
-		case statData := <-bt.statChannel:
-			log.Debugf("STAT TO PROCESS: %+v", statData)
-		case eventData := <-bt.eventChannel:
-			log.Debug("EVENT TO PROCESS : " + string(eventData))
-			eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
-			if eventsToPublish != nil {
-				bt.client.PublishAll(eventsToPublish)
-			}
+			// case eventData := <-bt.eventChannel:
+			// 	log.Debug("EVENT TO PROCESS : " + string(eventData))
+			// 	eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
+			// 	if eventsToPublish != nil {
+			// 		bt.client.PublishAll(eventsToPublish)
+			// 	}
 		}
 	}
 }
