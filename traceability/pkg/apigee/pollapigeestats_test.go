@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/Axway/agent-sdk/pkg/cache"
@@ -20,9 +21,12 @@ type mockCollector struct {
 	total     *int
 	successes *int
 	errors    *int
+	mutex     *sync.Mutex
 }
 
 func (m mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string, duration, bytes int64, appName, teamName string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	apiCount := make([]int, 3)
 	if c, ok := m.apiCounts[apiDetails.Name]; ok {
 		apiCount = c
@@ -55,7 +59,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 7,
 			errors:    0,
 			apiCalls: map[string][]int{
-				"Petstore-prod": {7, 7, 0},
+				"Petstore (prod)": {7, 7, 0},
 			},
 		},
 		{
@@ -65,17 +69,17 @@ func TestProcessMetric(t *testing.T) {
 			successes: 0,
 			errors:    7,
 			apiCalls: map[string][]int{
-				"Petstore-prod": {7, 0, 7},
+				"Petstore (prod)": {7, 0, 7},
 			},
 		},
 		{
 			name:      "Multiple Calls",
 			responses: []string{"multiple_calls_1.json", "multiple_calls_2.json"},
-			total:     14,
+			total:     21,
 			successes: 7,
-			errors:    7,
+			errors:    14,
 			apiCalls: map[string][]int{
-				"Petstore-prod": {14, 7, 7},
+				"Petstore (prod)": {21, 7, 14},
 			},
 		},
 		{
@@ -85,19 +89,18 @@ func TestProcessMetric(t *testing.T) {
 			successes: 27,
 			errors:    18,
 			apiCalls: map[string][]int{
-				"Petstore-prod":     {19, 11, 8},
-				"Practitioner-prod": {26, 16, 10},
+				"Petstore (prod)":     {19, 11, 8},
+				"Practitioner (prod)": {26, 16, 10},
 			},
 		},
 		{
 			name:      "Real Data",
 			responses: []string{"real_data.json"},
-			total:     83,
-			successes: 28,
-			errors:    55,
+			total:     1788,
+			successes: 894,
+			errors:    894,
 			apiCalls: map[string][]int{
-				"Petstore-prod": {9, 8, 1},
-				"customer-prod": {74, 20, 54},
+				"Swagger-Petstore (prod)": {1788, 894, 894},
 			},
 		},
 	}
@@ -113,6 +116,7 @@ func TestProcessMetric(t *testing.T) {
 				total:     new(int),
 				successes: new(int),
 				errors:    new(int),
+				mutex:     &sync.Mutex{},
 			}
 			job.collector = mCollector
 

@@ -34,15 +34,16 @@ type metricData struct {
 
 type pollApigeeStats struct {
 	jobs.Job
-	id         string
-	agent      *Agent
-	endTime    time.Time
-	startTime  time.Time
-	lastTime   time.Time
-	increment  time.Duration // increment the end and start times by this amount
-	cacheKeys  []string
-	cacheClean bool
-	collector  metric.Collector
+	id             string
+	agent          *Agent
+	endTime        time.Time
+	startTime      time.Time
+	lastTime       time.Time
+	increment      time.Duration // increment the end and start times by this amount
+	cacheKeys      []string
+	cacheKeysMutex sync.Mutex
+	cacheClean     bool
+	collector      metric.Collector
 }
 
 func newPollStatsJob(agent *Agent, options ...func(*pollApigeeStats)) *pollApigeeStats {
@@ -78,6 +79,7 @@ func withCacheClean(increment time.Duration) func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
 		p.cacheKeys = make([]string, 0)
 		p.cacheClean = true
+		p.cacheKeysMutex = sync.Mutex{}
 	}
 }
 
@@ -202,6 +204,7 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 			metData := &metricData{
 				environment:    metrics.Environments[0].Name,
 				name:           d.Name,
+				timestamp:      d.Metrics[metricsIndex[countMetric]].MetricValues[i].Timestamp,
 				count:          d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value,
 				policyErrCount: d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
 				serverErrCount: d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
@@ -220,7 +223,9 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 
 func (j *pollApigeeStats) processMetric(metData *metricData) {
 	metricCacheKey := fmt.Sprintf("%s-%s-%d", metData.environment, metData.name, metData.timestamp)
+	j.cacheKeysMutex.Lock()
 	j.cacheKeys = append(j.cacheKeys, metricCacheKey)
+	j.cacheKeysMutex.Unlock()
 
 	// get the cached values
 	newMetricData := &metricCache{
@@ -320,9 +325,11 @@ func (j *pollApigeeStats) cleanCache() {
 	keysMap := make(map[string]struct{})
 
 	// add keys that should be kept
+	j.cacheKeysMutex.Lock()
 	for _, key := range j.cacheKeys {
 		keysMap[key] = struct{}{}
 	}
+	j.cacheKeysMutex.Unlock()
 
 	// find keys not in the keysMap, these should be cleaned
 	for _, key := range knownKeys {
