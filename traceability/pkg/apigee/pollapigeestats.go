@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,7 +14,23 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
-const lastStartTimeKey = "lastStartTime"
+const (
+	lastStartTimeKey  = "lastStartTime"
+	countMetric       = "sum(message_count)"
+	policyErrMetric   = "sum(policy_error)"
+	serverErrMetric   = "sum(target_error)"
+	avgResponseMetric = "avg(total_response_time)"
+)
+
+type metricData struct {
+	environment    string
+	name           string
+	timestamp      int64
+	count          string
+	policyErrCount string
+	serverErrCount string
+	responseTime   string
+}
 
 type pollApigeeStats struct {
 	jobs.Job
@@ -114,12 +131,13 @@ func (j *pollApigeeStats) Execute() error {
 		startTime = time.Now().Add(time.Minute * -30) // go back 30 minutes
 	}
 
+	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
 	for _, envName := range j.agent.envs {
 		wg.Add(1)
 		go func(envName string) {
 			defer wg.Done()
-			metrics, err := j.agent.apigeeClient.GetStats(envName, startTime, lastTime)
+			metrics, err := j.agent.apigeeClient.GetStats(envName, metricSelect, startTime, lastTime)
 			if err != nil {
 				return
 			}
@@ -151,87 +169,139 @@ func (j *pollApigeeStats) Execute() error {
 }
 
 func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
-	wg := &sync.WaitGroup{}
-	for _, e := range metrics.Environments { // prod,test
-		for _, d := range e.Dimensions { // api_proxies
-			if len(d.Metrics) == 0 {
-				log.Error("metric data did not have the expected number of metric types, sum(message_count) and sum(is_error)")
-				return
-			}
+	if len(metrics.Environments) != 1 {
+		log.Error("exactly 1 environment should be returned")
+		return
+	}
 
-			for i, messageCount := range d.Metrics[0].Values { // sum(message_count),sum(is_error)
-				// get the error count metric
-				wg.Add(1)
-				errorCount := d.Metrics[1].Values[i]
-				go func(i int, messageCount, errorCount models.MetricsValues, envName, proxyName string) {
-					defer wg.Done()
-					j.processMetric(i, messageCount, errorCount, envName, proxyName)
-				}(i, messageCount, errorCount, e.Name, d.Name)
+	if len(metrics.Environments[0].Dimensions) == 0 {
+		log.Trace("At least one proxy is needed to process response data")
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	// get the index of each metric
+	var metricsIndex = map[string]int{
+		countMetric:       -1,
+		policyErrMetric:   -1,
+		serverErrMetric:   -1,
+		avgResponseMetric: -1,
+	}
+
+	for i, m := range metrics.Environments[0].Dimensions[0].Metrics { // api_proxies
+		if _, found := metricsIndex[m.Name]; !found {
+			log.Warnf("skipping metric, %s, in return data", m.Name)
+		}
+		metricsIndex[m.Name] = i
+	}
+
+	// TODO check for -1 index in metricsIndex
+
+	for _, d := range metrics.Environments[0].Dimensions { // api_proxies
+		for i := range d.Metrics[0].MetricValues {
+			metData := &metricData{
+				environment:    metrics.Environments[0].Name,
+				name:           d.Name,
+				count:          d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value,
+				policyErrCount: d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
+				serverErrCount: d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
+				responseTime:   d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
 			}
+			// get the error count metric
+			wg.Add(1)
+			go func(metData *metricData) {
+				defer wg.Done()
+				j.processMetric(metData)
+			}(metData)
 		}
 	}
 	wg.Wait()
 }
 
-func (j *pollApigeeStats) processMetric(i int, messageCount, errorCount models.MetricsValues, envName, proxyName string) {
-	metricCacheKey := fmt.Sprintf("%s-%s-%d", envName, proxyName, messageCount.Timestamp)
+func (j *pollApigeeStats) processMetric(metData *metricData) {
+	metricCacheKey := fmt.Sprintf("%s-%s-%d", metData.environment, metData.name, metData.timestamp)
 	j.cacheKeys = append(j.cacheKeys, metricCacheKey)
 
 	// get the cached values
-	metricData := &metricCache{
-		ProxyName: proxyName,
-		Timestamp: messageCount.Timestamp,
+	newMetricData := &metricCache{
+		ProxyName: metData.name,
+		Timestamp: metData.timestamp,
 	}
 	if data, err := j.agent.statCache.Get(metricCacheKey); err == nil {
 		stringData := data.(string)
-		err := json.Unmarshal([]byte(stringData), &metricData)
+		err := json.Unmarshal([]byte(stringData), &newMetricData)
 		if err != nil {
 			return
 		}
 	}
 
-	// get the total messages
-	s, err := strconv.ParseFloat(messageCount.Value, 64)
+	// get the average response time
+	s, err := strconv.ParseFloat(metData.responseTime, 64)
 	if err != nil {
-		log.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", messageCount.Value, messageCount.Timestamp)
+		log.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
 		return
 	}
-	metricData.Total = int(s)
+	newMetricData.ResponseTime = int64(s)
 
-	// get the total errors
-	s, err = strconv.ParseFloat(errorCount.Value, 64)
+	// get the total messages
+	s, err = strconv.ParseFloat(metData.count, 64)
 	if err != nil {
-		log.Errorf("could not read error metric value %s, at timestamp %d, as it was not a number", errorCount.Value, errorCount.Timestamp)
+		log.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
 		return
 	}
-	metricData.Error = int(s)
+	newMetricData.Total = int(s)
+
+	// get the policy errors
+	s, err = strconv.ParseFloat(metData.policyErrCount, 64)
+	if err != nil {
+		log.Errorf("could not read policy error metric value %s, at timestamp %d, as it was not a number", metData.policyErrCount, metData.timestamp)
+		return
+	}
+	newMetricData.PolicyError = int(s)
+
+	// get the server errors
+	s, err = strconv.ParseFloat(metData.serverErrCount, 64)
+	if err != nil {
+		log.Errorf("could not read server error metric value %s, at timestamp %d, as it was not a number", metData.serverErrCount, metData.timestamp)
+		return
+	}
+	newMetricData.ServerError = int(s)
 
 	// calculate the number of successes
-	metricData.Success = metricData.Total - metricData.Error
+	newMetricData.Success = newMetricData.Total - newMetricData.PolicyError - newMetricData.ServerError
 
 	// create teh api details structure for the metric collector
 	details := metric.APIDetails{
-		ID:   fmt.Sprintf("%s-%s", proxyName, envName),
-		Name: fmt.Sprintf("%s-%s", proxyName, envName),
+		ID:       fmt.Sprintf("%s-%s", metData.name, metData.environment),
+		Name:     fmt.Sprintf("%s (%s)", metData.name, metData.environment),
+		Revision: 1,
 	}
-	if metricData.ReportedError < metricData.Error {
-		count := metricData.Error - metricData.ReportedError
+	if newMetricData.ReportedPolicyError < newMetricData.PolicyError {
+		count := newMetricData.PolicyError - newMetricData.ReportedPolicyError
 		for count > 0 {
-			j.collector.AddMetric(details, "400", 0, 0, "", "")
+			j.collector.AddMetric(details, "400", newMetricData.ResponseTime, 0, "", "")
 			count--
-			metricData.ReportedError++
+			newMetricData.ReportedPolicyError++
 		}
 	}
-	if metricData.ReportedSuccess < metricData.Success {
-		count := metricData.Success - metricData.ReportedSuccess
+	if newMetricData.ReportedServerError < newMetricData.ServerError {
+		count := newMetricData.ServerError - newMetricData.ReportedServerError
 		for count > 0 {
-			j.collector.AddMetric(details, "200", 0, 0, "", "")
+			j.collector.AddMetric(details, "500", newMetricData.ResponseTime, 0, "", "")
 			count--
-			metricData.ReportedSuccess++
+			newMetricData.ReportedServerError++
+		}
+	}
+	if newMetricData.ReportedSuccess < newMetricData.Success {
+		count := newMetricData.Success - newMetricData.ReportedSuccess
+		for count > 0 {
+			j.collector.AddMetric(details, "200", newMetricData.ResponseTime, 0, "", "")
+			count--
+			newMetricData.ReportedSuccess++
 		}
 	}
 	// convert the metric data to a json string
-	data, err := json.Marshal(metricData)
+	data, err := json.Marshal(newMetricData)
 	if err != nil {
 		return
 	}
