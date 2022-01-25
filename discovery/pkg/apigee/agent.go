@@ -3,6 +3,7 @@ package apigee
 import (
 	"fmt"
 
+	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/filter"
@@ -23,6 +24,7 @@ type Agent struct {
 	cfg             *AgentConfig
 	apigeeClient    *apigee.ApigeeClient
 	discoveryFilter filter.Filter
+	channels        *agentChannels
 	stopChan        chan struct{}
 	devCreated      bool
 }
@@ -69,6 +71,7 @@ func (a *Agent) registerJobs() error {
 		removedAPIChan:    make(chan string),
 		wgActionChan:      make(chan wgAction, 10),
 	}
+	a.channels = channels
 
 	// create the product handler job and register it
 	productHandler := newProductHandlerJob(a.apigeeClient, channels, a.apigeeClient.GetConfig().GetIntervals().Product)
@@ -107,7 +110,7 @@ func (a *Agent) registerJobs() error {
 	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
 
 	// create job that registers the api validator
-	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(channels.wgActionChan, a.apiValidator), "Register API Validator")
+	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(channels.wgActionChan, a.registerValidator), "Register API Validator")
 
 	return err
 }
@@ -148,4 +151,10 @@ func (a *Agent) isDevCreated() bool {
 func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
 	// Evaluate the filter condition
 	return a.discoveryFilter.Evaluate(attributes)
+}
+
+func (a *Agent) registerValidator() {
+	agent.RegisterAPIValidator(a.apiValidator)
+	close(a.channels.wgActionChan)
+	a.channels.wgActionChan = nil
 }

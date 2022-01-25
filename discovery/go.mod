@@ -2,7 +2,7 @@ module github.com/Axway/agents-apigee/discovery
 
 go 1.16
 
-// replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
+replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 replace github.com/Axway/agents-apigee/client => ../client
 

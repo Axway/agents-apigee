@@ -34,9 +34,12 @@ func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalNam
 		processAPIChan: channels.processAPIChan,
 		removedAPIChan: channels.removedAPIChan,
 		wgActionChan:   channels.wgActionChan,
-		firstRun:       true,
+		firstRun:       false,
 	}
-	job.wgActionChan <- wgAdd
+	if channels.wgActionChan != nil {
+		job.wgActionChan <- wgAdd
+		job.firstRun = true
+	}
 	return job
 }
 

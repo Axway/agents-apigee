@@ -3,22 +3,21 @@ package apigee
 import (
 	"sync"
 
-	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 )
 
 type registerAPIValidatorJob struct {
 	jobs.Job
-	waitGroup    sync.WaitGroup
-	wgActionChan chan wgAction
-	apiValidator agent.APIValidator
+	waitGroup         sync.WaitGroup
+	wgActionChan      chan wgAction
+	registerValidator func()
 }
 
-func newRegisterAPIValidatorJob(wgActionChan chan wgAction, apiValidator agent.APIValidator) *registerAPIValidatorJob {
+func newRegisterAPIValidatorJob(wgActionChan chan wgAction, registerValidator func()) *registerAPIValidatorJob {
 	job := &registerAPIValidatorJob{
-		waitGroup:    sync.WaitGroup{},
-		wgActionChan: wgActionChan,
-		apiValidator: apiValidator,
+		waitGroup:         sync.WaitGroup{},
+		wgActionChan:      wgActionChan,
+		registerValidator: registerValidator,
 	}
 	go job.acceptActions()
 	return job
@@ -50,7 +49,6 @@ func (j *registerAPIValidatorJob) Status() error {
 
 func (j *registerAPIValidatorJob) Execute() error {
 	j.waitGroup.Wait()
-	agent.RegisterAPIValidator(j.apiValidator)
-	close(j.wgActionChan)
+	j.registerValidator()
 	return nil
 }
