@@ -2,7 +2,6 @@
 
 * You need an Axway Platform user account that is assigned the AMPLIFY Central admin role
 * Your Apigee Gateway/Manager should be up and running and have APIs to be discovered and exposed in AMPLIFY Central
-* [Loggly](https://www.loggly.com/) account
 
 Let’s get started!
 
