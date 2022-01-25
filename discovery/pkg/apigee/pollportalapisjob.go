@@ -36,7 +36,7 @@ func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalNam
 		wgActionChan:   channels.wgActionChan,
 		firstRun:       false,
 	}
-	if channels.wgActionChan != nil {
+	if job.wgActionChan != nil {
 		job.wgActionChan <- wgAdd
 		job.firstRun = true
 	}
@@ -66,8 +66,10 @@ func (j *pollPortalAPIsJob) Status() error {
 func (j *pollPortalAPIsJob) Execute() error {
 	if j.firstRun {
 		defer func() {
-			j.wgActionChan <- wgDone
-			j.firstRun = false
+			if j.wgActionChan != nil {
+				j.wgActionChan <- wgDone
+				j.firstRun = false
+			}
 		}()
 	}
 	log.Tracef("Executing %s Portal poller", j.portalName)

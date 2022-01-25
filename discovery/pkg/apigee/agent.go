@@ -155,6 +155,7 @@ func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
 
 func (a *Agent) registerValidator() {
 	agent.RegisterAPIValidator(a.apiValidator)
-	close(a.channels.wgActionChan)
+	closeChan := a.channels.wgActionChan
 	a.channels.wgActionChan = nil
+	close(closeChan)
 }
