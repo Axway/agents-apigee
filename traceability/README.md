@@ -2,8 +2,6 @@
 
 The Traceability agent finds logs from consumed Apigee proxies and sends the traffic data to Amplify Central
 
-![Traceability Agent Process](/resources/traceability_agent_apigee.JPG)
-
 ## Build and run
 
 The following make targets are available

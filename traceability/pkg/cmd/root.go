@@ -42,7 +42,6 @@ func init() {
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
 	config.AddProperties(rootProps)
-	// logglycfg.AddProperties(rootProps)
 }
 
 // Callback that agent will call to process the execution
@@ -56,15 +55,11 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
 	apigeeConfig := config.ParseConfig(rootProps)
-	// logglyConfig := logglycfg.ParseConfig(rootProps)
 
 	agentConfig := &apigee.AgentConfig{
 		CentralCfg: centralConfig,
 		ApigeeCfg:  apigeeConfig,
-		// LogglyCfg:  logglyConfig,
 	}
-
-	// beater.SetLogglyConfig(logglyConfig)
 
 	apigee.NewAgent(agentConfig)
 

@@ -64,9 +64,6 @@ APIGEE_ORGANIZATION=<Apigee Organization>                # created in Prepare Ap
 APIGEE_AUTH_USERNAME=<Apigee Username>                   # created in Prepare Apigee step
 APIGEE_AUTH_PASSWORD=<Apigee Password>                   # created in Prepare Apigee step
 
-# Traceability agent only
-
-
 LOG_LEVEL=info
 LOG_OUTPUT=stdout
 ```
