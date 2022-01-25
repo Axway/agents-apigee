@@ -197,7 +197,13 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 		metricsIndex[m.Name] = i
 	}
 
-	// TODO check for -1 index in metricsIndex
+	// check for -1 index in metricsIndex
+	for key, index := range metricsIndex {
+		if index < 0 {
+			log.Errorf("did not find the %s metric in the returned data", key)
+			return
+		}
+	}
 
 	for _, d := range metrics.Environments[0].Dimensions { // api_proxies
 		for i := range d.Metrics[0].MetricValues {
