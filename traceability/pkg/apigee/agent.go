@@ -33,7 +33,6 @@ type Agent struct {
 	cfg           *AgentConfig
 	apigeeClient  *apigee.ApigeeClient
 	statCache     cache.Cache
-	statChannel   chan interface{}
 	cacheFilePath string
 	envs          []string
 	catchUpDone   bool
@@ -51,7 +50,6 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		apigeeClient: apigeeClient,
 		cfg:          agentCfg,
 		statCache:    cache.New(),
-		statChannel:  make(chan interface{}),
 		catchUpDone:  false,
 	}
 
