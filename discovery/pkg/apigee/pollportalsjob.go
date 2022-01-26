@@ -18,15 +18,21 @@ type pollPortalsJob struct {
 	portalsMap        map[string]apigee.PortalData
 	newPortalChan     chan string
 	removedPortalChan chan string
+	wgActionChan      chan wgAction
+	firstRun          bool
 }
 
 func newPollPortalsJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels) *pollPortalsJob {
-	return &pollPortalsJob{
+	job := &pollPortalsJob{
 		apigeeClient:      apigeeClient,
 		portalsMap:        make(map[string]apigee.PortalData),
 		newPortalChan:     channels.newPortalChan,
 		removedPortalChan: channels.removedPortalChan,
+		wgActionChan:      channels.wgActionChan,
+		firstRun:          true,
 	}
+	job.wgActionChan <- wgAdd
+	return job
 }
 
 func (j *pollPortalsJob) Ready() bool {
@@ -38,6 +44,12 @@ func (j *pollPortalsJob) Status() error {
 }
 
 func (j *pollPortalsJob) Execute() error {
+	if j.firstRun {
+		defer func() {
+			j.wgActionChan <- wgDone
+			j.firstRun = false
+		}()
+	}
 	allPortals := j.apigeeClient.GetPortals()
 	portalsFound := make(map[string]string)
 	for _, portal := range allPortals {

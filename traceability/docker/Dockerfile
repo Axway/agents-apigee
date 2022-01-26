@@ -47,16 +47,19 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /go/src/github.com/Axway/agents-apigee/traceability/apigee_traceability_agent.yml /apigee_traceability_agent.yml
 COPY --from=builder /go/src/github.com/Axway/agents-apigee/traceability/bin/apigee_traceability_agent /apigee_traceability_agent
 
-RUN mkdir /keys && \
-  chown -R axway /keys && \
-  apk --no-cache add openssl libssl1.1 libcrypto1.1 musl musl-utils libc6-compat busybox curl && \
-  chmod go-w /apigee_traceability_agent.yml && \
-  chown -R axway:2500 /keys /data /events /apigee_traceability_agent.yml && \
-  find / -perm /6000 -type f -exec chmod a-s {} \; || true
+RUN apk --no-cache add openssl libssl1.1 libcrypto1.1 musl musl-utils libc6-compat busybox curl && \
+  mkdir /keys /data && \
+  chown -R axway /keys /data /apigee_traceability_agent.yml && \
+  chmod go-w /apigee_traceability_agent.yml
+
+RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
+
+RUN chgrp -R 0 /apigee_traceability_agent /data && chmod -R g=u /apigee_traceability_agent /data && chown -R axway /apigee_traceability_agent /data
+RUN chown 0 /apigee_traceability_agent.yml && chmod go-w /apigee_traceability_agent.yml
 
 USER axway
 
-VOLUME ["/keys"]
+VOLUME ["/keys", "/data"]
 
 HEALTHCHECK --retries=1 CMD curl --fail http://localhost:${STATUS_PORT:-8989}/status || exit 1
 

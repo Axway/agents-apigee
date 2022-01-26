@@ -1,0 +1,107 @@
+{
+  "environments": [
+    {
+      "dimensions": [
+        {
+          "metrics": [
+            {
+              "name": "sum(message_count)",
+              "values": [
+                {
+                  "timestamp": 1642648380000,
+                  "value": "6.0"
+                },
+                {
+                  "timestamp": 1642648320000,
+                  "value": "3.0"
+                },
+                {
+                  "timestamp": 1642648200000,
+                  "value": "6.0"
+                },
+                {
+                  "timestamp": 1642545960000,
+                  "value": "6.0"
+                }
+              ]
+            },
+            {
+              "name": "sum(policy_error)",
+              "values": [
+                {
+                  "timestamp": 1642648380000,
+                  "value": "2.0"
+                },
+                {
+                  "timestamp": 1642648320000,
+                  "value": "1.0"
+                },
+                {
+                  "timestamp": 1642648200000,
+                  "value": "2.0"
+                },
+                {
+                  "timestamp": 1642545960000,
+                  "value": "2.0"
+                }
+              ]
+            },
+            {
+              "name": "sum(target_error)",
+              "values": [
+                {
+                  "timestamp": 1642648380000,
+                  "value": "2.0"
+                },
+                {
+                  "timestamp": 1642648320000,
+                  "value": "1.0"
+                },
+                {
+                  "timestamp": 1642648200000,
+                  "value": "2.0"
+                },
+                {
+                  "timestamp": 1642545960000,
+                  "value": "2.0"
+                }
+              ]
+            },
+            {
+              "name": "avg(total_response_time)",
+              "values": [
+                {
+                  "timestamp": 1642648380000,
+                  "value": "60.0"
+                },
+                {
+                  "timestamp": 1642648320000,
+                  "value": "30.0"
+                },
+                {
+                  "timestamp": 1642648200000,
+                  "value": "20.0"
+                },
+                {
+                  "timestamp": 1642545960000,
+                  "value": "70.0"
+                }
+              ]
+            }
+          ],
+          "name": "Petstore"
+        }
+      ],
+      "name": "prod"
+    }
+  ],
+  "metaData": {
+    "errors": [],
+    "notices": [
+      "Source:Postgres",
+      "Table used: edge.api.faxgroupusenondn012.agg_api",
+      "PG Host:uap-trial-us-central1-1:us-central1:rgce1uappg02s",
+      "query served by:e1e06c50-c96e-4941-b469-c0dce4baa18e"
+    ]
+  }
+}

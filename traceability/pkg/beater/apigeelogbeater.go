@@ -9,32 +9,24 @@ import (
 	"github.com/elastic/beats/v7/libbeat/common"
 
 	"github.com/Axway/agents-apigee/traceability/pkg/apigee"
-	"github.com/Axway/agents-apigee/traceability/pkg/config"
 )
 
 // customLogBeater configuration.
 type customLogBeater struct {
-	done           chan struct{}
-	logglyClient   *apigee.LogglyClient
-	eventProcessor *apigee.EventProcessor
-	client         beat.Client
-	eventChannel   chan []byte
+	done   chan struct{}
+	client beat.Client
 }
 
 var bt *customLogBeater
-var logglyConfig *config.LogglyConfig
 
 // New creates an instance of aws_apigw_traceability_agent.
 func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	bt := &customLogBeater{
-		done:         make(chan struct{}),
-		eventChannel: make(chan []byte),
+		done: make(chan struct{}),
 	}
 
 	var err error
 
-	bt.logglyClient, err = apigee.NewLogglyClient(logglyConfig, bt.eventChannel)
-	bt.eventProcessor = apigee.NewEventProcessor(logglyConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +39,6 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	return bt, nil
 }
 
-// SetLogglyConfig - set parsed gateway config
-func SetLogglyConfig(logglyCfg *config.LogglyConfig) {
-	logglyConfig = logglyCfg
-}
-
 // Run starts ApigeeTraceabilityAgent.
 func (bt *customLogBeater) Run(b *beat.Beat) error {
 	log.Info("apigee_traceability_agent is running! Hit CTRL-C to stop it.")
@@ -62,18 +49,11 @@ func (bt *customLogBeater) Run(b *beat.Beat) error {
 		return err
 	}
 
-	bt.logglyClient.Start()
-
+	apigee.GetAgent().BeatsReady()
 	for {
 		select {
 		case <-bt.done:
 			return nil
-		case eventData := <-bt.eventChannel:
-			log.Debug("EVENT TO PROCESS : " + string(eventData))
-			eventsToPublish := bt.eventProcessor.ProcessRaw(eventData)
-			if eventsToPublish != nil {
-				bt.client.PublishAll(eventsToPublish)
-			}
 		}
 	}
 }

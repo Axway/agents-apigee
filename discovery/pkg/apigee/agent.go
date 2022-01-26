@@ -2,7 +2,6 @@ package apigee
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/cache"
@@ -25,6 +24,7 @@ type Agent struct {
 	cfg             *AgentConfig
 	apigeeClient    *apigee.ApigeeClient
 	discoveryFilter filter.Filter
+	channels        *agentChannels
 	stopChan        chan struct{}
 	devCreated      bool
 }
@@ -56,13 +56,6 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 
 	newAgent.handleSubscriptions()
 
-	// delay the start of the API validator
-	go func() {
-		// allow 2 poll intervals before starting validator
-		time.Sleep(apigeeClient.GetConfig().GetIntervals().API * 2)
-		agent.RegisterAPIValidator(newAgent.apiValidator)
-	}()
-
 	return newAgent, nil
 }
 
@@ -76,7 +69,9 @@ func (a *Agent) registerJobs() error {
 		removedPortalChan: make(chan string),
 		processAPIChan:    make(chan *apigee.APIDocData),
 		removedAPIChan:    make(chan string),
+		wgActionChan:      make(chan wgAction, 10),
 	}
+	a.channels = channels
 
 	// create the product handler job and register it
 	productHandler := newProductHandlerJob(a.apigeeClient, channels, a.apigeeClient.GetConfig().GetIntervals().Product)
@@ -113,6 +108,9 @@ func (a *Agent) registerJobs() error {
 
 	// create job that starts the subscription manager
 	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
+
+	// create job that registers the api validator
+	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(channels.wgActionChan, a.registerValidator), "Register API Validator")
 
 	return err
 }
@@ -153,4 +151,11 @@ func (a *Agent) isDevCreated() bool {
 func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
 	// Evaluate the filter condition
 	return a.discoveryFilter.Evaluate(attributes)
+}
+
+func (a *Agent) registerValidator() {
+	agent.RegisterAPIValidator(a.apiValidator)
+	closeChan := a.channels.wgActionChan
+	a.channels.wgActionChan = nil
+	close(closeChan)
 }

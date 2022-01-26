@@ -2,8 +2,6 @@
 
 The Traceability agent finds logs from consumed Apigee proxies and sends the traffic data to Amplify Central
 
-![Traceability Agent Process](/resources/traceability_agent_apigee.JPG)
-
 ## Build and run
 
 The following make targets are available
@@ -26,7 +24,7 @@ make docker-build
 ### Run (Docker)
 
 ```
-docker run --env-file env_vars -v `pwd`/keys:/keys apigee-traceability-agent:latest
+docker run --env-file env_vars  -v `pwd`/data:/data -v `pwd`/keys:/keys apigee-traceability-agent:latest
 ```
 
 ### Build (Windows)
@@ -52,13 +50,8 @@ go build -tags static_all \
 
 ## Traceability agent variables
 
-| Environment Variable        | Description                               | Default (if applicable) |
-|-----------------------------|-------------------------------------------|-------------------------|
-| APIGEE_ORGANIZATION         | The Apigee organization name              |                         |
-| APIGEE_AUTH_USERNAME        | The Apigee account username/email address |                         |
-| APIGEE_AUTH_PASSWORD        | The Apigee account password               |                         |
-| APIGEE_LOGGLY_SUBDOMAIN     | The Loggly subdomain name                 |                         |
-| APIGEE_LOGGLY_CUSTOMERTOKEN | The Loggly customer token                 |                         |
-| APIGEE_LOGGLY_APITOKEN      | The Loggly API token                      |                         |
-| APIGEE_LOGGLY_HOST          | The Loggly host address                   | logs-01.loggly.com      |
-| APIGEE_LOGGLY_PORT          | The Loggly host port                      | 514                     |
+| Environment Variable | Description                               | Default (if applicable) |
+|----------------------|-------------------------------------------|-------------------------|
+| APIGEE_ORGANIZATION  | The Apigee organization name              |                         |
+| APIGEE_AUTH_USERNAME | The Apigee account username/email address |                         |
+| APIGEE_AUTH_PASSWORD | The Apigee account password               |                         |

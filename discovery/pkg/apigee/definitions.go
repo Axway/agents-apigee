@@ -15,6 +15,13 @@ const (
 	refresh
 )
 
+type wgAction int
+
+const (
+	wgAdd wgAction = iota
+	wgDone
+)
+
 func (g grantType) String() string {
 	return [...]string{"password", "refresh_token"}[g]
 }
@@ -25,9 +32,10 @@ type productRequest struct {
 }
 
 type agentChannels struct {
-	productChan       chan productRequest
+	wgActionChan      chan wgAction
 	newPortalChan     chan string
 	removedPortalChan chan string
-	processAPIChan    chan *apigee.APIDocData
 	removedAPIChan    chan string
+	processAPIChan    chan *apigee.APIDocData
+	productChan       chan productRequest
 }

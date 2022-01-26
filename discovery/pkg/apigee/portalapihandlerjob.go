@@ -22,26 +22,22 @@ const (
 //newPortalAPIHandler - job that waits for
 type newPortalAPIHandler struct {
 	jobs.Job
-	apigeeClient   *apigee.ApigeeClient
-	processAPIChan chan *apigee.APIDocData
-	removedAPIChan chan string
-	stopChan       chan interface{}
-	isRunning      bool
-	runningChan    chan bool
-	productChan    chan productRequest
-	shouldPushAPI  func(map[string]string) bool
+	apigeeClient  *apigee.ApigeeClient
+	channels      *agentChannels
+	stopChan      chan interface{}
+	runningChan   chan bool
+	isRunning     bool
+	shouldPushAPI func(map[string]string) bool
 }
 
 func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels, shouldPushAPI func(map[string]string) bool) *newPortalAPIHandler {
 	job := &newPortalAPIHandler{
-		apigeeClient:   apigeeClient,
-		stopChan:       make(chan interface{}),
-		isRunning:      false,
-		processAPIChan: channels.processAPIChan,
-		removedAPIChan: channels.removedAPIChan,
-		runningChan:    make(chan bool),
-		productChan:    channels.productChan,
-		shouldPushAPI:  shouldPushAPI,
+		apigeeClient:  apigeeClient,
+		channels:      channels,
+		stopChan:      make(chan interface{}),
+		isRunning:     false,
+		runningChan:   make(chan bool),
+		shouldPushAPI: shouldPushAPI,
 	}
 	go job.statusUpdate()
 	return job
@@ -63,13 +59,13 @@ func (j *newPortalAPIHandler) Execute() error {
 	defer j.stopped()
 	for {
 		select {
-		case newAPI, ok := <-j.processAPIChan:
+		case newAPI, ok := <-j.channels.processAPIChan:
 			if !ok {
 				err := fmt.Errorf("new api channel was closed")
 				return err
 			}
 			j.handleAPI(newAPI)
-		case removedAPI, ok := <-j.removedAPIChan:
+		case removedAPI, ok := <-j.channels.removedAPIChan:
 			if !ok {
 				err := fmt.Errorf("removed api channel was closed")
 				return err
@@ -194,23 +190,27 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	hashString := util.ConvertUnitToString(serviceBodyHash)
 
 	// Check DiscoveryCache for API
+	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
+	update := false
 	if !agent.IsAPIPublishedByID(newAPI.ProductName) {
 		// call new API
 		j.publishAPI(newAPI, *serviceBody, hashString)
+		update = true
 	} else if value := agent.GetAttributeOnPublishedAPIByID(newAPI.ProductName, fmt.Sprintf("%s-hash", newAPI.PortalID)); value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", newAPI.ProductName)
 		serviceBody.APIUpdateSeverity = "Major"
+		serviceBody.SpecDefinition = []byte{}
+		log.Tracef("%+v", serviceBody)
 		j.publishAPI(newAPI, *serviceBody, hashString)
-	} else {
-		// no changes made do not update the cache
-		return
+		update = true
 	}
 
-	// update the cache
-	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
-	cache.GetCache().SetWithSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.GetPortalTitle(), newAPI.ProductName), *newAPI)
-	cache.GetCache().SetSecondaryKey(cacheKey, strconv.Itoa(newAPI.ID))
+	if _, err := cache.GetCache().Get(cacheKey); err != nil || update {
+		// update the cache
+		cache.GetCache().SetWithSecondaryKey(cacheKey, fmt.Sprintf("%s-%s", newAPI.GetPortalTitle(), newAPI.ProductName), *newAPI)
+		cache.GetCache().SetSecondaryKey(cacheKey, strconv.Itoa(newAPI.ID))
+	}
 }
 
 func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
@@ -252,7 +252,7 @@ func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
 func (j *newPortalAPIHandler) checkProduct(productName string) (bool, map[string]string) {
 	// get the product attributes
 	attributesChan := make(chan map[string]string)
-	j.productChan <- productRequest{
+	j.channels.productChan <- productRequest{
 		name:     productName,
 		response: attributesChan,
 	}

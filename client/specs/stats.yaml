@@ -1,0 +1,415 @@
+---
+openapi: "3.0.0"
+servers:
+- url: "https://api.enterprise.apigee.com/v1"
+info:
+  title: "Stats API"
+  description: "Access metrics collected by Apigee Edge that measure API consumption\
+    \ and performance that are used to build Analytics reports."
+  version: "1.0"
+security:
+- Basic: []
+- OAuth: []
+paths:
+  /organizations/{org_name}/environments/{env_name}/stats/{dimension_name}:
+    get:
+      tags:
+      - "Analytics"
+      summary: "Get metrics organized by dimensions"
+      description: "Gets metrics, groups them by dimensions, and filters the results.\
+        \ If you are using <a href=\"https://docs.apigee.com/api-platform/microgateway/edge-microgateway-home\"\
+        >Edge Microgateway</a> with the analytics plugin enabled (default), API calls\
+        \ to Edge Microgateway are included in results.\n\nFor examples using this\
+        \ API, see <a href=\"https://docs.apigee.com/analytics-services/reference/analytics-command-reference\"\
+        >Analytics command reference</a>.\n\n**Notes:** \n* **Data delay interval**:\
+        \ After API calls are made to API proxies, it may take up to 10 minutes for\
+        \ the data to appear in dashboards, custom reports, and management API calls.\n\
+        * You can use the `_optimized=js` query parameter to optimize the JSON in\
+        \ the response so that it is less verbose, as described in this <a href=\"\
+        https://community.apigee.com/articles/2621/querying-analytics-apis-in-apigee-edge.html\"\
+        >community article</a>. However, the `_optimized` query parameter has not\
+        \ been fully tested and its performance cannot be guaranteed.\n\n**Metrics**\n\
+        \nThe types of metrics you can retrieve (specifid by the `select` query parameter)\
+        \ include traffic, message counts, API call latency, response size, and cache\
+        \ hits and counts. See <a href=\"https://docs.apigee.com/api-platform/analytics/analytics-reference#metrics\"\
+        >Metrics</a> for more information and for a list of functions (`sum, avg,\
+        \ min, max`) supported by each metric.\n\nFor example, to get the average\
+        \ request size for your APIs, set the select query param as: `select=avg(request_size)`\n\
+        \n**Note**: If you want to use the `app_count`, `developer_count`, or `user_count`\
+        \ metric, you cannot set an aggregation function.\n\n**Dimensions**: \n\n\
+        Dimensions let you view metrics in meaningful groups. For example, instead\
+        \ of looking at total API traffic in your organization, you can see API traffic\
+        \ for each API proxy, for each app, for each developer, and more.\n\nFor each\
+        \ dimension, you construct a request by adding the desired dimension in the\
+        \ URL after /stats. For example, to group metrics by API proxies, you'd use:\
+        \ `/stats/apiproxy`\n\nYou can specify multiple dimensions to the API, separated\
+        \ by commas. To group metrics by API proxy and target response code combinations,\
+        \ you'd comma-separate dimensions in the URL: `/stats/apiproxy,target_response_code`\n\
+        \nFor a description of all supported dimensions, see <a href=\"https://docs.apigee.com/api-platform/analytics/analytics-reference#dimensions\"\
+        >Dimensions</a>. You can also include your own custom dimensions, as described\
+        \ in <a href=\"https://docs.apigee.com/analytics-services/content/analyze-api-message-content-using-custom-analytics\"\
+        >Analyze API message content using custom analytics</a>.\n\nHere's an example\
+        \ that shows how to get the average response time (metric) for all API proxies\
+        \ (dimension) in an environment: `/stats/apiproxy?select=avg(total_response_time)`\n\
+        \n**Filters**\n\nYou can also apply filters to limit the data that's returned.\
+        \ For example, if you're getting message counts grouped by API proxies, you\
+        \ can add a filter that returns only metrics for API proxies that return 4xx\
+        \ or 5xx status codes. Use any available dimensions or metrics to build your\
+        \ filters.\n\nFor more information on filters and the operators you can use,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/analytics/analytics-reference#filters\"\
+        >filters</a>.\n\n**Metrics API quotas**\n\nApigee Edge enforces a quota on\
+        \ the API calls. The quota is based on the backend system that handles the\
+        \ call:\n\n\n* Postgres: limited to 40 calls per minute.\n* BigQuery: limited\
+        \ to 12 calls per minute.\n\nIf you exceed the call quota, this API returns\
+        \ an HTTP 429 response.\n\nDetermine the backend system that handles the call\
+        \ by examining the response object. Every response object contains a metaData\
+        \ property that lists service that handled the call in the Source property.\
+        \ For example, for Postgres:\n```\n{\n  ...\n  \"metaData\": {\n    \"errors\"\
+        : [],\n    \"notices\": [\n      \"Source:Postgres\",\n      \"Table used:\
+        \ xxxxxx.yyyyy\",\n      \"query served by:111-222-333\"\n    ]\n  }\n}\n\
+        ``` \n\nFor BigQuery, the Source property is: `\"Source:Big Query\"`"
+      operationId: "getMetricsByDimension"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/dimension_name"
+      - $ref: "#/components/parameters/select"
+      - $ref: "#/components/parameters/timeRange"
+      - $ref: "#/components/parameters/timeUnit"
+      - $ref: "#/components/parameters/sortby"
+      - $ref: "#/components/parameters/sort"
+      - $ref: "#/components/parameters/topk"
+      - $ref: "#/components/parameters/filter"
+      - $ref: "#/components/parameters/limit"
+      - $ref: "#/components/parameters/offset"
+      - $ref: "#/components/parameters/tsAscending"
+      - $ref: "#/components/parameters/tzo"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/environments/{env_name}/stats:
+    get:
+      tags:
+      - "Analytics"
+      summary: "Get metrics"
+      description: "Get metrics per time interval for an organization and environment.\
+        \ If you are using <a href=\"https://docs.apigee.com/api-platform/microgateway/edge-microgateway-home\"\
+        >Edge Microgateway</a> with the analytics plugin enabled (default), API calls\
+        \ to Edge Microgateway are included in the count.\n\n**If you have multiple\
+        \ organizations and environments**, make this API call for each one and add\
+        \ them to get the total number of calls per time interval for your API program.\n\
+        \nTo convert the JSON response to a CSV format for use in spreadsheets, use\
+        \ a tool like  <a href=\"https://json-csv.com/\">https://json-csv.com/</a>\n\
+        \nFor more granular metrics, use the <a href=\"/docs/stats/1/routes/organizations/%7Borg_name%7D/environments/%7Benv_name%7D/stats/%7Bdimension_name%7D/get\"\
+        >Get metrics organized by dimensions API</a>. For more information on the\
+        \ analytics management API, see <a href=\"https://docs.apigee.com/api-platform/analytics/use-analytics-api-measure-api-program-performance\"\
+        >Use the metrics APIs</a>.\n\nYou can also try the <a href=\"https://github.com/DinoChiesa/ApigeeEdge-API-Traffic-Summarizer\"\
+        >API Traffic Summarizer tool</a> to get and graph traffic data by API proxy\
+        \ over a specific time range.\n\n**Metrics**\n\nThe types of metrics you can\
+        \ retrieve (specifid by the `select` query parameter) include traffic, message\
+        \ counts, API call latency, response size, and cache hits and counts. See\
+        \ <a href=\"https://docs.apigee.com/api-platform/analytics/analytics-reference#metrics\"\
+        >Metrics</a> for more information and for a list of functions (`sum, avg,\
+        \ min, max`) supported by each metric.\n\nFor example, to get the average\
+        \ request size for your APIs, set the select query param as: `select=avg(request_size)`\n\
+        \nTo get metrics for the sum of policy errors, transactions per second, and\
+        \ the average request size, set the select query param as: `select=sum(policy_error),tps,avg(request_size)`\n\
+        \n**Metrics API quotas**\n\nApigee Edge enforces a quota on the API calls.\
+        \ The quota is based on the backend system that handles the call:\n\n* Postgres:\
+        \ limited to 40 calls per minute.\n* BigQuery: limited to 12 calls per minute.\n\
+        \nIf you exceed the call quota, this API returns an HTTP 429 response.\n\n\
+        Determine the backend system that handles the call by examining the response\
+        \ object. Every response object contains a metaData property that lists service\
+        \ that handled the call in the Source property. For example, for Postgres:\n\
+        ```\n{\n  ...\n  \"metaData\": {\n    \"errors\": [],\n    \"notices\": [\n\
+        \      \"Source:Postgres\",\n      \"Table used: xxxxxx.yyyyy\",\n      \"\
+        query served by:111-222-333\"\n    ]\n  }\n}\n``` \n\nFor BigQuery, the Source\
+        \ property is: `\"Source:Big Query\"`"
+      operationId: "getMetrics"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/select"
+      - $ref: "#/components/parameters/timeRange"
+      - $ref: "#/components/parameters/timeUnit"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/stats/preferences/reports/dailysummaryreport:
+    get:
+      tags:
+      - "Analytics"
+      summary: "Subscribe to or unsubscribe from Analytics Report"
+      description: "Subscribe to (`optin=true`) or unsubscribe from (`optin=false`)\
+        \ daily analytics reports. You must be an organization administrator.\n\n\
+        On success, this API returns an HTML-formatted response.\n\n**Note**: Summary\
+        \ reports are currently available only for environments named `prod` or `production`.\n\
+        For more information, see <a href=\"https://docs.apigee.com/analytics-services/content/subscribe-daily-analytics-emails\"\
+        >Subscribe to daily analytics emails</a>."
+      operationId: "subscribeUnsubscribeAnalyticsReport"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/optin"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/stats/preferences/reports/dailysummaryreport/users:
+    get:
+      tags:
+      - "Analytics"
+      summary: "Get List of Subscribed and Unsubscribed Users"
+      description: "Gets a list of subscribed and unsubscribed users for the daily\
+        \ analytics report.\n\n**Notes**:\n* **Apigee Edge for Private Cloud only**.\
+        \ If you are using Apigee Edge for Public Cloud, contact Apigee Support for\
+        \ assistance.\n* **This API cannot be executed using the Try this API panel**.\n\
+        \nBy default, all organization administrators are automatically subscribed\
+        \ to receive daily analytics summary reports through email. \nA value of `\"\
+        optout\": 1` in the response corresponds to the user having opted out, meaning\
+        \ unsubscribed."
+      operationId: "getSubscribedUnsubscribedUsers"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad request"
+components:
+  securitySchemes:
+    Basic:
+      type: "http"
+      scheme: "basic"
+      description: "Multi-factor authentication is not supported."
+    OAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      description: "For OAuth, enter the following in the Key field: Bearer %your-token%\
+        \ (see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens)"
+  parameters:
+    org_name:
+      in: "path"
+      name: "org_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Organization name."
+    env_name:
+      in: "path"
+      name: "env_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Environment name."
+    dimension_name:
+      in: "path"
+      name: "dimension_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Dimension name."
+    select:
+      in: "query"
+      name: "select"
+      required: true
+      schema:
+        type: "string"
+      description: "Designates one or more metrics to be aggregated for the report.\
+        \ See <a href=\"https://docs.apigee.com/api-platform/analytics/analytics-reference#metrics\"\
+        >Metrics</a> for more information and for a list of functions (`sum, avg,\
+        \ min, max`) supported by each metric.\nFollowing are examples of supported\
+        \ metrics and aggregate functions:\n\n* `sum(ax_cache_executed)`\n* `avg|min|max(ax_cache_l1_count)`\n\
+        * `sum(cache_hit)`\n* `sum(is_error)`\n* `sum(message_count)`\n* `sum(policy_error)`\n\
+        * `avg|min|max(request_processing_latency)`\n* `sum|avg|min|max(request_size)`\n\
+        * `avg|min|max(response_processing_latency)`\n* `sum|avg|min|max(response_size)`\n\
+        * `sum(target_error)`\n* `sum|avg|min|max(target_response_time)`\n* `sum|avg|min|max(total_response_time)`\n\
+        * `tps (Currently must use with another metric)`\n\nSeparate more than one\
+        \ metric with a comma. For example: `sum(message_count),tps`"
+    timeRange:
+      in: "query"
+      name: "timeRange"
+      required: true
+      schema:
+        type: "string"
+      description: "UTC start and end time for the desired interval. The date format\
+        \ is `MM/DD/YYYY HH:MM`. For example, `03/01/2016 00:00~03/31/2016 23:59`\
+        \ returns data for the month of March 2016.\n\nIf you make a request using\
+        \ the Try this API panel, it automatically URL-encodes the space character\
+        \ before `HH:MM`. However, if you are entering the time range in a cur command\
+        \ from the command line, manually insert `%20` for the space character, in\
+        \ the form: `MM/DD/YYYY%20HH:MM~MM/DD/YYYY%20HH:MM`. (You can expand the Try\
+        \ this API panel to view the curl command.)\n\nBy default, the `timeRange`\
+        \ parameter specifies a UTC start and end time. To change the time zone from\
+        \ UTC to a different time zone, use the `tzo` parameter to set the offset,\
+        \ in minutes, from UTC to the desired time zone.\n\n**Notes**: \n\n* If you\
+        \ have high API traffic, report generation will be faster if you use smaller\
+        \ time ranges, such as 2 or 3 hours.\n* It takes at least 10 minutes after\
+        \ an API call for Edge analytics to register it.\n* Do not use 24:00 as the\
+        \ time because it wraps around to 00:00. Use 23:59 instead.\n* Data older\
+        \ than six months from the current date is not accessible by default. If you\
+        \ want to access data older than six months, contact <a href=\"https://cloud.google.com/apigee/support\"\
+        >Apigee Support</a>.\n* If you set `timeUnit` to `second`, the `timeRange`\
+        \ cannot be longer than one hour."
+    timeUnit:
+      in: "query"
+      name: "timeUnit"
+      required: false
+      schema:
+        type: "string"
+      description: "**When getting metrics per time interval**: Specify a value to\
+        \ return counts in time intervals. Valid values include `second`, `minute`,\
+        \ `hour`, `day`, or `week`. Leave blank to return the total number of API\
+        \ calls. The Epoch timestamp in milliseconds that is returned is the start\
+        \ time of each interval.\n\n**When getting metrics by dimension**: Set to\
+        \ `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`, `decade`,\
+        \ `century`, or `millennium`.\n\n**Note**: `second` is not supported for Edge\
+        \ for the Private Cloud."
+    sortby:
+      in: "query"
+      name: "sortby"
+      required: false
+      schema:
+        type: "string"
+      description: "Sort results by a specific metric when two or more metrics are\
+        \ specified. For example, when you include the `metricssum(message_count),sum(is_error)\
+        \ `, use a `sortby` of `sum(message_count)` to sort the results by message\
+        \ count."
+    sort:
+      in: "query"
+      name: "sort"
+      required: false
+      schema:
+        type: "string"
+      description: "Sort in ascending (`ASC`) or descending (`DESC`) order."
+    topk:
+      in: "query"
+      name: "topk"
+      required: false
+      schema:
+        type: "string"
+      description: "Specify the `top k` results to return. For example, to return\
+        \ the top 5 results `topk=5`."
+    filter:
+      in: "query"
+      name: "filter"
+      required: false
+      schema:
+        type: "string"
+      description: "Enable drill-down on specific dimension values. Don't add the\
+        \ word `filter`, and close value in parenthesis `()`. For example: `(response_status_code\
+        \ gt 500 and response_status_code lt 599)`. When using the Try this API panel,\
+        \ spaces are automatically encoded."
+    limit:
+      in: "query"
+      name: "limit"
+      required: false
+      schema:
+        type: "string"
+      description: "Set the limit for the number of entries returned by the API. The\
+        \ default limit is 1000 entries. If you expect your query to return more than\
+        \ 1000 entries, then set the limit appropriately. Otherwise, your query returns\
+        \ a maximum of 1000 entries."
+    offset:
+      in: "query"
+      name: "offset"
+      required: false
+      schema:
+        type: "string"
+      description: "Use with `limit` to enable pagination of results. For example,\
+        \ to display results 11-20, set limit to `10` and offset to `10`.\n\n**Note**:\
+        \ Edge ignores the offset parameter on queries that process raw fact data.\
+        \ For these \"fact\" queries, Edge uses Big Data (Apache Spark), which processes\
+        \ data using a parallel map-reduce technique. You can tell if the Spark query\
+        \ engine was used to process a query when you see something like the following\
+        \ in the response:\n\n  `\"notices\" : [ \"query served by:d62441a4-0951-4b90-abd3-318e86c23cf6\"\
+        , \"Spark engine used\" ]`"
+    tsAscending:
+      in: "query"
+      name: "tsAscending"
+      required: false
+      schema:
+        type: "string"
+      description: "Flag that specifies the order in which to list timestamps. Set\
+        \ to `true` to list timestamps in ascending order. Recommend setting this\
+        \ value to `true` if you are using `sortby` with `sort=DESC`."
+    tzo:
+      in: "query"
+      name: "tzo"
+      required: false
+      schema:
+        type: "string"
+      description: "By default, the `timeRange` parameter specifies a UTC start and\
+        \ end time. To change the time zone from UTC to a different time zone, use\
+        \ the `tzo` parameter to set the offset, in minutes, from UTC to the desired\
+        \ time zone. For example, to change the time zone to EST, set `tzo` to `-240`.\
+        \ For California, in the PST timezone, set the offset to `-480` minutes. For\
+        \ Bangalore, in the IST timezone, set the offset to `330` minutes."
+    optin:
+      in: "query"
+      name: "optin"
+      required: true
+      schema:
+        type: "string"
+      description: "Flag that specifies whether to subscribe to (`true`) or unsubscribe\
+        \ from (`false) daily summary reports."
+  schemas:
+    Metrics:
+      description: "Metric details."
+      type: "object"
+      properties:
+        environments:
+          type: "array"
+          description: "Environment details."
+          items:
+            type: "object"
+            properties:
+              dimensions:
+                type: "array"
+                description: "Dimension details."
+                items:
+                  type: "object"
+                  properties:
+                    metrics:
+                      type: "array"
+                      description: "List of metrics."
+                      items:
+                        type: "object"
+                        properties:
+                          name:
+                            type: "string"
+                            description: "Metric details."
+                          values:
+                            type: "array"
+                            items:
+                              type: "object"
+                              properties:
+                                timestamp:
+                                  type: "string"
+                                  description: "Timestamp in millieseconds since epoch."
+                                value:
+                                  type: "string"
+                                  description: "Value of metric."
+                    name:
+                      type: "string"
+                      description: "Dimension name."
+              name:
+                type: "string"
+                description: "Environment name."

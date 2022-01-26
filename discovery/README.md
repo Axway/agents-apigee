@@ -2,8 +2,6 @@
 
 The Discovery agent finds deployed API Proxies in Apigee then sends them to API Central
 
-![Discovery Agent Process](/resources/discovery_agent_apigee.JPG)
-
 ## Build and run
 
 The following make targets are available
