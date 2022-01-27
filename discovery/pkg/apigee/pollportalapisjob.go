@@ -17,29 +17,20 @@ type pollPortalAPIsJob struct {
 	portalID          string
 	portalName        string
 	portalAPIsMap     map[string]string
-	processAPIChan    chan *apigee.APIDocData
-	removedAPIChan    chan string
-	wgActionChan      chan wgAction
 	jobID             string
 	consecutiveErrors int // job only fails after 3 consecutive execution errors
 	firstRun          bool
 }
 
-func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalName string, channels *agentChannels) *pollPortalAPIsJob {
+func newPollPortalAPIsJob(apigeeClient *apigee.ApigeeClient, portalID, portalName string) *pollPortalAPIsJob {
 	job := &pollPortalAPIsJob{
-		apigeeClient:   apigeeClient,
-		portalID:       portalID,
-		portalName:     portalName,
-		portalAPIsMap:  make(map[string]string),
-		processAPIChan: channels.processAPIChan,
-		removedAPIChan: channels.removedAPIChan,
-		wgActionChan:   channels.wgActionChan,
-		firstRun:       false,
+		apigeeClient:  apigeeClient,
+		portalID:      portalID,
+		portalName:    portalName,
+		portalAPIsMap: make(map[string]string),
+		firstRun:      true,
 	}
-	if job.wgActionChan != nil {
-		job.wgActionChan <- wgAdd
-		job.firstRun = true
-	}
+	publishToTopic(apiValidatorWait, wgAdd)
 	return job
 }
 
@@ -66,10 +57,8 @@ func (j *pollPortalAPIsJob) Status() error {
 func (j *pollPortalAPIsJob) Execute() error {
 	if j.firstRun {
 		defer func() {
-			if j.wgActionChan != nil {
-				j.wgActionChan <- wgDone
-				j.firstRun = false
-			}
+			publishToTopic(apiValidatorWait, wgDone)
+			j.firstRun = false
 		}()
 	}
 	log.Tracef("Executing %s Portal poller", j.portalName)
@@ -94,14 +83,14 @@ func (j *pollPortalAPIsJob) Execute() error {
 		if err != nil || changed {
 			api.SetPortalTitle(j.portalName)
 			// send to new api handler
-			j.processAPIChan <- api
+			publishToTopic(processAPI, api)
 		}
 	}
 
 	// check if any api has been removed
 	for id := range j.portalAPIsMap {
 		if _, ok := apisFound[id]; !ok {
-			j.removedAPIChan <- id
+			publishToTopic(removedAPI, id)
 			defer func(id string) {
 				delete(j.portalAPIsMap, id)
 			}(id) // remove apis from the map
@@ -114,7 +103,7 @@ func (j *pollPortalAPIsJob) Execute() error {
 func (j *pollPortalAPIsJob) PortalRemoved() {
 	// Loop all apis in this portal and remove them
 	for _, id := range j.portalAPIsMap {
-		j.removedAPIChan <- id
+		publishToTopic(removedAPI, id)
 	}
 
 	// Unregister this portals job

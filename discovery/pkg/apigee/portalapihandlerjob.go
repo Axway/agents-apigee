@@ -22,22 +22,26 @@ const (
 //newPortalAPIHandler - job that waits for
 type newPortalAPIHandler struct {
 	jobs.Job
-	apigeeClient  *apigee.ApigeeClient
-	channels      *agentChannels
-	stopChan      chan interface{}
-	runningChan   chan bool
-	isRunning     bool
-	shouldPushAPI func(map[string]string) bool
+	apigeeClient   *apigee.ApigeeClient
+	stopChan       chan interface{}
+	processAPIChan chan interface{}
+	removedAPIChan chan interface{}
+	runningChan    chan bool
+	isRunning      bool
+	shouldPushAPI  func(map[string]string) bool
 }
 
-func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels, shouldPushAPI func(map[string]string) bool) *newPortalAPIHandler {
+func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, shouldPushAPI func(map[string]string) bool) *newPortalAPIHandler {
+	processAPIChan, _, _ := subscribeToTopic(processAPI)
+	removedAPIChan, _, _ := subscribeToTopic(removedAPI)
 	job := &newPortalAPIHandler{
-		apigeeClient:  apigeeClient,
-		channels:      channels,
-		stopChan:      make(chan interface{}),
-		isRunning:     false,
-		runningChan:   make(chan bool),
-		shouldPushAPI: shouldPushAPI,
+		apigeeClient:   apigeeClient,
+		stopChan:       make(chan interface{}),
+		processAPIChan: processAPIChan,
+		removedAPIChan: removedAPIChan,
+		isRunning:      false,
+		runningChan:    make(chan bool),
+		shouldPushAPI:  shouldPushAPI,
 	}
 	go job.statusUpdate()
 	return job
@@ -59,18 +63,18 @@ func (j *newPortalAPIHandler) Execute() error {
 	defer j.stopped()
 	for {
 		select {
-		case newAPI, ok := <-j.channels.processAPIChan:
+		case newAPI, ok := <-j.processAPIChan:
 			if !ok {
 				err := fmt.Errorf("new api channel was closed")
 				return err
 			}
-			j.handleAPI(newAPI)
-		case removedAPI, ok := <-j.channels.removedAPIChan:
+			j.handleAPI(newAPI.(*apigee.APIDocData))
+		case removedAPI, ok := <-j.removedAPIChan:
 			if !ok {
 				err := fmt.Errorf("removed api channel was closed")
 				return err
 			}
-			j.handleRemovedAPI(removedAPI)
+			j.handleRemovedAPI(removedAPI.(string))
 		case <-j.stopChan:
 			log.Info("Stopping the api handler")
 			return nil
@@ -252,10 +256,10 @@ func (j *newPortalAPIHandler) handleRemovedAPI(removedAPIID string) {
 func (j *newPortalAPIHandler) checkProduct(productName string) (bool, map[string]string) {
 	// get the product attributes
 	attributesChan := make(chan map[string]string)
-	j.channels.productChan <- productRequest{
+	publishToTopic(newProduct, productRequest{
 		name:     productName,
 		response: attributesChan,
-	}
+	})
 	attributes := <-attributesChan
 
 	if !j.shouldPushAPI(attributes) {

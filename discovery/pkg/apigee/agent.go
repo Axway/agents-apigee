@@ -24,7 +24,6 @@ type Agent struct {
 	cfg             *AgentConfig
 	apigeeClient    *apigee.ApigeeClient
 	discoveryFilter filter.Filter
-	channels        *agentChannels
 	stopChan        chan struct{}
 	devCreated      bool
 }
@@ -62,39 +61,33 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 // registerJobs - registers the agent jobs
 func (a *Agent) registerJobs() error {
 	var err error
-	// create the communication channels
-	channels := &agentChannels{
-		productChan:       make(chan productRequest),
-		newPortalChan:     make(chan string),
-		removedPortalChan: make(chan string),
-		processAPIChan:    make(chan *apigee.APIDocData),
-		removedAPIChan:    make(chan string),
-		wgActionChan:      make(chan wgAction, 10),
-	}
-	a.channels = channels
+	createTopics()
+
+	// create job that registers the api validator
+	apiValidatorJob := newRegisterAPIValidatorJob(a.registerValidator)
 
 	// create the product handler job and register it
-	productHandler := newProductHandlerJob(a.apigeeClient, channels, a.apigeeClient.GetConfig().GetIntervals().Product)
+	productHandler := newProductHandlerJob(a.apigeeClient, a.apigeeClient.GetConfig().GetIntervals().Product)
 	_, err = jobs.RegisterChannelJobWithName(productHandler, productHandler.stopChan, "Product Handler")
 	if err != nil {
 		return err
 	}
 
 	// create the portals/portal poller job and register it
-	_, err = jobs.RegisterIntervalJobWithName(newPollPortalsJob(a.apigeeClient, channels), a.apigeeClient.GetConfig().GetIntervals().Portal, "Poll Portals")
+	_, err = jobs.RegisterIntervalJobWithName(newPollPortalsJob(a.apigeeClient), a.apigeeClient.GetConfig().GetIntervals().Portal, "Poll Portals")
 	if err != nil {
 		return err
 	}
 
 	// create the portal handler job and register it
-	portalHandler := newPortalHandlerJob(a.apigeeClient, channels)
+	portalHandler := newPortalHandlerJob(a.apigeeClient)
 	_, err = jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
 	if err != nil {
 		return err
 	}
 
 	// create the api handler job and register it
-	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, channels, a.shouldPushAPI)
+	apiHandler := newPortalAPIHandlerJob(a.apigeeClient, a.shouldPushAPI)
 	_, err = jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
 	if err != nil {
 		return err
@@ -109,9 +102,9 @@ func (a *Agent) registerJobs() error {
 	// create job that starts the subscription manager
 	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
 
-	// create job that registers the api validator
-	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(channels.wgActionChan, a.registerValidator), "Register API Validator")
-
+	// register the api validator job
+	// time.Sleep(a.apigeeClient.GetConfig().Intervals.Portal * 2) // wait 2 portal polling intervals before starting hte api validator job
+	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
 	return err
 }
 
@@ -155,7 +148,4 @@ func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
 
 func (a *Agent) registerValidator() {
 	agent.RegisterAPIValidator(a.apiValidator)
-	closeChan := a.channels.wgActionChan
-	a.channels.wgActionChan = nil
-	close(closeChan)
 }
