@@ -101,9 +101,11 @@ func (a *Agent) registerJobs() error {
 
 	// create job that starts the subscription manager
 	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
+	if err != nil {
+		return err
+	}
 
 	// register the api validator job
-	// time.Sleep(a.apigeeClient.GetConfig().Intervals.Portal * 2) // wait 2 portal polling intervals before starting hte api validator job
 	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
 	return err
 }
