@@ -8,6 +8,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 )
 
@@ -22,17 +23,18 @@ type productCacheItem struct {
 type productHandler struct {
 	jobs.Job
 	apigeeClient    *apigee.ApigeeClient
-	productChan     chan productRequest
+	productChan     chan interface{}
 	stopChan        chan interface{}
 	isRunning       bool
 	runningChan     chan bool
 	refreshInterval time.Duration
 }
 
-func newProductHandlerJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels, refreshInterval time.Duration) *productHandler {
+func newProductHandlerJob(apigeeClient *apigee.ApigeeClient, refreshInterval time.Duration) *productHandler {
+	productChan, _, _ := subscribeToTopic(newProduct)
 	job := &productHandler{
 		apigeeClient:    apigeeClient,
-		productChan:     channels.productChan,
+		productChan:     productChan,
 		stopChan:        make(chan interface{}),
 		isRunning:       false,
 		runningChan:     make(chan bool),
@@ -80,7 +82,7 @@ func (j *productHandler) Execute() error {
 				err := fmt.Errorf("product request channel was closed")
 				return err
 			}
-			j.handleProductRequest(req)
+			j.handleProductRequest(req.(productRequest))
 		case <-j.stopChan:
 			log.Info("Stopping the product handler")
 			return nil

@@ -4,6 +4,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 )
 
@@ -14,24 +15,19 @@ const (
 // job that will poll for any new portals on APIGEE Edge
 type pollPortalsJob struct {
 	jobs.Job
-	apigeeClient      *apigee.ApigeeClient
-	portalsMap        map[string]apigee.PortalData
-	newPortalChan     chan string
-	removedPortalChan chan string
-	wgActionChan      chan wgAction
-	firstRun          bool
+	apigeeClient *apigee.ApigeeClient
+	portalsMap   map[string]apigee.PortalData
+	firstRun     bool
 }
 
-func newPollPortalsJob(apigeeClient *apigee.ApigeeClient, channels *agentChannels) *pollPortalsJob {
+func newPollPortalsJob(apigeeClient *apigee.ApigeeClient) *pollPortalsJob {
 	job := &pollPortalsJob{
-		apigeeClient:      apigeeClient,
-		portalsMap:        make(map[string]apigee.PortalData),
-		newPortalChan:     channels.newPortalChan,
-		removedPortalChan: channels.removedPortalChan,
-		wgActionChan:      channels.wgActionChan,
-		firstRun:          true,
+		apigeeClient: apigeeClient,
+		portalsMap:   make(map[string]apigee.PortalData),
+		firstRun:     true,
 	}
-	job.wgActionChan <- wgAdd
+	log.Tracef("+++++++++Increment+++++++++")
+	publishToTopic(apiValidatorWait, wgAdd)
 	return job
 }
 
@@ -46,7 +42,7 @@ func (j *pollPortalsJob) Status() error {
 func (j *pollPortalsJob) Execute() error {
 	if j.firstRun {
 		defer func() {
-			j.wgActionChan <- wgDone
+			publishToTopic(apiValidatorWait, wgDone)
 			j.firstRun = false
 		}()
 	}
@@ -59,14 +55,14 @@ func (j *pollPortalsJob) Execute() error {
 			j.portalsMap[portal.ID] = portal
 			cache.GetCache().Set(portalMapCacheKey, j.portalsMap)
 			// send to portal handler
-			j.newPortalChan <- portal.ID
+			publishToTopic(newPortal, portal.ID)
 		}
 	}
 
 	// check if any portal has been removed
 	for id := range j.portalsMap {
 		if _, ok := portalsFound[id]; !ok {
-			j.removedPortalChan <- id
+			publishToTopic(removedPortal, id)
 			defer func(id string) {
 				delete(j.portalsMap, id)
 				cache.GetCache().Set(portalMapCacheKey, j.portalsMap)

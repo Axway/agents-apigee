@@ -9,14 +9,17 @@ import (
 type registerAPIValidatorJob struct {
 	jobs.Job
 	waitGroup         sync.WaitGroup
-	wgActionChan      chan wgAction
+	wgActionChan      chan interface{}
+	topicID           string
 	registerValidator func()
 }
 
-func newRegisterAPIValidatorJob(wgActionChan chan wgAction, registerValidator func()) *registerAPIValidatorJob {
+func newRegisterAPIValidatorJob(registerValidator func()) *registerAPIValidatorJob {
+	wgActionChan, id, _ := subscribeToTopic(apiValidatorWait)
 	job := &registerAPIValidatorJob{
 		waitGroup:         sync.WaitGroup{},
 		wgActionChan:      wgActionChan,
+		topicID:           id,
 		registerValidator: registerValidator,
 	}
 	go job.acceptActions()
@@ -30,7 +33,7 @@ func (j *registerAPIValidatorJob) acceptActions() {
 			if !ok {
 				return
 			}
-			if action == wgAdd {
+			if action.(wgAction) == wgAdd {
 				j.waitGroup.Add(1)
 			} else {
 				j.waitGroup.Done()
@@ -50,5 +53,6 @@ func (j *registerAPIValidatorJob) Status() error {
 func (j *registerAPIValidatorJob) Execute() error {
 	j.waitGroup.Wait()
 	j.registerValidator()
+	unsubscribeFromTopic(apiValidatorWait, j.topicID)
 	return nil
 }

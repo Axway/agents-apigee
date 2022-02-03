@@ -1,7 +1,5 @@
 package apigee
 
-import "github.com/Axway/agents-apigee/client/pkg/apigee"
-
 const (
 	defaultSubscriptionSchema = "apigee-subscription-schema"
 	appDisplayNameKey         = "appDisplayName"
@@ -29,13 +27,4 @@ func (g grantType) String() string {
 type productRequest struct {
 	name     string
 	response chan map[string]string
-}
-
-type agentChannels struct {
-	wgActionChan      chan wgAction
-	newPortalChan     chan string
-	removedPortalChan chan string
-	removedAPIChan    chan string
-	processAPIChan    chan *apigee.APIDocData
-	productChan       chan productRequest
 }
