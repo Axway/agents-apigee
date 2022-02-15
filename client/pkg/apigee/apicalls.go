@@ -23,12 +23,14 @@ const (
 //GetDevelopers - get the list of developers for the org
 func (a *ApigeeClient) GetDevelopers() []string {
 	// Get the developers
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/developers", a.cfg.Organization),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/developers", a.cfg.Organization),
 		WithDefaultHeaders(),
 	).Execute()
 
 	developers := []string{}
-	json.Unmarshal(response.Body, &developers)
+	if err == nil {
+		json.Unmarshal(response.Body, &developers)
+	}
 
 	return developers
 }
@@ -36,12 +38,14 @@ func (a *ApigeeClient) GetDevelopers() []string {
 //GetEnvironments - get the list of environments for the org
 func (a *ApigeeClient) GetEnvironments() []string {
 	// Get the developers
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/environments", a.cfg.Organization),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/environments", a.cfg.Organization),
 		WithDefaultHeaders(),
 	).Execute()
 
 	environments := []string{}
-	json.Unmarshal(response.Body, &environments)
+	if err == nil {
+		json.Unmarshal(response.Body, &environments)
+	}
 
 	return environments
 }
@@ -137,11 +141,14 @@ func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 //GetProducts - get the list of products for the org
 func (a *ApigeeClient) GetProducts() Products {
 	// Get the products
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apiproducts", a.cfg.Organization),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apiproducts", a.cfg.Organization),
 		WithDefaultHeaders(),
 	).Execute()
+
 	products := Products{}
-	json.Unmarshal(response.Body, &products)
+	if err == nil {
+		json.Unmarshal(response.Body, &products)
+	}
 
 	return products
 }
@@ -149,12 +156,15 @@ func (a *ApigeeClient) GetProducts() Products {
 //GetPortals - get the list of portals for the org
 func (a *ApigeeClient) GetPortals() []PortalData {
 	// Get the portals
-	response, _ := a.newRequest(http.MethodGet, portalsURL,
+	response, err := a.newRequest(http.MethodGet, portalsURL,
 		WithDefaultHeaders(),
 		WithQueryParam("orgname", a.cfg.Organization),
 	).Execute()
+
 	portalRes := PortalsResponse{}
-	json.Unmarshal(response.Body, &portalRes)
+	if err == nil {
+		json.Unmarshal(response.Body, &portalRes)
+	}
 
 	return portalRes.Data
 }
@@ -162,11 +172,14 @@ func (a *ApigeeClient) GetPortals() []PortalData {
 //GetPortal - get the list of portals for the org
 func (a *ApigeeClient) GetPortal(portalID string) PortalData {
 	// Get the portals
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf("%s/%s/portal", portalsURL, portalID),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/%s/portal", portalsURL, portalID),
 		WithDefaultHeaders(),
 	).Execute()
+
 	portalRes := PortalResponse{}
-	json.Unmarshal(response.Body, &portalRes)
+	if err == nil {
+		json.Unmarshal(response.Body, &portalRes)
+	}
 
 	return portalRes.Data
 }
@@ -206,7 +219,10 @@ func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error
 //GetImageWithURL - get the list of portals for the org
 func (a *ApigeeClient) GetImageWithURL(imageURL, portalURL string) (string, string) {
 	// Get the portal
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf("%s%s", portalURL, imageURL)).Execute()
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s%s", portalURL, imageURL)).Execute()
+	if err != nil {
+		return "", ""
+	}
 
 	contentType := ""
 	if contentTypeArray, ok := response.Headers["Content-Type"]; ok {
@@ -241,9 +257,13 @@ func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 //GetRevisionSpec - gets the resource file of type openapi for the org, api, revision, and spec file specified
 func (a *ApigeeClient) GetRevisionSpec(apiName, revisionNumber, specFile string) []byte {
 	// Get the openapi resource file
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/apis/%s/revisions/%s/resourcefiles/openapi/%s", a.cfg.Organization, apiName, revisionNumber, specFile),
 		WithDefaultHeaders(),
 	).Execute()
+
+	if err != nil {
+		return []byte{}
+	}
 
 	return response.Body
 }
@@ -251,9 +271,13 @@ func (a *ApigeeClient) GetRevisionSpec(apiName, revisionNumber, specFile string)
 //GetSwagger - downloads the specfile from apigee given the url path of its location
 func (a *ApigeeClient) GetSwagger(specPath string) []byte {
 	// Get the spec file
-	response, _ := a.newRequest(http.MethodGet, fmt.Sprintf("https://apigee.com%s", specPath),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("https://apigee.com%s", specPath),
 		WithDefaultHeaders(),
 	).Execute()
+
+	if err != nil {
+		return []byte{}
+	}
 
 	return response.Body
 }
