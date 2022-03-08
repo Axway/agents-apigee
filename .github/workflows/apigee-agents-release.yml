@@ -1,4 +1,4 @@
-name: Build Apigee discovery agent
+name: Release Apigee Agents
 
 on:
   push:
