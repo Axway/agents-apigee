@@ -290,7 +290,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	if newMetricData.ReportedPolicyError < newMetricData.PolicyError {
 		count := newMetricData.PolicyError - newMetricData.ReportedPolicyError
 		for count > 0 {
-			j.collector.AddMetric(details, "400", newMetricData.ResponseTime, 0, "", "")
+			j.collector.AddMetric(details, "400", newMetricData.ResponseTime, 0, "")
 			count--
 			newMetricData.ReportedPolicyError++
 		}
@@ -298,7 +298,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	if newMetricData.ReportedServerError < newMetricData.ServerError {
 		count := newMetricData.ServerError - newMetricData.ReportedServerError
 		for count > 0 {
-			j.collector.AddMetric(details, "500", newMetricData.ResponseTime, 0, "", "")
+			j.collector.AddMetric(details, "500", newMetricData.ResponseTime, 0, "")
 			count--
 			newMetricData.ReportedServerError++
 		}
@@ -306,7 +306,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	if newMetricData.ReportedSuccess < newMetricData.Success {
 		count := newMetricData.Success - newMetricData.ReportedSuccess
 		for count > 0 {
-			j.collector.AddMetric(details, "200", newMetricData.ResponseTime, 0, "", "")
+			j.collector.AddMetric(details, "200", newMetricData.ResponseTime, 0, "")
 			count--
 			newMetricData.ReportedSuccess++
 		}
