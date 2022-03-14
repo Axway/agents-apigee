@@ -25,7 +25,7 @@ type mockCollector struct {
 	mutex     *sync.Mutex
 }
 
-func (m mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string, duration, bytes int64, appName, teamName string) {
+func (m mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string, duration, bytes int64, appName string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	apiCount := make([]int, 3)

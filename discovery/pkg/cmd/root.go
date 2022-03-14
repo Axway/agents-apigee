@@ -3,6 +3,7 @@ package cmd
 import (
 	corecmd "github.com/Axway/agent-sdk/pkg/cmd"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
+	"github.com/Axway/agent-sdk/pkg/migrate"
 	"github.com/Axway/agent-sdk/pkg/notify"
 
 	"github.com/Axway/agents-apigee/client/pkg/config"
@@ -28,6 +29,8 @@ func init() {
 	// Get the root command properties and bind the config property in YAML definition
 	rootProps := RootCmd.GetProperties()
 	config.AddProperties(rootProps)
+
+	migrate.MatchAttrPattern("-hash")
 }
 
 // Callback that agent will call to process the execution

@@ -136,12 +136,15 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	apiID := fmt.Sprint(newAPI.ID)
 
 	// create attributes to be added to revision and instance
-	serviceAttributes := make(map[string]string)
+	serviceDetails := make(map[string]interface{})
 	revisionAttributes := make(map[string]string)
 	for k, v := range productAttributes {
-		serviceAttributes[k] = v
+		serviceDetails[k] = v
 		revisionAttributes[k] = v
 	}
+
+	serviceDetails[apigee.ApigeeAgentAttribute.Name] = apigee.ApigeeAgentAttribute.Value
+
 	revisionAttributes[catalogIDKey] = apiID
 	revisionAttributes["PortalID"] = newAPI.PortalID
 
@@ -163,7 +166,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 		SetStatus(state).
 		SetTitle(newAPI.Title).
 		SetSubscriptionName(defaultSubscriptionSchema).
-		SetServiceAttribute(serviceAttributes).
+		SetServiceAgentDetails(serviceDetails).
 		SetRevisionAttribute(revisionAttributes).
 		SetInstanceAttribute(revisionAttributes).
 		Build()
@@ -230,8 +233,8 @@ func (j *newPortalAPIHandler) getAPISpec(contentID string) []byte {
 func (j *newPortalAPIHandler) publishAPI(newAPI *apigee.APIDocData, serviceBody apic.ServiceBody, hashString string) {
 
 	// Add a few more attributes to the service body
-	serviceBody.ServiceAttributes[fmt.Sprintf("%s-hash", newAPI.PortalID)] = hashString
 	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
+	serviceBody.ServiceAgentDetails[fmt.Sprintf("%s-hash", newAPI.PortalID)] = hashString
 
 	err := agent.PublishAPI(serviceBody)
 	if err == nil {

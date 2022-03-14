@@ -7,7 +7,7 @@ go 1.16
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.14
+	github.com/Axway/agent-sdk v1.1.17-0.20220310152019-714963369c00
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/Shopify/sarama v1.26.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect
@@ -24,8 +24,6 @@ require (
 	github.com/miekg/dns v1.1.29 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/stretchr/testify v1.6.1
-	google.golang.org/grpc v1.39.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.5.0 // indirect
 )
 
