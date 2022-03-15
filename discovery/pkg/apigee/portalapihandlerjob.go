@@ -17,6 +17,7 @@ import (
 const (
 	gatewayType  = "Apigee"
 	catalogIDKey = "PortalCatalogID"
+	portalIDKey  = "PortalID"
 )
 
 //newPortalAPIHandler - job that waits for
@@ -135,18 +136,20 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	// create the service body to use for update or create
 	apiID := fmt.Sprint(newAPI.ID)
 
-	// create attributes to be added to revision and instance
+	// create attributes for service agent details
 	serviceDetails := make(map[string]interface{})
+
+	// create attributes to be added to revision and instance
+	serviceAttributes := make(map[string]string)
 	revisionAttributes := make(map[string]string)
 	for k, v := range productAttributes {
-		serviceDetails[k] = v
+		serviceAttributes[k] = v
 		revisionAttributes[k] = v
 	}
 
 	serviceDetails[apigee.ApigeeAgentAttribute.Name] = apigee.ApigeeAgentAttribute.Value
-
-	revisionAttributes[catalogIDKey] = apiID
-	revisionAttributes["PortalID"] = newAPI.PortalID
+	serviceDetails[catalogIDKey] = apiID
+	serviceDetails[portalIDKey] = newAPI.PortalID
 
 	state := apic.UnpublishedState
 	if newAPI.Visibility {
@@ -166,6 +169,7 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 		SetStatus(state).
 		SetTitle(newAPI.Title).
 		SetSubscriptionName(defaultSubscriptionSchema).
+		SetServiceAttribute(serviceAttributes).
 		SetServiceAgentDetails(serviceDetails).
 		SetRevisionAttribute(revisionAttributes).
 		SetInstanceAttribute(revisionAttributes).
