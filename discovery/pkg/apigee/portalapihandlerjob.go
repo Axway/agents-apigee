@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	gatewayType  = "Apigee"
-	catalogIDKey = "PortalCatalogID"
-	portalIDKey  = "PortalID"
+	gatewayType     = "Apigee"
+	portalCatalogID = "PortalCatalogID"
+	portalID        = "PortalID"
 )
 
 // newPortalAPIHandler - job that waits for
@@ -69,7 +69,7 @@ func (j *newPortalAPIHandler) Execute() error {
 				err := fmt.Errorf("new api channel was closed")
 				return err
 			}
-			j.handleAPI(newAPI.(*apigee.APIDocData))
+			go j.handleAPI(newAPI.(*apigee.APIDocData))
 		case removedAPI, ok := <-j.removedAPIChan:
 			if !ok {
 				err := fmt.Errorf("removed api channel was closed")
@@ -148,8 +148,8 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	}
 
 	serviceDetails[apigee.ApigeeAgentAttribute.Name] = apigee.ApigeeAgentAttribute.Value
-	serviceDetails[catalogIDKey] = apiID
-	serviceDetails[portalIDKey] = newAPI.PortalID
+	serviceDetails[portalCatalogID] = apiID
+	serviceDetails[portalID] = newAPI.PortalID
 
 	state := apic.UnpublishedState
 	if newAPI.Visibility {

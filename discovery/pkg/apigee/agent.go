@@ -109,8 +109,8 @@ func (a *Agent) registerJobs() error {
 	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
 
 	agent.RegisterProvisioner(NewProvisioner(a.apigeeClient))
-	agent.NewAPIKeyCredentialRequestBuilder().Register()
-	agent.NewOAuthCredentialRequestBuilder().Register()
+	agent.NewAPIKeyCredentialRequestBuilder().SetMaxApplicationCredentials(1).Register()
+	agent.NewOAuthCredentialRequestBuilder().SetMaxApplicationCredentials(1).Register()
 	return err
 }
 
@@ -131,7 +131,12 @@ func (a *Agent) apiValidator(productName, portalName string) bool {
 
 	_, err := cache.GetCache().GetBySecondaryKey(cacheKey)
 	if err != nil {
-		return false // api has been removed
+		// get api from data plane
+		// return false if not found
+		_, e := a.apigeeClient.GetProduct(productName)
+		if e != nil {
+			return false
+		}
 	}
 
 	return true

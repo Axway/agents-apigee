@@ -83,8 +83,8 @@ func (a *Agent) processSubscribe(sub apic.Subscription) {
 	// check for the catalog id on the subscription event
 	var catalogID string
 	var ok bool
-	if catalogID, ok = apiAttributes[catalogIDKey]; !ok {
-		log.Errorf("subscription did not have a catalog ID key, %s, as expected", catalogIDKey)
+	if catalogID, ok = apiAttributes[portalCatalogID]; !ok {
+		log.Errorf("subscription did not have a catalog ID key, %s, as expected", portalCatalogID)
 		return
 	}
 

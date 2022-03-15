@@ -82,7 +82,7 @@ func (j *productHandler) Execute() error {
 				err := fmt.Errorf("product request channel was closed")
 				return err
 			}
-			j.handleProductRequest(req.(productRequest))
+			go j.handleProductRequest(req.(productRequest))
 		case <-j.stopChan:
 			log.Info("Stopping the product handler")
 			return nil
