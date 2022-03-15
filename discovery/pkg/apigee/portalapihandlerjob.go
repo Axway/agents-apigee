@@ -20,7 +20,7 @@ const (
 	portalIDKey  = "PortalID"
 )
 
-//newPortalAPIHandler - job that waits for
+// newPortalAPIHandler - job that waits for
 type newPortalAPIHandler struct {
 	jobs.Job
 	apigeeClient   *apigee.ApigeeClient
@@ -148,9 +148,8 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	}
 
 	serviceDetails[apigee.ApigeeAgentAttribute.Name] = apigee.ApigeeAgentAttribute.Value
-
-	revisionAttributes[catalogIDKey] = apiID
-	revisionAttributes[portalIDKey] = newAPI.PortalID
+	serviceDetails[catalogIDKey] = apiID
+	serviceDetails[portalIDKey] = newAPI.PortalID
 
 	state := apic.UnpublishedState
 	if newAPI.Visibility {

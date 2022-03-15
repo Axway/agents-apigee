@@ -84,7 +84,7 @@ func (a *Agent) processSubscribe(sub apic.Subscription) {
 	var catalogID string
 	var ok bool
 	if catalogID, ok = apiAttributes[catalogIDKey]; !ok {
-		log.Errorf("subscrition did not have a catalog ID key, %s, as expected", catalogIDKey)
+		log.Errorf("subscription did not have a catalog ID key, %s, as expected", catalogIDKey)
 		return
 	}
 
