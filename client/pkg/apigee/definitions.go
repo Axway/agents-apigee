@@ -26,7 +26,7 @@ func (g grantType) String() string {
 	return [...]string{"password", "refresh_token"}[g]
 }
 
-//AuthResponse - response struct from APIGEE auth call
+// AuthResponse - response struct from APIGEE auth call
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`
@@ -36,7 +36,7 @@ type AuthResponse struct {
 	JTI          string `json:"jti"`
 }
 
-//Products
+// Products
 type Products []string
 
 // PortalResponse
@@ -73,4 +73,10 @@ type PortalData struct {
 	DefaultURL           string `json:"defaultURL"`
 	CurrentURL           string `json:"currentURL"`
 	CurrentDomain        string `json:"currentDomain"`
+}
+
+// CredentialProvisionRequest represents the request body needed to add an api product to a credential in an app.
+type CredentialProvisionRequest struct {
+	ApiProducts []string           `json:"apiProducts"`
+	Attributes  []models.Attribute `json:"attributes,omitempty"`
 }

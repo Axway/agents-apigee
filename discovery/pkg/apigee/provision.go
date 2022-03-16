@@ -2,6 +2,7 @@ package apigee
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Axway/agent-sdk/pkg/apic/definitions"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
@@ -19,7 +20,9 @@ type client interface {
 	RemoveDeveloperApp(appName, developerID string) error
 	GetDeveloperID() string
 	GetDeveloperApp(name string) (*models.DeveloperApp, error)
-	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
+	GetAppCredential(appName, devID, key string) (*models.DeveloperAppCredentials, error)
+	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
+	RemoveProductCredential(appName, devID, key, productName string) error
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
@@ -32,6 +35,7 @@ func NewProvisioner(client client) prov.Provisioning {
 // AccessRequestDeprovision - removes an api from an application
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
 	ps := prov.NewRequestStatusBuilder()
+	devID := p.client.GetDeveloperID()
 
 	appName := req.GetApplicationName()
 	if appName == "" {
@@ -40,17 +44,29 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		return failed(ps, fmt.Errorf("error retrieving app: %s", err))
+		if ok := strings.Contains(err.Error(), "404"); ok {
+			return ps.Success()
+		}
+
+		return failed(ps, fmt.Errorf("failed to retrieve app: %s", err))
 	}
 
-	var apiProducts []string
-	for _, api := range apiProducts {
-		if api != req.GetAPIID() {
-			apiProducts = append(apiProducts, api)
+	var cred models.DeveloperAppCredentials
+	// find the credential that the api is linked to
+	for _, c := range app.Credentials {
+		for _, p := range c.ApiProducts {
+			if p.Apiproduct == req.GetAPIID() {
+				cred = c
+			}
 		}
 	}
 
-	_, err = p.client.UpdateDeveloperApp(*app)
+	apiID := req.GetAPIID()
+	if apiID == "" {
+		return failed(ps, fmt.Errorf("%s not found", definitions.AttrExternalAPIID))
+	}
+
+	err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
 	if err != nil {
 		return failed(ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
@@ -61,6 +77,12 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 // AccessRequestProvision - adds an api to an application
 func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.RequestStatus {
 	ps := prov.NewRequestStatusBuilder()
+	devID := p.client.GetDeveloperID()
+
+	apiID := req.GetAPIID()
+	if apiID == "" {
+		return failed(ps, fmt.Errorf("%s name not found", definitions.AttrExternalAPIID))
+	}
 
 	appName := req.GetApplicationName()
 	if appName == "" {
@@ -69,19 +91,26 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.Request
 
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		log.Error(err)
+		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err))
 	}
 
-	apiID := req.GetAPIID()
-	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s not found", definitions.AttrExternalAPIID))
+	// check if the api is linked to a credential
+	for _, cred := range app.Credentials {
+		for _, p := range cred.ApiProducts {
+			if p.Apiproduct == apiID {
+				return failed(ps, fmt.Errorf("api %s already added to app %s", apiID, appName))
+			}
+		}
 	}
 
-	app.ApiProducts = append(app.ApiProducts, apiID)
+	cred := app.Credentials[0]
+	cpr := apigee.CredentialProvisionRequest{
+		ApiProducts: []string{apiID},
+	}
 
-	_, err = p.client.UpdateDeveloperApp(*app)
+	_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to add api %s to app: %s", apiID, err))
+		return failed(ps, fmt.Errorf("error: %s", err))
 	}
 
 	return ps.Success()
@@ -93,7 +122,7 @@ func (p provisioner) ApplicationRequestDeprovision(req prov.ApplicationRequest) 
 
 	appName := req.GetManagedApplicationName()
 	if appName == "" {
-		return failed(ps, fmt.Errorf("managed application name not found"))
+		return failed(ps, fmt.Errorf("managed application %s not found", appName))
 	}
 
 	devID := p.client.GetDeveloperID()
