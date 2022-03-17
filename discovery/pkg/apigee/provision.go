@@ -51,19 +51,23 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 		return failed(ps, fmt.Errorf("failed to retrieve app: %s", err))
 	}
 
-	var cred models.DeveloperAppCredentials
+	apiID := req.GetAPIID()
+	if apiID == "" {
+		return failed(ps, fmt.Errorf("%s not found", definitions.AttrExternalAPIID))
+	}
+
+	var cred *models.DeveloperAppCredentials
 	// find the credential that the api is linked to
 	for _, c := range app.Credentials {
 		for _, p := range c.ApiProducts {
-			if p.Apiproduct == req.GetAPIID() {
-				cred = c
+			if p.Apiproduct == apiID {
+				cred = &c
 			}
 		}
 	}
 
-	apiID := req.GetAPIID()
-	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s not found", definitions.AttrExternalAPIID))
+	if cred == nil {
+		return failed(ps, fmt.Errorf("app %s does not contain credentials for api %s", appName, apiID))
 	}
 
 	err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
@@ -94,7 +98,11 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.Request
 		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err))
 	}
 
-	// check if the api is linked to a credential
+	if len(app.Credentials) == 0 {
+		return failed(ps, fmt.Errorf("expected app to contain credentials, but none were found"))
+	}
+
+	// check if the api is linked to a credential, and return an error if it is
 	for _, cred := range app.Credentials {
 		for _, p := range cred.ApiProducts {
 			if p.Apiproduct == apiID {
@@ -125,12 +133,7 @@ func (p provisioner) ApplicationRequestDeprovision(req prov.ApplicationRequest) 
 		return failed(ps, fmt.Errorf("managed application %s not found", appName))
 	}
 
-	devID := p.client.GetDeveloperID()
-	if p.client.GetDeveloperID() == "" {
-		return failed(ps, fmt.Errorf("developer id not found"))
-	}
-
-	err := p.client.RemoveDeveloperApp(appName, devID)
+	err := p.client.RemoveDeveloperApp(appName, p.client.GetDeveloperID())
 	if err != nil {
 		return failed(ps, fmt.Errorf("failed to delete app: %s", err))
 	}
