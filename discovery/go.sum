@@ -21,6 +21,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/Axway/agent-sdk v1.1.17-0.20220310152019-714963369c00/go.mod h1:LU4jXoEVVU6mFQC9Xs5iXzR5TidsY4IpWK0wl7IlqCk=
 github.com/Axway/agent-sdk v1.1.18-0.20220317222107-b88b6c7f06e5 h1:uB+y5mND8gJ2KC5/6mMXj+u1S8Jwvsea773o33MLuaE=
 github.com/Axway/agent-sdk v1.1.18-0.20220317222107-b88b6c7f06e5/go.mod h1:UCJuvIr/0L3U8WEVzB83uR36ns00glNfigtbO85CS/c=
+github.com/Axway/agent-sdk v1.1.18-0.20220317223402-e46fe2b66aff h1:1VFcCJh0VZ+DrSDMXG/gHdhLd+U2F+siS+xFGHM6h0Q=
+github.com/Axway/agent-sdk v1.1.18-0.20220317223402-e46fe2b66aff/go.mod h1:UCJuvIr/0L3U8WEVzB83uR36ns00glNfigtbO85CS/c=
 github.com/Axway/agents-apigee/client v0.0.0-20220315032923-775e5c11b9bb h1:4lnbTqN5XvAbfIp5/+m/qEGrrsvqtDl0YDnqcMvEMO0=
 github.com/Axway/agents-apigee/client v0.0.0-20220315032923-775e5c11b9bb/go.mod h1:uuDb8tw8ACVEO6gNeEW8oFEZW1JjEtoxW4DMs4tNjVc=
 github.com/Azure/azure-amqp-common-go/v3 v3.0.0/go.mod h1:SY08giD/XbhTz07tJdpw1SoxQXHPN30+DI3Z04SYqyg=
