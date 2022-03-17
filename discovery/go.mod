@@ -5,13 +5,12 @@ go 1.16
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.17-0.20220310152019-714963369c00
+	github.com/Axway/agent-sdk v1.1.18-0.20220317222107-b88b6c7f06e5
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 )
 
 replace (
-	github.com/Axway/agent-sdk => /Users/tjohnson/Public/repos/agent-sdk
-	github.com/Axway/agents-apigee/client => /Users/tjohnson/Public/repos/agents-apigee/client
+	github.com/Axway/agents-apigee/client => ../client
 	github.com/Shopify/sarama => github.com/elastic/sarama v0.0.0-20191122160421-355d120d0970
 	github.com/dop251/goja => github.com/andrewkroh/goja v0.0.0-20190128172624-dd2ac4456e20
 	github.com/fsnotify/fsevents => github.com/fsnotify/fsevents v0.1.1

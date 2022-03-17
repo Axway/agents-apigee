@@ -93,45 +93,32 @@ func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Develop
 	return &developer, err
 }
 
-func (a *ApigeeClient) createOrUpdateDeveloperApp(method string, newApp models.DeveloperApp) (*models.DeveloperApp, error) {
+//CreateDeveloperApp - create an app for the developer
+func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
+	// create a new developer app
 	data, err := json.Marshal(newApp)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf(orgURL+"/developers/%s/apps", a.cfg.Organization, newApp.DeveloperId)
-	if method == http.MethodPut {
-		url = fmt.Sprintf("%s/%s", url, newApp.Name)
-	}
-	response, err := a.newRequest(
-		method, url,
+	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"/developers/%s/apps", a.cfg.Organization, newApp.DeveloperId),
 		WithDefaultHeaders(),
 		WithBody(data),
 	).Execute()
-
 	if err != nil {
 		return nil, err
 	}
-	if response.Code != http.StatusCreated && response.Code != http.StatusOK {
-		return nil, fmt.Errorf(
-			"received an unexpected response code %d from Apigee for a %s request", response.Code, method,
-		)
+	if response.Code != http.StatusCreated {
+		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when creating the app", response.Code)
 	}
 
 	devApp := models.DeveloperApp{}
 	err = json.Unmarshal(response.Body, &devApp)
+	if err != nil {
+		return nil, err
+	}
 
 	return &devApp, err
-}
-
-// CreateDeveloperApp - creates a developer app
-func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
-	return a.createOrUpdateDeveloperApp(http.MethodPost, newApp)
-}
-
-// UpdateDeveloperApp - updates a developer app
-func (a *ApigeeClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error) {
-	return a.createOrUpdateDeveloperApp(http.MethodPut, app)
 }
 
 // GetDeveloperApp gets an app by name
