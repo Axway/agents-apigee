@@ -127,7 +127,10 @@ func (a *Agent) apiValidator(productName, portalName string) bool {
 
 	_, err := cache.GetCache().GetBySecondaryKey(cacheKey)
 	if err != nil {
-		return false // api has been removed
+		_, e := a.apigeeClient.GetProduct(productName)
+		if e != nil {
+			return false
+		}
 	}
 
 	return true
