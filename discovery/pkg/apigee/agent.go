@@ -131,8 +131,6 @@ func (a *Agent) apiValidator(productName, portalName string) bool {
 
 	_, err := cache.GetCache().GetBySecondaryKey(cacheKey)
 	if err != nil {
-		// get api from data plane
-		// return false if not found
 		_, e := a.apigeeClient.GetProduct(productName)
 		if e != nil {
 			return false
