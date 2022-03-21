@@ -109,8 +109,8 @@ func (a *Agent) registerJobs() error {
 	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
 
 	agent.RegisterProvisioner(NewProvisioner(a.apigeeClient))
-	agent.NewAPIKeyCredentialRequestBuilder().SetMaxApplicationCredentials(1).Register()
-	agent.NewOAuthCredentialRequestBuilder().SetMaxApplicationCredentials(1).Register()
+	agent.NewAPIKeyCredentialRequestBuilder().Register()
+	agent.NewOAuthCredentialRequestBuilder().Register()
 	return err
 }
 
