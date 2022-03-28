@@ -188,7 +188,7 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 
 	t := req.GetCredentialType()
 	if t == "oauth" {
-		cr = prov.NewCredentialBuilder().SetOAuth(key, secret)
+		cr = prov.NewCredentialBuilder().SetOAuthIDAndSecret(key, secret)
 	} else {
 		cr = prov.NewCredentialBuilder().SetAPIKey(key)
 	}

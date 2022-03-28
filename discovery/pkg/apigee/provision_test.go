@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning/mock"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
@@ -368,8 +369,8 @@ func TestCredentialProvision(t *testing.T) {
 			})
 
 			mcr := mock.MockCredentialRequest{
-				AppName:  tc.appName,
-				CredType: tc.credType,
+				AppName:     tc.appName,
+				CredDefName: tc.credType,
 			}
 
 			status, cred := p.CredentialProvision(&mcr)
@@ -378,13 +379,13 @@ func TestCredentialProvision(t *testing.T) {
 			} else {
 				assert.NotNil(t, cred)
 				if tc.credType == "oauth" {
-					assert.Contains(t, cred.GetData(), "id")
-					assert.Contains(t, cred.GetData(), "secret")
-					assert.NotContains(t, cred.GetData(), "key")
+					assert.Contains(t, cred.GetData(), provisioning.OauthClientID)
+					assert.Contains(t, cred.GetData(), provisioning.OauthClientSecret)
+					assert.NotContains(t, cred.GetData(), provisioning.APIKey)
 				} else {
-					assert.NotContains(t, cred.GetData(), "id")
-					assert.NotContains(t, cred.GetData(), "secret")
-					assert.Contains(t, cred.GetData(), "key")
+					assert.NotContains(t, cred.GetData(), provisioning.OauthClientID)
+					assert.NotContains(t, cred.GetData(), provisioning.OauthClientSecret)
+					assert.Contains(t, cred.GetData(), provisioning.APIKey)
 				}
 			}
 			assert.Equal(t, tc.status.String(), status.GetStatus().String())

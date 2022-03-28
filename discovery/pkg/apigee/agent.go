@@ -110,7 +110,8 @@ func (a *Agent) registerJobs() error {
 
 	agent.RegisterProvisioner(NewProvisioner(a.apigeeClient))
 	agent.NewAPIKeyCredentialRequestBuilder().Register()
-	agent.NewOAuthCredentialRequestBuilder().Register()
+	agent.NewAPIKeyAccessRequestBuilder().Register()
+	agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret()).Register()
 	return err
 }
 
