@@ -5,12 +5,13 @@ go 1.16
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.17-0.20220310152019-714963369c00
+	github.com/Axway/agent-sdk v1.1.18-0.20220331143154-3b3e88ea4456
+	github.com/hashicorp/hcl v1.0.1-0.20180906183839-65a6292f0157 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
-	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/spf13/afero v1.3.0 // indirect
-	github.com/spf13/cast v1.3.1 // indirect
-	gopkg.in/ini.v1 v1.57.0 // indirect
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	golang.org/x/sys v0.0.0-20220222172238-00053529121e // indirect
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
 
 replace (
@@ -21,6 +22,7 @@ replace (
 	github.com/dop251/goja => github.com/andrewkroh/goja v0.0.0-20190128172624-dd2ac4456e20
 	github.com/fsnotify/fsevents => github.com/elastic/fsevents v0.0.0-20181029231046-e1d381a4d270
 	github.com/fsnotify/fsnotify => github.com/adriansr/fsnotify v0.0.0-20180417234312-c9bbe1f46f1d
+	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.67.0
 	github.com/google/gopacket => github.com/adriansr/gopacket v1.1.18-0.20200327165309-dd62abfa8a41
 	github.com/insomniacslk/dhcp => github.com/elastic/dhcp v0.0.0-20200227161230-57ec251c7eb3 // indirect
 	github.com/tonistiigi/fifo => github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c

@@ -75,7 +75,7 @@ func (j *portalHandler) Execute() error {
 				err := fmt.Errorf("New portal channel was closed")
 				return err
 			}
-			j.handleNewPortal(newPortal.(string))
+			go j.handleNewPortal(newPortal.(string))
 		case removedPortal, ok := <-j.removedPortalChan:
 			if !ok {
 				err := fmt.Errorf("New portal channel was closed")

@@ -107,6 +107,11 @@ func (a *Agent) registerJobs() error {
 
 	// register the api validator job
 	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
+
+	agent.RegisterProvisioner(NewProvisioner(a.apigeeClient))
+	agent.NewAPIKeyCredentialRequestBuilder().Register()
+	agent.NewAPIKeyAccessRequestBuilder().Register()
+	agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret()).Register()
 	return err
 }
 

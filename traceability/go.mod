@@ -7,7 +7,7 @@ go 1.16
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.17-0.20220310152019-714963369c00
+	github.com/Axway/agent-sdk v1.1.18-0.20220331143154-3b3e88ea4456
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/Shopify/sarama v1.26.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect
@@ -16,14 +16,11 @@ require (
 	github.com/elastic/beats/v7 v7.7.1
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
-	github.com/kr/pretty v0.2.0 // indirect
-	github.com/miekg/dns v1.1.29 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.1
 	gopkg.in/jcmturner/gokrb5.v7 v7.5.0 // indirect
 )
 
@@ -35,6 +32,7 @@ replace (
 	github.com/dop251/goja => github.com/andrewkroh/goja v0.0.0-20190128172624-dd2ac4456e20
 	github.com/fsnotify/fsevents => github.com/elastic/fsevents v0.0.0-20181029231046-e1d381a4d270
 	github.com/fsnotify/fsnotify => github.com/adriansr/fsnotify v0.0.0-20180417234312-c9bbe1f46f1d
+	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.67.0
 	github.com/google/gopacket => github.com/adriansr/gopacket v1.1.18-0.20200327165309-dd62abfa8a41
 	github.com/insomniacslk/dhcp => github.com/elastic/dhcp v0.0.0-20200227161230-57ec251c7eb3 // indirect
 	github.com/tonistiigi/fifo => github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c

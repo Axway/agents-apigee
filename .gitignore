@@ -5,7 +5,7 @@ vendor/
 demo/
 /traceability/data
 
-env_vars*
+*env_vars*
 apigee_discovery_agent.yml
 gocoverage.out
 **/.idea/
