@@ -34,6 +34,7 @@ func NewProvisioner(client client) prov.Provisioning {
 
 // AccessRequestDeprovision - removes an api from an application
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
+	log.Infof("deprovisioning access request for api %s from app %s ", req.GetAPIID(), req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
 
@@ -75,11 +76,14 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 		return failed(ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
 
+	log.Infof("removed access for api %s from app %s", req.GetAPIID(), req.GetApplicationName())
+
 	return ps.Success()
 }
 
 // AccessRequestProvision - adds an api to an application
 func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.RequestStatus {
+	log.Infof("processing access request for api %s to app %s", req.GetAPIID(), req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
 
@@ -121,11 +125,14 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.Request
 		return failed(ps, fmt.Errorf("error: %s", err))
 	}
 
+	log.Infof("granted access for api %s to app %s", req.GetAPIID(), req.GetApplicationName())
+
 	return ps.Success()
 }
 
 // ApplicationRequestDeprovision - removes an app from apigee
 func (p provisioner) ApplicationRequestDeprovision(req prov.ApplicationRequest) prov.RequestStatus {
+	log.Infof("removing app %s", req.GetManagedApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 
 	appName := req.GetManagedApplicationName()
@@ -138,11 +145,14 @@ func (p provisioner) ApplicationRequestDeprovision(req prov.ApplicationRequest) 
 		return failed(ps, fmt.Errorf("failed to delete app: %s", err))
 	}
 
+	log.Infof("removed app %s", req.GetManagedApplicationName())
+
 	return ps.Success()
 }
 
 // ApplicationRequestProvision - creates an apigee app
 func (p provisioner) ApplicationRequestProvision(req prov.ApplicationRequest) prov.RequestStatus {
+	log.Infof("provisioning app %s", req.GetManagedApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 	app := models.DeveloperApp{
 		Attributes: []models.Attribute{
@@ -157,18 +167,23 @@ func (p provisioner) ApplicationRequestProvision(req prov.ApplicationRequest) pr
 		return failed(ps, fmt.Errorf("failed to create app: %s", err))
 	}
 
+	log.Infof("provisioned app %s", req.GetManagedApplicationName())
+
 	return ps.Success()
 }
 
 // CredentialDeprovision - Return success because there are no credentials to remove until the app is deleted
 func (p provisioner) CredentialDeprovision(_ prov.CredentialRequest) prov.RequestStatus {
+	msg := "credentials will be removed when the azure subscription is deleted"
+	log.Info(msg)
 	return prov.NewRequestStatusBuilder().
-		SetMessage("credential still active until application is removed").
+		SetMessage(msg).
 		Success()
 }
 
 // CredentialProvision - retrieves the app credentials for oauth or api key authentication
 func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.RequestStatus, prov.Credential) {
+	log.Infof("provisioning credentials for app %s", req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 
 	appName := req.GetApplicationName()
@@ -192,6 +207,8 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 	} else {
 		cr = prov.NewCredentialBuilder().SetAPIKey(key)
 	}
+
+	log.Infof("created credentials for app %s", req.GetApplicationName())
 
 	return ps.Success(), cr
 }
