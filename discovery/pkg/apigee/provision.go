@@ -174,7 +174,7 @@ func (p provisioner) ApplicationRequestProvision(req prov.ApplicationRequest) pr
 
 // CredentialDeprovision - Return success because there are no credentials to remove until the app is deleted
 func (p provisioner) CredentialDeprovision(_ prov.CredentialRequest) prov.RequestStatus {
-	msg := "credentials will be removed when the azure subscription is deleted"
+	msg := "credentials will be removed when the subscription is deleted"
 	log.Info(msg)
 	return prov.NewRequestStatusBuilder().
 		SetMessage(msg).
