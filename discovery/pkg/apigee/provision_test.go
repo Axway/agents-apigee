@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning/mock"
@@ -90,7 +91,9 @@ func TestAccessRequestDeprovision(t *testing.T) {
 			}
 
 			mar := mock.MockAccessRequest{
-				APIID:      tc.apiID,
+				InstanceDetails: map[string]interface{}{
+					defs.AttrExternalAPIID:    tc.apiID,
+				},
 				AppDetails: nil,
 				AppName:    tc.appName,
 			}
@@ -187,7 +190,9 @@ func TestAccessRequestProvision(t *testing.T) {
 			})
 
 			mar := mock.MockAccessRequest{
-				APIID:      tc.apiID,
+				InstanceDetails: map[string]interface{}{
+					defs.AttrExternalAPIID:    tc.apiID,
+				},
 				AppDetails: nil,
 				AppName:    tc.appName,
 			}
