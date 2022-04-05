@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Axway/agent-sdk/pkg/apic/definitions"
+	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
+	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
@@ -34,7 +35,10 @@ func NewProvisioner(client client) prov.Provisioning {
 
 // AccessRequestDeprovision - removes an api from an application
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
-	log.Infof("deprovisioning access request for api %s from app %s ", req.GetAPIID(), req.GetApplicationName())
+	instDetails := req.GetInstanceDetails()
+	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+
+	log.Infof("deprovisioning access request for api %s from app %s ", apiID, req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
 
@@ -52,9 +56,8 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 		return failed(ps, fmt.Errorf("failed to retrieve app: %s", err))
 	}
 
-	apiID := req.GetAPIID()
 	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s not found", definitions.AttrExternalAPIID))
+		return failed(ps, fmt.Errorf("%s not found", defs.AttrExternalAPIID))
 	}
 
 	var cred *models.DeveloperAppCredentials
@@ -76,20 +79,22 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 		return failed(ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
 
-	log.Infof("removed access for api %s from app %s", req.GetAPIID(), req.GetApplicationName())
+	log.Infof("removed access for api %s from app %s", apiID, req.GetApplicationName())
 
 	return ps.Success()
 }
 
 // AccessRequestProvision - adds an api to an application
 func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.RequestStatus {
-	log.Infof("processing access request for api %s to app %s", req.GetAPIID(), req.GetApplicationName())
+	instDetails := req.GetInstanceDetails()
+	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+
+	log.Infof("processing access request for api %s to app %s", apiID, req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
 
-	apiID := req.GetAPIID()
 	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s name not found", definitions.AttrExternalAPIID))
+		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID))
 	}
 
 	appName := req.GetApplicationName()
@@ -125,7 +130,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.Request
 		return failed(ps, fmt.Errorf("error: %s", err))
 	}
 
-	log.Infof("granted access for api %s to app %s", req.GetAPIID(), req.GetApplicationName())
+	log.Infof("granted access for api %s to app %s", apiID, req.GetApplicationName())
 
 	return ps.Success()
 }
