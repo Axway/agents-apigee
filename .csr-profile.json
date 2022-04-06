@@ -1,0 +1,23 @@
+{
+    "project": "Mulesoft Agents",
+    "repo_url": "https://github.com/Axway/agents-mulesoft",
+      "security_guide": "https://docs.axway.com/bundle/axway_resources/page/amplify_api_management_platform_security_white_paper.html",
+    "requirements": {
+      "dependency-check": false,
+      "fortify": true,
+      "irius-risk": false,
+      "npm-audit": false,
+      "pentest": false,
+      "retirejs": false,
+      "twistlock": false,
+      "zap": false,
+      "yarn": false,
+      "gosec": false,
+      "whitesource": true,
+      "appspider": false,
+      "insightvm": false
+    },
+    "suppressions": [
+    ]
+}
+  
