@@ -1,6 +1,6 @@
 # Build image
-# golang:1.16.12-alpine3.15 linux/amd64
-FROM docker.io/golang@sha256:2fe2a23a4d219139bf3e0cdffdefe3588dd25c2e6af7517de27169aab6f5cc26 as builder
+# golang:1.17.9-alpine3.15 linux/amd64
+FROM docker.io/golang@sha256:fae4a45a8787835db6ce9f9aa34b3b9de18b8b3068af29bb337014d49f3c6150 as builder
 
 ENV GOFLAGS "-mod=mod"
 
