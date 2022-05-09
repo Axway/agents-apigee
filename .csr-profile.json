@@ -1,5 +1,5 @@
 {
-    "project": "Mulesoft Agents",
+    "project": "Apigee Agents",
     "repo_url": "https://github.com/Axway/agents-mulesoft",
       "security_guide": "https://docs.axway.com/bundle/axway_resources/page/amplify_api_management_platform_security_white_paper.html",
     "requirements": {
