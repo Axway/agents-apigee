@@ -1,7 +1,7 @@
 image: docker:dind
 
 variables:
-  PROJECT: 'agents-mulesoft'
+  PROJECT: 'agents-apigee'
   
   # Fortify
   FORTIFY_PROJECT: "10716"
