@@ -69,8 +69,10 @@ twistlock:on-schedule:
 twistlock-discovery:
   extends: .twistlock
   before_script:
+    - echo "$PWD"
+    - echo "$CI_PROJECT_DIR"
     - apk --no-cache update && apk add make
-    - make docker-build-disc 
+    - cd discovery && make docker-build 
     - export IMAGE_NAME=apigee_discovery_agent:latest
   except:
     refs:
@@ -80,8 +82,9 @@ twistlock-discovery:
 twistlock-traceability:
   extends: .twistlock
   before_script:
+    - echo "$PWD"
     - apk --no-cache update && apk add make
-    - make docker-build-trace 
+    - cd traceability && make docker-build 
     - export IMAGE_NAME=apigee_traceability_agent:latest
   except:
     refs:
