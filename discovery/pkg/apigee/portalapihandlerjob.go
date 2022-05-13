@@ -168,7 +168,6 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 		SetAPIName(newAPI.ProductName).
 		SetStage(newAPI.GetPortalTitle()).
 		SetStageDescriptor("Portal").
-		SetVersion(newAPI.GetPortalTitle()).
 		SetDescription(newAPI.Description).
 		SetAPISpec(spec).
 		SetImage(image).
