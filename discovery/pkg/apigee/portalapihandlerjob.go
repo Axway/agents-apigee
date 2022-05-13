@@ -121,6 +121,10 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	// get the spec to build the service body
 	spec := j.getAPISpec(newAPI.SpecContent)
 
+	if len(spec) == 0 {
+		return nil, fmt.Errorf("could not retrive spec for Product %s in Portal %s, skipping", newAPI.ProductName, newAPI.GetPortalTitle())
+	}
+
 	portal, err := j.getPortalData(newAPI.PortalID)
 	if err != nil {
 		return nil, err
