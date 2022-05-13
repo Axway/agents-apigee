@@ -47,6 +47,10 @@ func (j *authJob) Ready() bool {
 }
 
 func (j *authJob) Status() error {
+	return nil
+}
+
+func (j *authJob) checkConnection() error {
 	request := coreapi.Request{
 		Method: coreapi.GET,
 		URL:    apigeeAuthCheckURL,
@@ -63,7 +67,11 @@ func (j *authJob) Status() error {
 }
 
 func (j *authJob) Execute() error {
-	var err error
+	err := j.checkConnection()
+	if err != nil {
+		return err
+	}
+
 	if j.refreshToken != "" {
 		err = j.refreshAuth()
 	}
