@@ -14,7 +14,7 @@ The following make targets are available
 | update-sdk      | pulls the latest changes to main on the SDK repo               |                               |
 | build           | builds the binary discovery agent                              | bin/apigee_discovery_agent    |
 | apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models             |
-| build           | builds the traceability agent in a docker container            | apigee-discovery-agent:latest |
+| docker-build    | builds the discovery agent in a docker container               | apigee-discovery-agent:latest |
 
 ### Build (Docker)
 

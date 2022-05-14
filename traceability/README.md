@@ -6,14 +6,14 @@ The Traceability agent finds logs from consumed Apigee proxies and sends the tra
 
 The following make targets are available
 
-| Target     | Description                                                    | Output(s)                        |
-|------------|----------------------------------------------------------------|----------------------------------|
-| lint       | runs go lint against all source files                          | linter results                   |
-| dep        | downloads all dependencies needed to build the discovery agent | /vendor                          |
-| test       | runs go test against all test files int he repo                | test results                     |
-| update-sdk | pulls the latest changes to main on the SDK repo               |                                  |
-| build      | builds the binary traceability agent                           | bin/apigee_traceability_agent    |
-| build      | builds the traceability agent in a docker container            | apigee-traceability-agent:latest |
+| Target       | Description                                                    | Output(s)                        |
+|--------------|----------------------------------------------------------------|----------------------------------|
+| lint         | runs go lint against all source files                          | linter results                   |
+| dep          | downloads all dependencies needed to build the discovery agent | /vendor                          |
+| test         | runs go test against all test files int he repo                | test results                     |
+| update-sdk   | pulls the latest changes to main on the SDK repo               |                                  |
+| build        | builds the binary traceability agent                           | bin/apigee_traceability_agent    |
+| docker-build | builds the traceability agent in a docker container            | apigee-traceability-agent:latest |
 
 ### Build (Docker)
 
