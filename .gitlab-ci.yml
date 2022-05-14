@@ -74,6 +74,7 @@ twistlock-discovery:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build 
     - export IMAGE_NAME=apigee-discovery-agent:latest
+    - cd ..
   except:
     refs:
       - schedules
@@ -86,6 +87,7 @@ twistlock-traceability:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build 
     - export IMAGE_NAME=apigee-traceability-agent:latest
+    - cd ..
   except:
     refs:
       - schedules
