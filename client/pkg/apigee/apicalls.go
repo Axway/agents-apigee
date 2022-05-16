@@ -266,7 +266,7 @@ func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
 		WithDefaultHeaders(),
 	).Execute()
 
-	if err != nil {
+	if err != nil || response.Code != 200 {
 		return []byte{}
 	}
 
@@ -441,7 +441,7 @@ func (a *ApigeeClient) GetAppCredential(appName, devID, key string) (*models.Dev
 func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
 	data, err := json.Marshal(cpr)
 	if err != nil {
-		return nil , err
+		return nil, err
 	}
 
 	url := fmt.Sprintf(orgURL+"/developers/%s/apps/%s/keys/%s", a.cfg.Organization, devID, appName, key)
@@ -473,14 +473,14 @@ func (a *ApigeeClient) RemoveProductCredential(appName, devID, key, productName 
 		http.MethodDelete, url, WithDefaultHeaders(),
 	).Execute()
 	if err != nil {
-		return  err
+		return err
 	}
 
 	if response.Code != http.StatusOK {
-		return  fmt.Errorf(
+		return fmt.Errorf(
 			"received an unexpected response code %d from Apigee while updating removing product from app credentials", response.Code,
 		)
 	}
 
-	return  err
+	return err
 }

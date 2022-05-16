@@ -3,6 +3,7 @@ package apigee
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
@@ -24,6 +25,7 @@ const (
 type newPortalAPIHandler struct {
 	jobs.Job
 	apigeeClient   *apigee.ApigeeClient
+	pubLock        *sync.Mutex
 	stopChan       chan interface{}
 	processAPIChan chan interface{}
 	removedAPIChan chan interface{}
@@ -37,6 +39,7 @@ func newPortalAPIHandlerJob(apigeeClient *apigee.ApigeeClient, shouldPushAPI fun
 	removedAPIChan, _, _ := subscribeToTopic(removedAPI)
 	job := &newPortalAPIHandler{
 		apigeeClient:   apigeeClient,
+		pubLock:        &sync.Mutex{},
 		stopChan:       make(chan interface{}),
 		processAPIChan: processAPIChan,
 		removedAPIChan: removedAPIChan,
@@ -121,6 +124,10 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	// get the spec to build the service body
 	spec := j.getAPISpec(newAPI.SpecContent)
 
+	if len(spec) == 0 {
+		return nil, fmt.Errorf("could not retrive spec for Product %s in Portal %s, skipping", newAPI.ProductName, newAPI.GetPortalTitle())
+	}
+
 	portal, err := j.getPortalData(newAPI.PortalID)
 	if err != nil {
 		return nil, err
@@ -203,6 +210,7 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 	// Check DiscoveryCache for API
 	cacheKey := fmt.Sprintf("%s-%s", newAPI.PortalID, newAPI.ProductName)
 	update := false
+	j.pubLock.Lock() // only publish one at a time
 	if !agent.IsAPIPublishedByID(newAPI.ProductName) {
 		// call new API
 		j.publishAPI(newAPI, *serviceBody, hashString)
@@ -216,6 +224,7 @@ func (j *newPortalAPIHandler) handleAPI(newAPI *apigee.APIDocData) {
 		j.publishAPI(newAPI, *serviceBody, hashString)
 		update = true
 	}
+	j.pubLock.Unlock()
 
 	if _, err := cache.GetCache().Get(cacheKey); err != nil || update {
 		// update the cache

@@ -6,7 +6,6 @@ import (
 
 	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
-	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning/mock"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
@@ -16,7 +15,7 @@ import (
 func TestAccessRequestDeprovision(t *testing.T) {
 	tests := []struct {
 		name        string
-		status      prov.Status
+		status      provisioning.Status
 		appName     string
 		apiID       string
 		getAppErr   error
@@ -27,13 +26,13 @@ func TestAccessRequestDeprovision(t *testing.T) {
 			name:    "should deprovision an access request",
 			appName: "app-one",
 			apiID:   "abc-123",
-			status:  prov.Success,
+			status:  provisioning.Success,
 		},
 		{
 			name:      "should return success when the developer app is already removed",
 			appName:   "app-one",
 			apiID:     "abc-123",
-			status:    prov.Success,
+			status:    provisioning.Success,
 			getAppErr: fmt.Errorf("404"),
 		},
 		{
@@ -41,32 +40,32 @@ func TestAccessRequestDeprovision(t *testing.T) {
 			appName:   "app-one",
 			apiID:     "abc-123",
 			getAppErr: fmt.Errorf("error"),
-			status:    prov.Error,
+			status:    provisioning.Error,
 		},
 		{
 			name:      "should fail to deprovision an access request when removing the credential",
 			appName:   "app-one",
 			apiID:     "abc-123",
-			status:    prov.Error,
+			status:    provisioning.Error,
 			rmCredErr: fmt.Errorf("error"),
 		},
 		{
 			name:    "should return an error when the appName is not found",
 			appName: "",
 			apiID:   "abc-123",
-			status:  prov.Error,
+			status:  provisioning.Error,
 		},
 		{
 			name:    "should return an error when the apiID is not found",
 			appName: "app-one",
 			apiID:   "",
-			status:  prov.Error,
+			status:  provisioning.Error,
 		},
 		{
 			name:        "should return an error when the apiID is not found",
 			appName:     "app-one",
 			apiID:       "api-123",
-			status:      prov.Error,
+			status:      provisioning.Error,
 			missingCred: true,
 		},
 	}
@@ -92,7 +91,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 
 			mar := mock.MockAccessRequest{
 				InstanceDetails: map[string]interface{}{
-					defs.AttrExternalAPIID:    tc.apiID,
+					defs.AttrExternalAPIID: tc.apiID,
 				},
 				AppDetails: nil,
 				AppName:    tc.appName,
@@ -108,7 +107,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 func TestAccessRequestProvision(t *testing.T) {
 	tests := []struct {
 		name        string
-		status      prov.Status
+		status      provisioning.Status
 		appName     string
 		apiID       string
 		getAppErr   error
@@ -120,46 +119,46 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:    "should provision an access request",
 			appName: "app-one",
 			apiID:   "abc-123",
-			status:  prov.Success,
+			status:  provisioning.Success,
 		},
 		{
 			name:       "should fail to deprovision an access request",
 			appName:    "app-one",
 			apiID:      "abc-123",
-			status:     prov.Error,
+			status:     provisioning.Error,
 			addCredErr: fmt.Errorf("error"),
 		},
 		{
 			name:      "should fail to deprovision when unable to retrieve the app",
 			appName:   "app-one",
 			apiID:     "abc-123",
-			status:    prov.Error,
+			status:    provisioning.Error,
 			getAppErr: fmt.Errorf("error"),
 		},
 		{
 			name:    "should return an error when the apiID is not found",
 			appName: "app-one",
 			apiID:   "",
-			status:  prov.Error,
+			status:  provisioning.Error,
 		},
 		{
 			name:    "should return an error when the appName is not found",
 			appName: "",
 			apiID:   "abc-123",
-			status:  prov.Error,
+			status:  provisioning.Error,
 		},
 		{
 			name:    "should return an error when there are no credentials on the app",
 			appName: "app-one",
 			apiID:   "abc-123",
-			status:  prov.Error,
+			status:  provisioning.Error,
 			noCreds: true,
 		},
 		{
 			name:        "should return an error when the api is already linked to a credential",
 			appName:     "app-one",
 			apiID:       "abc-123",
-			status:      prov.Error,
+			status:      provisioning.Error,
 			isApiLinked: true,
 		},
 	}
@@ -191,7 +190,7 @@ func TestAccessRequestProvision(t *testing.T) {
 
 			mar := mock.MockAccessRequest{
 				InstanceDetails: map[string]interface{}{
-					defs.AttrExternalAPIID:    tc.apiID,
+					defs.AttrExternalAPIID: tc.apiID,
 				},
 				AppDetails: nil,
 				AppName:    tc.appName,
@@ -207,32 +206,32 @@ func TestAccessRequestProvision(t *testing.T) {
 func TestApplicationRequestDeprovision(t *testing.T) {
 	tests := []struct {
 		name     string
-		status   prov.Status
+		status   provisioning.Status
 		appName  string
 		apiID    string
 		rmAppErr error
 	}{
 		{
 			name:    "should deprovision an application",
-			status:  prov.Success,
+			status:  provisioning.Success,
 			appName: "app-one",
 			apiID:   "api-123",
 		},
 		{
 			name:    "should return an error when the app name is not found",
-			status:  prov.Error,
+			status:  provisioning.Error,
 			appName: "",
 			apiID:   "api-123",
 		},
 		{
 			name:    "should return an error when the app name is not found",
-			status:  prov.Error,
+			status:  provisioning.Error,
 			appName: "",
 			apiID:   "api-123",
 		},
 		{
 			name:     "should return an error failing to remove the app",
-			status:   prov.Error,
+			status:   provisioning.Error,
 			appName:  "app-one",
 			apiID:    "api-123",
 			rmAppErr: fmt.Errorf("err"),
@@ -267,20 +266,20 @@ func TestApplicationRequestDeprovision(t *testing.T) {
 func TestApplicationRequestProvision(t *testing.T) {
 	tests := []struct {
 		name         string
-		status       prov.Status
+		status       provisioning.Status
 		appName      string
 		apiID        string
 		createAppErr error
 	}{
 		{
 			name:    "should provision an application",
-			status:  prov.Success,
+			status:  provisioning.Success,
 			appName: "app-one",
 			apiID:   "api-123",
 		},
 		{
 			name:         "should return an error when creating the app",
-			status:       prov.Error,
+			status:       provisioning.Error,
 			appName:      "app-one",
 			apiID:        "api-123",
 			createAppErr: fmt.Errorf("err"),
@@ -316,14 +315,14 @@ func TestCredentialDeprovision(t *testing.T) {
 	p := NewProvisioner(&mockClient{})
 	mcr := mock.MockCredentialRequest{}
 	status := p.CredentialDeprovision(mcr)
-	assert.Equal(t, prov.Success, status.GetStatus())
+	assert.Equal(t, provisioning.Success, status.GetStatus())
 	assert.NotEmpty(t, status.GetMessage())
 }
 
 func TestCredentialProvision(t *testing.T) {
 	tests := []struct {
 		name      string
-		status    prov.Status
+		status    provisioning.Status
 		appName   string
 		apiID     string
 		getAppErr error
@@ -331,28 +330,28 @@ func TestCredentialProvision(t *testing.T) {
 	}{
 		{
 			name:     "should provision an api-key credential",
-			status:   prov.Success,
+			status:   provisioning.Success,
 			appName:  "app-one",
 			apiID:    "api-123",
 			credType: "api-key",
 		},
 		{
 			name:     "should provision an oauth credential",
-			status:   prov.Success,
+			status:   provisioning.Success,
 			appName:  "app-one",
 			apiID:    "api-123",
 			credType: "oauth",
 		},
 		{
 			name:     "should return an error when the app name is not found",
-			status:   prov.Error,
+			status:   provisioning.Error,
 			appName:  "",
 			apiID:    "api-123",
 			credType: "oauth",
 		},
 		{
 			name:      "should return an error when unable to retrieve the app",
-			status:    prov.Error,
+			status:    provisioning.Error,
 			appName:   "app-one",
 			apiID:     "api-123",
 			getAppErr: fmt.Errorf("err"),
@@ -379,7 +378,7 @@ func TestCredentialProvision(t *testing.T) {
 			}
 
 			status, cred := p.CredentialProvision(&mcr)
-			if tc.status == prov.Error {
+			if tc.status == provisioning.Error {
 				assert.Nil(t, cred)
 			} else {
 				assert.NotNil(t, cred)
