@@ -138,6 +138,9 @@ func (j *newPortalAPIHandler) buildServiceBody(newAPI *apigee.APIDocData, produc
 	imageContentType := ""
 	if newAPI.ImageURL != nil {
 		image, imageContentType = j.apigeeClient.GetImageWithURL(*newAPI.ImageURL, portal.CurrentURL)
+		if image == "" {
+			return nil, fmt.Errorf("could not retrive image, when it was set, for Product %s in Portal %s, skipping", newAPI.ProductName, newAPI.GetPortalTitle())
+		}
 	}
 
 	// create the service body to use for update or create

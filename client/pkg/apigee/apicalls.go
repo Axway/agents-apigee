@@ -237,40 +237,48 @@ func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error
 
 // GetImageWithURL - get the list of portals for the org
 func (a *ApigeeClient) GetImageWithURL(imageURL, portalURL string) (string, string) {
-	// Get the portal
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s%s", portalURL, imageURL)).Execute()
-	if err != nil {
-		return "", ""
-	}
-
-	contentType := ""
-	if contentTypeArray, ok := response.Headers["Content-Type"]; ok {
-		contentType = contentTypeArray[0]
-		// assuming an octet stream type is actually an image/png
-		if contentType == "application/octet-stream" {
-			contentType = "image/png"
+	retries := 2
+	for i := 0; i <= retries; i++ {
+		// Get the portal
+		response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s%s", portalURL, imageURL)).Execute()
+		if err != nil {
+			return "", ""
 		}
-	}
 
-	if response.Code != 200 || string(response.Body) == "" || contentType == "" {
-		return "", ""
-	}
+		contentType := ""
+		if contentTypeArray, ok := response.Headers["Content-Type"]; ok {
+			contentType = contentTypeArray[0]
+			// assuming an octet stream type is actually an image/png
+			if contentType == "application/octet-stream" {
+				contentType = "image/png"
+			}
+		}
 
-	return base64.StdEncoding.EncodeToString(response.Body), contentType
+		if response.Code != 200 || string(response.Body) == "" || contentType == "" {
+			continue
+		}
+
+		return base64.StdEncoding.EncodeToString(response.Body), contentType
+	}
+	return "", ""
 }
 
 // GetSpecContent - get the spec content for an api product
 func (a *ApigeeClient) GetSpecContent(contentID string) []byte {
-	// Get the spec content file
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID),
-		WithDefaultHeaders(),
-	).Execute()
+	retries := 2
+	for i := 0; i <= retries; i++ {
+		// Get the spec content file
+		response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgDataAPIURL+"/specs/doc/%s/content", a.cfg.Organization, contentID),
+			WithDefaultHeaders(),
+		).Execute()
 
-	if err != nil || response.Code != 200 {
-		return []byte{}
+		if err != nil || response.Code != 200 {
+			continue
+		}
+
+		return response.Body
 	}
-
-	return response.Body
+	return []byte{}
 }
 
 // GetRevisionSpec - gets the resource file of type openapi for the org, api, revision, and spec file specified
