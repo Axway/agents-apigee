@@ -85,7 +85,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 }
 
 // AccessRequestProvision - adds an api to an application
-func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.RequestStatus {
+func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.RequestStatus, prov.AccessData) {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
 
@@ -94,28 +94,28 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.Request
 	devID := p.client.GetDeveloperID()
 
 	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID))
+		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID)), nil
 	}
 
 	appName := req.GetApplicationName()
 	if appName == "" {
-		return failed(ps, fmt.Errorf("application name not found"))
+		return failed(ps, fmt.Errorf("application name not found")), nil
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err))
+		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
 	}
 
 	if len(app.Credentials) == 0 {
-		return failed(ps, fmt.Errorf("expected app to contain credentials, but none were found"))
+		return failed(ps, fmt.Errorf("expected app to contain credentials, but none were found")), nil
 	}
 
 	// check if the api is linked to a credential, and return an error if it is
 	for _, cred := range app.Credentials {
 		for _, p := range cred.ApiProducts {
 			if p.Apiproduct == apiID {
-				return failed(ps, fmt.Errorf("api %s already added to app %s", apiID, appName))
+				return failed(ps, fmt.Errorf("api %s already added to app %s", apiID, appName)), nil
 			}
 		}
 	}
@@ -127,12 +127,12 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) prov.Request
 
 	_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
 	if err != nil {
-		return failed(ps, fmt.Errorf("error: %s", err))
+		return failed(ps, fmt.Errorf("error: %s", err)), nil
 	}
 
 	log.Infof("granted access for api %s to app %s", apiID, req.GetApplicationName())
 
-	return ps.Success()
+	return ps.Success(), nil
 }
 
 // ApplicationRequestDeprovision - removes an app from apigee
