@@ -5,7 +5,7 @@ go 1.16
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.25-0.20220527165022-5c6bd759d057
+	github.com/Axway/agent-sdk v1.1.25-0.20220527205549-c2296d29b337
 	github.com/hashicorp/hcl v1.0.1-0.20180906183839-65a6292f0157 // indirect
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	golang.org/x/sys v0.0.0-20220222172238-00053529121e // indirect
