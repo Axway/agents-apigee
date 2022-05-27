@@ -39,6 +39,12 @@ apigee_traceability_agent:
       insecureSkipVerify: ${CENTRAL_SSL_INSECURESKIPVERIFY:false}
     proxyUrl: ${CENTRAL_PROXYURL:""}
     clientTimeout: ${CENTRAL_CLIENTTIMEOUT:60s}
+  agentFeatures:
+    persistCache: ${AGENTFEATURES_PERSISTCACHE}
+    marketplaceProvisioning: ${AGENTFEATURES_MARKETPLACEPROVISIONING}
+    versionChecker: ${AGENTFEATURES_VERSIONCHECKER}
+    processSystemSignals: ${AGENTFEATURES_PROCESSSYSTEMSIGNALS}
+    connectToCentral: ${AGENTFEATURES_CONNECTTOCENTRAL}
   status:
     port: ${STATUS_PORT:8990}
     healthCheckPeriod: ${STATUS_HEALTHCHECKPERIOD:3m}
