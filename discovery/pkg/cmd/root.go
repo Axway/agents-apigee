@@ -13,7 +13,7 @@ import (
 
 // RootCmd - Agent root command
 var RootCmd corecmd.AgentRootCmd
-var agentConfig *apigee.AgentConfig
+var apigeeClient *apigee.Agent
 
 func init() {
 	// Create new root command with callbacks to initialize the agent config and command execution.
@@ -36,11 +36,7 @@ func init() {
 
 // Callback that agent will call to process the execution
 func run() error {
-	apigeeClient, err := apigee.NewAgent(agentConfig)
-	if err == nil {
-		apigeeClient.AgentRunning()
-	}
-	return err
+	return apigeeClient.Run()
 }
 
 // Callback that agent will call to initialize the config. CentralConfig is parsed by Agent SDK
@@ -48,10 +44,14 @@ func run() error {
 func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 	rootProps := RootCmd.GetProperties()
 	// Parse the config from bound properties and setup gateway config
-	agentConfig = &apigee.AgentConfig{
+	agentConfig := &apigee.AgentConfig{
 		CentralCfg: centralConfig,
 		ApigeeCfg:  config.ParseConfig(rootProps),
 	}
 	notify.SetSubscriptionConfig(centralConfig.GetSubscriptionConfig())
-	return agentConfig, nil
+
+	var err error
+	apigeeClient, err = apigee.NewAgent(agentConfig)
+
+	return agentConfig, err
 }

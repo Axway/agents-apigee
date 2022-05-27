@@ -196,7 +196,7 @@ func TestAccessRequestProvision(t *testing.T) {
 				AppName:    tc.appName,
 			}
 
-			status := p.AccessRequestProvision(&mar)
+			status, _ := p.AccessRequestProvision(&mar)
 			assert.Equal(t, tc.status.String(), status.GetStatus().String())
 			assert.Equal(t, 0, len(status.GetProperties()))
 		})

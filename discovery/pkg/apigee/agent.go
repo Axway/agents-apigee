@@ -47,15 +47,20 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		stopChan:        make(chan struct{}),
 	}
 
-	// Start the agent jobs
-	err = newAgent.registerJobs()
-	if err != nil {
-		return nil, err
-	}
-
 	newAgent.handleSubscriptions()
+	agent.RegisterProvisioner(NewProvisioner(newAgent.apigeeClient))
 
 	return newAgent, nil
+}
+
+func (a *Agent) Run() error {
+	// Start the agent jobs
+	err := a.registerJobs()
+	if err != nil {
+		return err
+	}
+	a.running()
+	return nil
 }
 
 // registerJobs - registers the agent jobs
@@ -108,15 +113,14 @@ func (a *Agent) registerJobs() error {
 	// register the api validator job
 	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
 
-	agent.RegisterProvisioner(NewProvisioner(a.apigeeClient))
 	agent.NewAPIKeyCredentialRequestBuilder().Register()
 	agent.NewAPIKeyAccessRequestBuilder().Register()
 	agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret()).Register()
 	return err
 }
 
-// AgentRunning - waits for a signal to stop the agent
-func (a *Agent) AgentRunning() {
+// running - waits for a signal to stop the agent
+func (a *Agent) running() {
 	<-a.stopChan
 }
 

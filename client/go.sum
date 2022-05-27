@@ -53,8 +53,8 @@ code.cloudfoundry.org/go-loggregator v7.4.0+incompatible/go.mod h1:KPBTRqj+y738N
 code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f/go.mod h1:sk5LnIjB/nIEU7yP5sDQExVm62wu0pBh3yrElngUisI=
 code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a/go.mod h1:tkZo8GtzBjySJ7USvxm4E36lNQw1D3xM6oKHGqdaAJ4=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/Axway/agent-sdk v1.1.24 h1:lnffpM8VZPUt3uoeCY/EogX8x4uPJAskKh1U4GsWh3A=
-github.com/Axway/agent-sdk v1.1.24/go.mod h1:NNRSbAhk14i8TdcPCKfFqDViyXAoEpmpmTQfvuQ7ib0=
+github.com/Axway/agent-sdk v1.1.25-0.20220527165022-5c6bd759d057 h1:AZjRXQGio0a1G1wrS+sg/97rpD+9V0ONcNqB0A7D0yU=
+github.com/Axway/agent-sdk v1.1.25-0.20220527165022-5c6bd759d057/go.mod h1:QHp7PuhJsG1UZHplJo4FpOMUIrJBNJKdAqc+CxDBG8w=
 github.com/Azure/azure-amqp-common-go/v3 v3.2.1/go.mod h1:O6X1iYHP7s2x7NjUKsXVhkwWrQhxrd+d8/3rRadj4CI=
 github.com/Azure/azure-event-hubs-go/v3 v3.3.15/go.mod h1:xgDvUi1+8/bb11WTEaU7VwZREYufzKzjWE4YiPZixb0=
 github.com/Azure/azure-pipeline-go v0.1.8/go.mod h1:XA1kFWRVhSK+KNFiOhfv83Fv8L9achrP7OxIzeTn1Yg=
