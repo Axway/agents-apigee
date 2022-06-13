@@ -22,7 +22,7 @@ jobs:
 
       - name: Test traceability agent
         working-directory: traceability
-        run: go test -v ./...
+        run: go test -race -v ./...
 
   buildTraceabilityAgent:
     env:

@@ -22,7 +22,7 @@ jobs:
 
       - name: Test discovery agent
         working-directory: discovery
-        run: go test -v ./...
+        run: go test -race -v ./...
 
   buildDiscoveryAgent:
     env:
