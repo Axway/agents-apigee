@@ -5,6 +5,7 @@ WORKSPACE ?= $$(pwd)
 GO_PKG_LIST := $(shell go list ./...)
 
 export GOFLAGS := -mod=mod
+export GOWORK := off
 export GOPRIVATE := git.ecd.axway.org
 
 lint:
