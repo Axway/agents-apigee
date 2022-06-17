@@ -97,6 +97,7 @@ output.traceability:
   sampling:
     percentage: ${TRACEABILITY_SAMPLING_PERCENTAGE:10}
     per_api: ${TRACEABILITY_SAMPLING_PER_API:true}
+    per_subscription: ${TRACEABILITY_SAMPLING_PER_SUBSCRIPTION:true}
     reportAllErrors: ${TRACEABILITY_SAMPLING_REPORTALLERRORS:true}
   apiExceptionsList: ${TRACEABILITY_EXCEPTION_LIST:[]}
 
