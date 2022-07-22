@@ -16,11 +16,6 @@ variables:
   GIT_TAG_PREFIX: v
 
 include:
-  - project: "apigov/beano_cicd"
-    ref: master
-    # the order of these include files is important
-    file:
-      - "/gitlabci/csrjobs.yml"
   - project: 'scurity/gitlabci'
     ref: master
     file:
@@ -29,6 +24,11 @@ include:
       - "/.gitlab-ci-twistlock.yml"
       - "/.gitlab-ci-whitesource.yml"
       - "/.gitlab-ci-csr.yml"
+  - project: "apigov/beano_cicd"
+    ref: master
+    # the order of these include files is important
+    file:
+      - "/gitlabci/csrjobs.yml"
 
 stages:
   - security-scans
@@ -57,15 +57,9 @@ fetch-iriusrisk:
 
 twistlock:
   extends: .dummy
-  only:
-    refs:
-      - xxxxx
 
 twistlock:on-schedule:
   extends: .dummy
-  only:
-    refs:
-      - xxxxx
 
 twistlock-discovery:
   extends: .twistlock
