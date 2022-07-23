@@ -49,6 +49,9 @@ stages:
   only:
     refs:
       - xxxxx
+  except:
+    refs:
+      - yyyyy
   script:
     - ""
 
