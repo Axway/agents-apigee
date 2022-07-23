@@ -42,26 +42,24 @@ stages:
   fi
 
 ####################
-# CSR - overridden from csrjobs.yml to effectively not see this job ever
+# CSR - overridden from csrjobs.yml to effectively not see this job ever. There's probably a better way to do this
+# but I gave up trying
 ####################
-.dummy:
-  stage: security-scans
+fetch-iriusrisk:
   only:
     refs:
       - xxxxx
   except:
     refs:
       - yyyyy
-  before_script:
-    - echo "BEFORE"
-  script:
-    - echo "SCRIPT"
-
-fetch-iriusrisk:
-  extends: .dummy
 
 twistlock:
-  extends: .dummy
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
 
 twistlock:on-schedule:
   only:
