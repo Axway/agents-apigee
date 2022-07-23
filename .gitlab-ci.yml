@@ -22,6 +22,7 @@ include:
       - '/.gitlab-ci-prepcsr.yml'
       - '/.gitlab-ci-fortify.yml'
       - "/.gitlab-ci-twistlock.yml"
+      - "/.gitlab-ci-iriusrisk.yml"
       - "/.gitlab-ci-whitesource.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
