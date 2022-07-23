@@ -52,8 +52,10 @@ stages:
   except:
     refs:
       - yyyyy
+  berfore_script:
+    - echo "BEFORE"
   script:
-    - ""
+    - echo "SCRIPT"
 
 fetch-iriusrisk:
   extends: .dummy
