@@ -116,6 +116,14 @@ fetch-iriusrisk:
     refs:
       - yyyyy
 
+fetch-iriusrisk:on-schedule:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
 twistlock:
   only:
     refs:
