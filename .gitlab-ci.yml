@@ -41,34 +41,6 @@ stages:
     export LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
   fi
 
-####################
-# CSR - overridden from csrjobs.yml to effectively not see this job ever. There's probably a better way to do this
-# but I gave up trying
-####################
-fetch-iriusrisk:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
-
-twistlock:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
-
-twistlock:on-schedule:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
-
 twistlock-discovery:
   extends: .twistlock
   before_script:
@@ -122,13 +94,6 @@ twistlock-traceability:on-schedule:
     refs:
       - schedules
 
-# never run twistlock-master
-twistlock-master:
-  extends: .dummy
-  only:
-    refs:
-      - xxxxx
-
 whitesource:on-schedule:
   extends: .whitesource
   before_script:
@@ -138,3 +103,39 @@ whitesource:on-schedule:
     - *get-latest-tag
     - echo "Checking out ${GIT_TAG_PREFIX}${LATEST_TAG}"
     - git checkout ${GIT_TAG_PREFIX}${LATEST_TAG}
+
+####################
+# Override these from csrjobs.yml to effectively not ever run them. There's probably a better way to do this
+# but I gave up trying
+####################
+fetch-iriusrisk:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
+twistlock:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
+twistlock:on-schedule:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
+twistlock-master:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
