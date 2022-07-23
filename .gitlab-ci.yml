@@ -22,6 +22,7 @@ include:
       - '/.gitlab-ci-prepcsr.yml'
       - '/.gitlab-ci-fortify.yml'
       - "/.gitlab-ci-twistlock.yml"
+      - "/.gitlab-ci-iriusrisk.yml"
       - "/.gitlab-ci-whitesource.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
@@ -40,36 +41,6 @@ stages:
   else 
     export LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
   fi
-
-####################
-# CSR - overridden from csrjobs.yml to effectively not see this job ever
-####################
-.dummy:
-  stage: security-scans
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
-  before_script:
-    - echo "BEFORE"
-  script:
-    - echo "SCRIPT"
-
-fetch-iriusrisk:
-  extends: .dummy
-
-twistlock:
-  extends: .dummy
-
-twistlock:on-schedule:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
 
 twistlock-discovery:
   extends: .twistlock
@@ -124,13 +95,6 @@ twistlock-traceability:on-schedule:
     refs:
       - schedules
 
-# never run twistlock-master
-twistlock-master:
-  extends: .dummy
-  only:
-    refs:
-      - xxxxx
-
 whitesource:on-schedule:
   extends: .whitesource
   before_script:
@@ -140,3 +104,38 @@ whitesource:on-schedule:
     - *get-latest-tag
     - echo "Checking out ${GIT_TAG_PREFIX}${LATEST_TAG}"
     - git checkout ${GIT_TAG_PREFIX}${LATEST_TAG}
+
+####################
+# CSR - overridden from csrjobs.yml to effectively not see these jobs ever
+####################
+fetch-iriusrisk:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
+twistlock:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
+twistlock:on-schedule:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
+
+twistlock-master:
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
