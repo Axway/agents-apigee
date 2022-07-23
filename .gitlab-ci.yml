@@ -64,7 +64,12 @@ twistlock:
   extends: .dummy
 
 twistlock:on-schedule:
-  extends: .dummy
+  only:
+    refs:
+      - xxxxx
+  except:
+    refs:
+      - yyyyy
 
 twistlock-discovery:
   extends: .twistlock
