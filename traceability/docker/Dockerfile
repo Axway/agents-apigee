@@ -1,8 +1,9 @@
 # Build image
-# golang:1.17.9-alpine3.15 linux/amd64
-FROM docker.io/golang@sha256:fae4a45a8787835db6ce9f9aa34b3b9de18b8b3068af29bb337014d49f3c6150 as builder
+# golang:1.19.0-alpine3.16 linux/amd64
+FROM docker.io/golang@sha256:70df3b8f9f099da7f60f0b32480015165e3d0b51bfacf9e255b59f3dd6bd2828 as builder
 
 ENV GOFLAGS "-mod=mod"
+ENV GOWORK "off"
 
 RUN apk --no-cache update && \
   apk --no-cache add -U bash build-base git

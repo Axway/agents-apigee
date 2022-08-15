@@ -37,7 +37,7 @@ dep-sdk:
 
 update-sdk:
 	@echo "Updating SDK dependencies"
-	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@${version}"
+	@export GOFLAGS="" && go mod edit -require "github.com/Axway/agent-sdk@${version}"
 
 test: dep
 	@go vet ${GO_PKG_LIST}
