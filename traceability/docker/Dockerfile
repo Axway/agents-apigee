@@ -3,6 +3,7 @@
 FROM docker.io/golang@sha256:70df3b8f9f099da7f60f0b32480015165e3d0b51bfacf9e255b59f3dd6bd2828 as builder
 
 ENV GOFLAGS "-mod=mod"
+ENV GOWORK "off"
 
 RUN apk --no-cache update && \
   apk --no-cache add -U bash build-base git
