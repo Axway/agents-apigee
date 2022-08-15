@@ -9,6 +9,7 @@ jobs:
   buildDiscoveryAgentDocker:
     env:
       GOFLAGS: "-mod=mod"
+      GOWORK: "off"
       IMAGE_NAME: apigee_discovery_agent
       ORG_NAME: Axway
     runs-on: ubuntu-latest

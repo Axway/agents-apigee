@@ -9,6 +9,7 @@ jobs:
   buildDiscoveryAgent:
     env:
       GOFLAGS: "-mod=mod"
+      GOWORK: "off"
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/discovery
@@ -40,6 +41,7 @@ jobs:
   buildTraceabilityAgent:
     env:
       GOFLAGS: "-mod=mod"
+      GOWORK: "off"
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/traceability
