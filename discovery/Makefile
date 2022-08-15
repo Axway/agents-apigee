@@ -31,14 +31,16 @@ dep-branch:
 	@make sdk=`git branch --show-current` dep-version
 
 dep-version:
+	@echo "here2 $(sdk), ${sdk}"
 	@export version=$(sdk) && make update-sdk && make dep
 
 dep-sdk: 
+	@echo "here1"
 	@make sdk=main dep-version
 
 update-sdk:
 	@echo "Updating SDK dependencies"
-	@export GOFLAGS="" && go get "github.com/Axway/agent-sdk@${version}"
+	@export GOFLAGS="" && go mod edit -require "github.com/Axway/agent-sdk@${version}"
 
 test: dep
 	@go vet ${GO_PKG_LIST}
