@@ -41,7 +41,6 @@ update-sdk:
 	@export GOFLAGS="" && go mod edit -require "github.com/Axway/agent-sdk@${version}"
 
 test: dep
-	export GOWORK := off
 	@go vet ${GO_PKG_LIST}
 	@go test -race -v -short -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST}
 

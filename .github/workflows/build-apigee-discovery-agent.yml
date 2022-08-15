@@ -8,6 +8,7 @@ jobs:
   testDiscoveryAgent:
     env:
       GOFLAGS: "-mod=mod"
+      GOWORK: "off"
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/discovery
@@ -27,6 +28,7 @@ jobs:
   buildDiscoveryAgent:
     env:
       GOFLAGS: "-mod=mod"
+      GOWORK: "off"
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/discovery
