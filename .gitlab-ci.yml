@@ -39,7 +39,6 @@ include:
       - "/gitlabci/csrjobs.yml"
 
 stages:
-  - test
   - sonar
   - security-scans
   - security-review
@@ -156,3 +155,21 @@ twistlock-master:
   except:
     refs:
       - yyyyy
+
+###################
+# These overridden from jobs.xml to never run      
+###################
+lint-test:
+  only:
+    refs:
+      - never
+
+test:
+  only:
+    refs:
+      - never
+
+error-check:
+  only:
+    refs:
+      - never
