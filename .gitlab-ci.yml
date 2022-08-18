@@ -39,6 +39,7 @@ include:
       - "/gitlabci/csrjobs.yml"
 
 stages:
+  - test
   - sonar
   - security-scans
   - security-review
