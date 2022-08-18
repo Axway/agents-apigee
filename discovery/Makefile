@@ -48,6 +48,7 @@ test-sonar: dep
 	@go vet ${GO_PKG_LIST}
 	@go test -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 
+
 ${WORKSPACE}/discovery_agent: dep
 	@echo ${WORKSPACE}
 	@export time=`date +%Y%m%d%H%M%S` && \
