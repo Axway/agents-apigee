@@ -1,8 +1,7 @@
 .PHONY: all dep test lint build
 
 WORKSPACE ?= $$(pwd)
-
-GO_PKG_LIST := $(shell go list ./...)
+ O_PKG_LIST := $(shell go list ${DIRS})
 
 export GOFLAGS := -mod=mod
 export GOPRIVATE := git.ecd.axway.org
@@ -45,7 +44,7 @@ test: dep
 
 test-sonar: dep
 	@go vet ${GO_PKG_LIST}
-	@go test -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
+	@go test -short -coverpkg=${DIRS} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 	
 sonar: test-sonar
 	./build/scripts/sonar.sh $(mode) $(sonarHost)
