@@ -1,9 +1,10 @@
 
-DIRS := ./client/... ./discovery/... ./traceability/...
+WORKSPACE := ${PWD}
+DIRS := ${WORKSPACE}/client/pkg/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
 GO_PKG_LIST := $(shell go list ${DIRS})
 
 # export GOFLAGS := -mod=mod
-export GOWORK := off
+# export GOWORK := ${PWD}/go.work
 # export GOPRIVATE := git.ecd.axway.org
 
 dep:
@@ -28,10 +29,12 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
-	@echo ${DIRS}
-	@echo ${GOWORK}
-	@go vet ${GO_PKG_LIST}
-	@go test -short -coverpkg=${DIRS} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
+	# @go vet ${GO_PKG_LIST}
+	@echo "${PWD}"
+	@echo "${WORKSPACE}"
+	@go work use .
+	@go test -short -coverpkg=${GO_PKG_LIST} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 
 sonar: test-sonar
 	./sonar.sh $(sonarHost)
+
