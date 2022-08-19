@@ -3,7 +3,8 @@ WORKSPACE := ${PWD}
 DIRS := ${WORKSPACE}/client/pkg/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
 GO_PKG_LIST := $(shell go list ${DIRS})
 
-# export GOFLAGS := -mod=mod
+export GOFLAGS := -mod=readonly
+export GOWORK := off
 # export GOWORK := ${PWD}/go.work
 # export GOPRIVATE := git.ecd.axway.org
 
