@@ -1,9 +1,9 @@
 
 GO_PKG_LIST := $(shell go list ./...)
 
-# export GOFLAGS := -mod=mod
-# export GOWORK := off
-# export GOPRIVATE := git.ecd.axway.org
+export GOFLAGS := -mod=mod
+export GOWORK := off
+export GOPRIVATE := git.ecd.axway.org
 
 dep:
 	@$(MAKE) -C client dep
