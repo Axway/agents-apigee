@@ -32,6 +32,7 @@ test-sonar:
 	# @go vet ${GO_PKG_LIST}
 	@echo "${PWD}"
 	@echo "${WORKSPACE}"
+	export GOFLAGS=" -mod=readonly"
 	@go work use .
 	@go test -short -coverpkg=${GO_PKG_LIST} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 
