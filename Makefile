@@ -28,9 +28,10 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
+	@echo ${DIRS}
+	@echo ${GOWORK}
 	@go vet ${GO_PKG_LIST}
 	@go test -short -coverpkg=${DIRS} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 
 sonar: test-sonar
-	@echo ${GOWORK}
 	./sonar.sh $(sonarHost)
