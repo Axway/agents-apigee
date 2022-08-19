@@ -39,6 +39,8 @@ test-sonar:
 	@echo ${GOFLAGS}
 	@echo ${GOWORK}
 	@echo "HERE"
+	@echo ${DIRS}
+	@echo ${GO_PKG_LIST}
 	@go test -short -coverpkg=${GO_PKG_LIST} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 	@echo "THERE"
 
