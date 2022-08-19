@@ -3,7 +3,7 @@ DIRS := ./client/... ./discovery/... ./traceability/...
 GO_PKG_LIST := $(shell go list ${DIRS})
 
 # export GOFLAGS := -mod=mod
-# export GOWORK := off
+export GOWORK := off
 # export GOPRIVATE := git.ecd.axway.org
 
 dep:
@@ -32,4 +32,5 @@ test-sonar:
 	@go test -short -coverpkg=${DIRS} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 
 sonar: test-sonar
+	@echo ${GOWORK}
 	./sonar.sh $(sonarHost)
