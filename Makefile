@@ -27,6 +27,7 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
+	ls -laR
 	echo "wkspc"
 	echo ${WORKSPACE}
 	echo "gopkglist"
