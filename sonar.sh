@@ -8,8 +8,8 @@ sonar-scanner -X \
     -Dsonar.projectKey=Apigee_Agent_Client \
     -Dsonar.sourceEncoding=UTF-8 \
     -Dsonar.projectBaseDir=${WORKSPACE} \
-    -Dsonar.sources=./client/pkg \
-    -Dsonar.tests=. \
+    -Dsonar.sources=./client/pkg/...,./discovery/...,./traceability/... \
+    -Dsonar.tests=./client/pkg/...,./discovery/...,./traceability/... \
 	-Dsonar.exclusions=**/*.json \
     -Dsonar.test.inclusions=**/*test*.go \
     -Dsonar.go.tests.reportPaths=goreport.json \
