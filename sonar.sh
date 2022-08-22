@@ -3,9 +3,9 @@
 sonar-scanner -X \
     -Dsonar.host.url=${SONAR_HOST} \
     -Dsonar.language=go \
-    -Dsonar.projectName=Apigee_Agent_Client \
+    -Dsonar.projectName=Apigee_Agents \
     -Dsonar.projectVersion=1.0 \
-    -Dsonar.projectKey=Apigee_Agent_Client \
+    -Dsonar.projectKey=Apigee_Agents \
     -Dsonar.sourceEncoding=UTF-8 \
     -Dsonar.projectBaseDir=${WORKSPACE} \
     -Dsonar.sources=./client/pkg/,./discovery/,./traceability/ \
