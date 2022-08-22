@@ -8,12 +8,12 @@ sonar-scanner -X \
     -Dsonar.projectKey=Apigee_Agent_Client \
     -Dsonar.sourceEncoding=UTF-8 \
     -Dsonar.projectBaseDir=${WORKSPACE} \
-    -Dsonar.sources=**/*.go \
-    -Dsonar.tests=./client/pkg/apigee/*,./client/pkg/apigee/models/*,./client/pkg/apigee/config/*,./client/pkg/apigee/*./discovery/**,./traceability/** \
+    -Dsonar.sources=./client/pkg/apigee/*,./client/pkg/apigee/models/*,./client/pkg/apigee/cmd,./discovery/** \
+    -Dsonar.tests=./client/pkg/**,./discovery/**,./traceability/** \
 	-Dsonar.exclusions=**/*.json \
     -Dsonar.test.inclusions=**/*test*.go \
     -Dsonar.go.tests.reportPaths=goreport.json \
     -Dsonar.go.coverage.reportPaths=gocoverage.out \
     -Dsonar.issuesReport.console.enable=true \
     -Dsonar.report.export.path=sonar-report.json \
-    -Dsonar.verbose=true
+    -Dsonar.verbos=true
