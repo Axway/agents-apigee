@@ -156,6 +156,13 @@ twistlock-master:
     refs:
       - yyyyy
 
+sonar:
+  before_script:
+    - echo "10716"
+    - echo ${GOFLAGS}
+    - echo ${GOWORK}
+    
+
 ###################
 # These overridden from jobs.xml to never run      
 ###################
