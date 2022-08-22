@@ -1,10 +1,10 @@
 
-WORKSPACE := ${PWD}
-GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
-
 export GOFLAGS := -mod=readonly
 # export GOWORK := off
 export GOWORK := ${PWD}/go.work
+
+WORKSPACE := ${PWD}
+GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 dep:
 	@$(MAKE) -C client dep
