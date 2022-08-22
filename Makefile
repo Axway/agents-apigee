@@ -38,7 +38,10 @@ test-sonar:
 	echo "THERE"
 
 sonar: test-sonar
-	@GO_PKG_LIST=$(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
-	ls -laR
+	echo "./sonar.sh $(sonarHost)"
 	./sonar.sh $(sonarHost)
+
+localsonar:
+	./sonar.sh "http://quality1.ecd.axway.int"
+
 
