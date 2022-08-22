@@ -1,6 +1,6 @@
 
 WORKSPACE := ${PWD}
-DIRS := ${WORKSPACE}/client/pkg/apigee ${WORKSPACE}/client/pkg/config ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
+DIRS := ${WORKSPACE}/client/pkg/config/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
 GO_PKG_LIST := $(shell go list ${DIRS})
 
 export GOFLAGS := -mod=readonly
@@ -43,7 +43,7 @@ test-sonar:
 	@echo ${GO_PKG_LIST}
 	@ls -la
 	@ go help test
-	@go test -short -coverpkg=${GO_PKG_LIST} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
+	@go test -short ${GO_PKG_LIST} -coverpkg=${GO_PKG_LIST} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 -json > ${WORKSPACE}/goreport.json
 	@echo "THERE"
 
 sonar: test-sonar
