@@ -9,7 +9,7 @@ sonar-scanner -X \
     -Dsonar.sourceEncoding=UTF-8 \
     -Dsonar.projectBaseDir=${WORKSPACE} \
     -Dsonar.sources=**/*.go \
-    -Dsonar.tests=./client/pkg/**,./discovery/**,./traceability/** \
+    -Dsonar.tests=./client/pkg/apigee/*,./client/pkg/apigee/models/*,./client/pkg/apigee/config/*,./client/pkg/apigee/*./discovery/**,./traceability/** \
 	-Dsonar.exclusions=**/*.json \
     -Dsonar.test.inclusions=**/*test*.go \
     -Dsonar.go.tests.reportPaths=goreport.json \
