@@ -15,4 +15,5 @@ sonar-scanner -X \
     -Dsonar.go.tests.reportPaths=goreport.json \
     -Dsonar.go.coverage.reportPaths=gocoverage.out \
     -Dsonar.issuesReport.console.enable=true \
-    -Dsonar.report.export.path=sonar-report.json
+    -Dsonar.report.export.path=sonar-report.json \
+    -Dsonar.verbost=true
