@@ -14,7 +14,7 @@ variables:
   WS_BRANCH: main
 
   GIT_TAG_PREFIX: v
-  GOWORK: ${PWD}/go.work
+  GOWORK: ${CI_PROJECT_DIR}/go.work
   GOFLAGS: "-mod=readonly"
 
 include:
@@ -161,7 +161,7 @@ sonar:
     - echo "10716"
     - echo ${GOFLAGS}
     - echo ${GOWORK}
-    
+
 
 ###################
 # These overridden from jobs.xml to never run      
