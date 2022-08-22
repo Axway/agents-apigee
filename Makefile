@@ -1,8 +1,8 @@
 
 export GOFLAGS := -mod=readonly
-export GOWORK := ${PWD}/go.work
+export GOWORK := $$(pwd)/go.work
 
-WORKSPACE := ${PWD}
+WORKSPACE := $$(pwd)
 GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 dep:
@@ -27,6 +27,7 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
+	echo ${WORKSPACE}
 	@export GOFLAGS="-mod=readonly" && \
 	echo "${GO_PKG_LIST}"
 	@echo "THREE"
