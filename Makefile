@@ -1,12 +1,10 @@
 
 WORKSPACE := ${PWD}
-DIRS := ${WORKSPACE}/client/pkg/config/... ${WORKSPACE}/client/pkg/apigee/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
-GO_PKG_LIST := $(shell go list ${WORKSPACE}/client/pkg/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...)
+GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 export GOFLAGS := -mod=readonly
-export GOWORK := off
-# export GOWORK := ${PWD}/go.work
-# export GOPRIVATE := git.ecd.axway.org
+# export GOWORK := off
+export GOWORK := ${PWD}/go.work
 
 dep:
 	@$(MAKE) -C client dep
@@ -30,20 +28,8 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
-	# @go vet ${GO_PKG_LIST}
-	@echo "${PWD}"
-	@echo "${WORKSPACE}"
-	# export GOFLAGS="-mod=readonly"
-	# @go work use .
-	export GOWORK=off
-	@echo ${GOFLAGS}
-	@echo ${GOWORK}
-	@echo "HERE"
-	@echo " dirs    ${DIRS}"
-	@echo " pkgs   ${GO_PKG_LIST}"
-	# @ls -la
-	# @ go help test
-	@go test -short ${DIRS} -coverpkg=${DIRS} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 -json > ${WORKSPACE}/goreport.json
+	@echo "${GO_PKG_LIST}"
+	@go test -v -short -coverpkg=./client/pkg/... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
 	@echo "THERE"
 
 sonar: test-sonar
