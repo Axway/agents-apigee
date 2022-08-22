@@ -15,6 +15,7 @@ variables:
 
   GIT_TAG_PREFIX: v
   GOWORK: ${PWD}/go.work
+  GOFLAGS: "-mod=readonly"
 
 include:
   - project: "apigov/beano_cicd"
