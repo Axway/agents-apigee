@@ -1,7 +1,7 @@
 
 WORKSPACE := ${PWD}
-DIRS := ${WORKSPACE}/client/pkg/config/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
-GO_PKG_LIST := $(shell go list ${DIRS})
+DIRS := ${WORKSPACE}/client/pkg/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...
+GO_PKG_LIST := $(shell go list ${WORKSPACE}/client/pkg/... ${WORKSPACE}/discovery/... ${WORKSPACE}/traceability/...)
 
 export GOFLAGS := -mod=readonly
 export GOWORK := off
@@ -41,8 +41,8 @@ test-sonar:
 	@echo "HERE"
 	@echo ${DIRS}
 	@echo ${GO_PKG_LIST}
-	@ls -la
-	@ go help test
+	# @ls -la
+	# @ go help test
 	@go test -short ${GO_PKG_LIST} -coverpkg=${GO_PKG_LIST} -coverprofile=${WORKSPACE}/gocoverage.out -count=1 -json > ${WORKSPACE}/goreport.json
 	@echo "THERE"
 
