@@ -1,6 +1,6 @@
 
-export GOFLAGS := -mod=readonly
-export GOWORK := $$(pwd)/go.work
+# export GOFLAGS := -mod=readonly
+# export GOWORK := $$(pwd)/go.work
 
 WORKSPACE := $$(pwd)
 GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
@@ -27,8 +27,10 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
+	echo "wkspc"
 	echo ${WORKSPACE}
-	@export GOFLAGS="-mod=readonly" && \
+	echo "gopkglist"
+	# @export GOFLAGS="-mod=readonly" && \
 	echo "${GO_PKG_LIST}"
 	@echo "THREE"
 	go test -v -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json && \
