@@ -1,8 +1,7 @@
 .PHONY: all dep test lint build
 
 WORKSPACE ?= $$(pwd)
-
-GO_PKG_LIST := $(shell go list ./...)
+GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 export GOFLAGS := -mod=mod
 export GOPRIVATE := git.ecd.axway.org
@@ -45,7 +44,10 @@ test: dep
 
 test-sonar: dep
 	@go vet ${GO_PKG_LIST}
-	@go test -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
+	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
+	
+sonar: test-sonar
+	./build/scripts/sonar.sh $(sonarHost)
 
 apigee-generate: ## generate apigee resources
 	./scripts/apigee_generate.sh

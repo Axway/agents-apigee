@@ -8,5 +8,6 @@ demo/
 *env_vars*
 apigee_discovery_agent.yml
 gocoverage.out
+goreport.json
 **/.idea/
 __debug_bin

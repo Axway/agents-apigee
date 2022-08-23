@@ -1,9 +1,9 @@
 image: docker:dind
 
 variables:
-  PROJECT: 'agents-apigee'
+  PROJECT: "agents-apigee"
   CSR_SUPPRESSION_LIST: "/tmp/csr-suppressions/amplify-central/golang-agents-common.json"
-  
+
   # Fortify
   FORTIFY_PROJECT: "10716"
   FORTIFY_BUILD_ID: "agents-apigee"
@@ -15,12 +15,23 @@ variables:
 
   GIT_TAG_PREFIX: v
 
+  # these needed for go workspace
+  GOWORK: ${CI_PROJECT_DIR}/go.work
+  GOFLAGS: "-mod=readonly"
+
 include:
-  - project: 'scurity/gitlabci'
+  - project: "apigov/beano_cicd"
+    ref: master
+    # the order of these include files is important
+    file:
+      - "/gitlabci/variables.yml"
+      - "/gitlabci/restrictions.yml"
+      - "/gitlabci/jobs.yml"
+  - project: "scurity/gitlabci"
     ref: master
     file:
-      - '/.gitlab-ci-prepcsr.yml'
-      - '/.gitlab-ci-fortify.yml'
+      - "/.gitlab-ci-prepcsr.yml"
+      - "/.gitlab-ci-fortify.yml"
       - "/.gitlab-ci-twistlock.yml"
       - "/.gitlab-ci-iriusrisk.yml"
       - "/.gitlab-ci-whitesource.yml"
@@ -32,6 +43,8 @@ include:
       - "/gitlabci/csrjobs.yml"
 
 stages:
+  - test
+  - sonar
   - security-scans
   - security-review
 
@@ -45,10 +58,8 @@ stages:
 twistlock-discovery:
   extends: .twistlock
   before_script:
-    - echo "$PWD"
-    - echo "$CI_PROJECT_DIR"
     - apk --no-cache update && apk add make
-    - cd discovery && make docker-build 
+    - cd discovery && make docker-build
     - export IMAGE_NAME=apigee-discovery-agent:latest
     - cd ..
   except:
@@ -60,9 +71,8 @@ twistlock-discovery:
 twistlock-traceability:
   extends: .twistlock
   before_script:
-    - echo "$PWD"
     - apk --no-cache update && apk add make
-    - cd traceability && make docker-build 
+    - cd traceability && make docker-build
     - export IMAGE_NAME=apigee-traceability-agent:latest
     - cd ..
   except:
@@ -147,3 +157,22 @@ twistlock-master:
   except:
     refs:
       - yyyyy
+
+
+###################
+# These overridden from jobs.xml to never run      
+###################
+lint-test:
+  only:
+    refs:
+      - never
+
+test:
+  only:
+    refs:
+      - never
+
+error-check:
+  only:
+    refs:
+      - never

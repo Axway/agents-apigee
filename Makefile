@@ -1,4 +1,6 @@
 
+GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
+
 dep:
 	@$(MAKE) -C client dep
 	@$(MAKE) -C discovery dep
@@ -19,4 +21,12 @@ dep-sdk:
 	@$(MAKE) -C client dep-sdk
 	@$(MAKE) -C discovery dep-sdk
 	@$(MAKE) -C traceability dep-sdk
+
+test-sonar:
+	@go vet ${GO_PKG_LIST}
+	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
+
+sonar: test-sonar
+	./sonar.sh $(sonarHost)
+
 

@@ -1,7 +1,6 @@
 .PHONY: all dep test lint build
 
 WORKSPACE ?= $$(pwd)
-
 GO_PKG_LIST := $(shell go list ./...)
 
 export GOFLAGS := -mod=mod
@@ -47,6 +46,9 @@ test: dep
 test-sonar: dep
 	@go vet ${GO_PKG_LIST}
 	@go test -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json
+
+sonar: test-sonar
+	./build/scripts/sonar.sh $(mode) $(sonarHost)
 
 ${WORKSPACE}/apigee_traceability_agent: dep
 	@export time=`date +%Y%m%d%H%M%S` && \
