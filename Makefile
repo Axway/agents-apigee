@@ -29,4 +29,3 @@ test-sonar:
 sonar: test-sonar
 	./sonar.sh $(sonarHost)
 
-
