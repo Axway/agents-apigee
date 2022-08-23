@@ -1,8 +1,4 @@
 
-# export GOFLAGS := -mod=readonly
-# export GOWORK := $$(pwd)/go.work
-
-WORKSPACE := $$(pwd)
 GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 dep:
@@ -27,21 +23,10 @@ dep-sdk:
 	@$(MAKE) -C traceability dep-sdk
 
 test-sonar:
-	ls -laR
-	echo "wkspc"
-	echo ${WORKSPACE}
-	echo "gopkglist"
-	# @export GOFLAGS="-mod=readonly" && \
-	echo "${GO_PKG_LIST}"
-	@echo "THREE"
-	go test -v -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ${WORKSPACE}/goreport.json && \
-	echo "THERE"
+	@go vet ${GO_PKG_LIST}
+	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
 
 sonar: test-sonar
-	echo "./sonar.sh $(sonarHost)"
 	./sonar.sh $(sonarHost)
-
-localsonar:
-	./sonar.sh "http://quality1.ecd.axway.int"
 
 
