@@ -1,7 +1,6 @@
 .PHONY: all dep test lint build
 
 WORKSPACE ?= $$(pwd)
-
 GO_PKG_LIST := $(shell go list ./...)
 
 export GOFLAGS := -mod=mod
