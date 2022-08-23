@@ -1,13 +1,10 @@
-.PHONY: all dep test lint build
+.PHONY: all dep test build
 
 WORKSPACE ?= $$(pwd)
 GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 export GOFLAGS := -mod=mod
 export GOPRIVATE := git.ecd.axway.org
-
-lint:
-	@golint -set_exit_status ${GO_PKG_LIST}
 
 all: clean package
 	@echo "Done"

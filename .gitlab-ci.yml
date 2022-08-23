@@ -162,11 +162,6 @@ twistlock-master:
 ###################
 # These overridden from jobs.xml to never run      
 ###################
-lint-test:
-  only:
-    refs:
-      - never
-
 test:
   only:
     refs:
