@@ -105,9 +105,14 @@ twistlock-traceability:on-schedule:
     refs:
       - schedules
 
+whitesource:
+  before_script:
+    - export GOWORK=off
+
 whitesource:on-schedule:
   extends: .whitesource
   before_script:
+    - export GOWORK=off
     - git config --global http.sslVerify false
     - git config --global url."ssh://git@git.ecd.axway.org".insteadOf "https://git.ecd.axway.org"''
     - git fetch
