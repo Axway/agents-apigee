@@ -25,7 +25,6 @@ type Agent struct {
 	apigeeClient    *apigee.ApigeeClient
 	discoveryFilter filter.Filter
 	stopChan        chan struct{}
-	devCreated      bool
 }
 
 // NewAgent - Creates a new Agent
@@ -48,7 +47,7 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 	}
 
 	newAgent.handleSubscriptions()
-	agent.RegisterProvisioner(NewProvisioner(newAgent.apigeeClient))
+	agent.RegisterProvisioner(NewProvisioner(newAgent.apigeeClient, agentCfg.CentralCfg.GetCredentialConfig().GetExpirationDays(), agent.GetCacheManager()))
 
 	return newAgent, nil
 }
@@ -98,12 +97,6 @@ func (a *Agent) registerJobs() error {
 		return err
 	}
 
-	// create job that creates the developer profile used by the agent
-	_, err = jobs.RegisterSingleRunJobWithName(newCreateDeveloperJob(a.apigeeClient, a.apigeeClient.SetDeveloperID), "Create Developer")
-	if err != nil {
-		return err
-	}
-
 	// create job that starts the subscription manager
 	_, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
 	if err != nil {
@@ -113,9 +106,9 @@ func (a *Agent) registerJobs() error {
 	// register the api validator job
 	_, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
 
-	agent.NewAPIKeyCredentialRequestBuilder().Register()
+	agent.NewAPIKeyCredentialRequestBuilder(agent.WithCRDIsSuspendable()).Register()
 	agent.NewAPIKeyAccessRequestBuilder().Register()
-	agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret()).Register()
+	agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret(), agent.WithCRDIsSuspendable()).Register()
 	return err
 }
 
@@ -143,15 +136,6 @@ func (a *Agent) apiValidator(productName, portalName string) bool {
 	}
 
 	return true
-}
-
-// setDeveloperCreated - once the developer creation job runs and sets that it is created
-func (a *Agent) setDeveloperCreated() {
-	a.devCreated = true
-}
-
-func (a *Agent) isDevCreated() bool {
-	return a.devCreated
 }
 
 // shouldPushAPI - callback used determine if the Product should be pushed to Central or not
