@@ -8,7 +8,6 @@ import (
 	v1 "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/api/v1"
 	management "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/management/v1alpha1"
 	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
-	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
@@ -38,7 +37,7 @@ type client interface {
 	GetDeveloperID() string
 	GetDeveloperApp(name string) (*models.DeveloperApp, error)
 	GetAppCredential(appName, devID, key string) (*models.DeveloperAppCredentials, error)
-	CreateAppCredential(appName, devID string, expDays int) (*models.DeveloperAppCredentials, error)
+	CreateAppCredential(appName, devID string, products []string, expDays int) (*models.DeveloperApp, error)
 	RemoveAppCredential(appName, devID, key string) error
 	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
 	RemoveProductCredential(appName, devID, key, productName string) error
@@ -257,19 +256,9 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 		return failed(ps, fmt.Errorf("application name not found")), nil
 	}
 
-	app, err := p.client.GetDeveloperApp(appName)
+	curApp, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
 		return failed(ps, fmt.Errorf("error retrieving app: %s", err)), nil
-	}
-	cred, err := p.client.CreateAppCredential(app.Name, p.client.GetDeveloperID(), p.credExpDays)
-	if err != nil {
-		return failed(ps, fmt.Errorf("error creating app credential: %s", err)), nil
-	}
-
-	// get the cred expiry time if it is set
-	credBuilder := prov.NewCredentialBuilder()
-	if p.credExpDays > 0 {
-		credBuilder = credBuilder.SetExpirationTime(time.UnixMilli(int64(cred.ExpiresAt)))
 	}
 
 	// associate all products
@@ -284,20 +273,38 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 			products = append(products, apiID)
 		}
 	}
-
-	// update the credential
-	cpr := apigee.CredentialProvisionRequest{
-		ApiProducts: products,
+	if len(products) == 0 {
+		return failed(ps, fmt.Errorf("at least one product access is required for a credential")), nil
 	}
 
-	_, err = p.client.AddProductCredential(appName, p.client.GetDeveloperID(), cred.ConsumerKey, cpr)
+	updateApp, err := p.client.CreateAppCredential(curApp.Name, p.client.GetDeveloperID(), products, p.credExpDays)
 	if err != nil {
-		return failed(ps, fmt.Errorf("error: %s", err)), nil
+		return failed(ps, fmt.Errorf("error creating app credential: %s", err)), nil
+	}
+
+	// find the new cred
+	cred := models.DeveloperAppCredentials{}
+	keys := map[string]struct{}{}
+	for _, c := range curApp.Credentials {
+		keys[c.ConsumerKey] = struct{}{}
+	}
+
+	for _, c := range updateApp.Credentials {
+		if _, ok := keys[c.ConsumerKey]; !ok {
+			cred = c
+			break
+		}
+	}
+
+	// get the cred expiry time if it is set
+	credBuilder := prov.NewCredentialBuilder()
+	if p.credExpDays > 0 {
+		credBuilder = credBuilder.SetExpirationTime(time.UnixMilli(int64(cred.ExpiresAt)))
 	}
 
 	var cr prov.Credential
 	t := req.GetCredentialType()
-	if t == provisioning.APIKeyCRD {
+	if t == prov.APIKeyCRD {
 		cr = credBuilder.SetAPIKey(cred.ConsumerKey)
 	} else {
 		cr = credBuilder.SetOAuthIDAndSecret(cred.ConsumerKey, cred.ConsumerSecret)

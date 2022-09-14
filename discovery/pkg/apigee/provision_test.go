@@ -6,6 +6,7 @@ import (
 	"time"
 
 	v1 "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/api/v1"
+	management "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/management/v1alpha1"
 	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning/mock"
@@ -572,26 +573,8 @@ func TestCredentialUpdate(t *testing.T) {
 				Action:      tc.action,
 			}
 
-			status, cred := p.CredentialUpdate(&mcr)
-			_ = status
-			_ = cred
-			// if tc.status == provisioning.Error {
-			// 	assert.Nil(t, cred)
-			// 	assert.Equal(t, 0, len(status.GetProperties()))
-			// } else {
-			// 	assert.NotNil(t, cred)
-			// 	assert.Equal(t, 2, len(status.GetProperties()))
-			// 	if tc.credType == "oauth" {
-			// 		assert.Contains(t, cred.GetData(), provisioning.OauthClientID)
-			// 		assert.Contains(t, cred.GetData(), provisioning.OauthClientSecret)
-			// 		assert.NotContains(t, cred.GetData(), provisioning.APIKey)
-			// 	} else {
-			// 		assert.NotContains(t, cred.GetData(), provisioning.OauthClientID)
-			// 		assert.NotContains(t, cred.GetData(), provisioning.OauthClientSecret)
-			// 		assert.Contains(t, cred.GetData(), provisioning.APIKey)
-			// 	}
-			// }
-			// assert.Equal(t, tc.status.String(), status.GetStatus().String())
+			status, _ := p.CredentialUpdate(&mcr)
+			assert.Equal(t, tc.status.String(), status.GetStatus().String())
 		})
 	}
 }
@@ -653,9 +636,13 @@ func (m mockClient) RemoveAppCredential(appName, devID, key string) error {
 	return nil
 }
 
-func (m mockClient) CreateAppCredential(appName, devID string, expDays int) (*models.DeveloperAppCredentials, error) {
-	return &models.DeveloperAppCredentials{
-		ExpiresAt: int(time.Now().Add(time.Duration(int64(time.Hour) * int64(24*expDays))).UnixMilli()),
+func (m mockClient) CreateAppCredential(appName, devID string, products []string, expDays int) (*models.DeveloperApp, error) {
+	return &models.DeveloperApp{
+		Credentials: []models.DeveloperAppCredentials{
+			{
+				ExpiresAt: int(time.Now().Add(time.Duration(int64(time.Hour) * int64(24*expDays))).UnixMilli()),
+			},
+		},
 	}, nil
 }
 
@@ -705,24 +692,23 @@ func newApp(apiID string, appName string) *models.DeveloperApp {
 }
 
 type mockCache struct {
-	t         *testing.T
-	appName   string
-	apiName   string
-	instCount int
-	accReqs   []*v1.ResourceInstance
+	t       *testing.T
+	appName string
+	apiName string
 }
 
 func (m *mockCache) GetAccessRequestsByApp(managedAppName string) []*v1.ResourceInstance {
 	assert.Equal(m.t, m.appName, managedAppName)
-	return m.accReqs
+	ar1 := management.NewAccessRequest("ar1", "env")
+	ar1.Spec.ManagedApplication = m.appName
+	ri, _ := ar1.AsInstance()
+	return []*v1.ResourceInstance{ri}
 }
 
 func (m *mockCache) GetAPIServiceInstanceByName(apiName string) (*v1.ResourceInstance, error) {
 	assert.Equal(m.t, m.apiName, apiName)
-	if len(m.accReqs) > m.instCount {
-		i := m.instCount
-		m.instCount++
-		return m.accReqs[i], nil
-	}
-	return nil, nil
+	apisi := management.NewAPIServiceInstance(apiName, "env")
+	util.SetAgentDetailsKey(apisi, defs.AttrExternalAPIID, "apiName")
+	ri, _ := apisi.AsInstance()
+	return ri, nil
 }

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
-	"github.com/Axway/agents-apigee/client/pkg/util"
 )
 
 const (
@@ -433,20 +432,18 @@ func (a *ApigeeClient) UpdateAppCredential(appName, devID, key string, enable bo
 	return err
 }
 
-func (a *ApigeeClient) CreateAppCredential(appName, devID string, expDays int) (*models.DeveloperAppCredentials, error) {
-	url := fmt.Sprintf(orgURL+"/developers/%s/apps/%s/keys/create", a.cfg.Organization, devID, appName)
+func (a *ApigeeClient) CreateAppCredential(appName, devID string, products []string, expDays int) (*models.DeveloperApp, error) {
+	url := fmt.Sprintf(orgURL+"/developers/%s/apps/%s", a.cfg.Organization, devID, appName)
 
-	cred := &models.DeveloperAppCredentials{
-		ConsumerKey:    util.RandString(35),
-		ConsumerSecret: util.RandString(19),
+	appCredReq := CredentialProvisionRequest{
+		ApiProducts: products,
 	}
-
 	if expDays > 0 {
-		expTime := time.Now().Add(time.Duration(int64(time.Hour) * int64(24*expDays)))
-		cred.ExpiresAt = int(expTime.UnixMilli())
+		expTime := time.Duration(int64(time.Hour) * int64(24*expDays))
+		appCredReq.KeyExpiresIn = int(expTime.Milliseconds())
 	}
 
-	credData, _ := json.Marshal(cred)
+	credData, _ := json.Marshal(appCredReq)
 
 	response, err := a.newRequest(
 		http.MethodPost, url, WithDefaultHeaders(), WithBody(credData),
@@ -456,16 +453,16 @@ func (a *ApigeeClient) CreateAppCredential(appName, devID string, expDays int) (
 		return nil, err
 	}
 
-	if response.Code != http.StatusCreated {
+	if response.Code != http.StatusOK {
 		return nil, fmt.Errorf(
 			"received an unexpected response code %d from Apigee while creating app credentials", response.Code,
 		)
 	}
 
-	creds := &models.DeveloperAppCredentials{}
-	err = json.Unmarshal(response.Body, creds)
+	appData := &models.DeveloperApp{}
+	err = json.Unmarshal(response.Body, appData)
 
-	return creds, err
+	return appData, err
 }
 
 func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
