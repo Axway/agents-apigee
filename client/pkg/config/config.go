@@ -15,6 +15,7 @@ type ApigeeConfig struct {
 	Auth         *AuthConfig      `config:"auth"`
 	Intervals    *ApigeeIntervals `config:"intervals"`
 	Filter       string           `config:"filter"`
+	DeveloperID  string           `config:"developerID"`
 }
 
 // ApigeeIntervals - intervals for the apigee agent to use
@@ -32,6 +33,7 @@ const (
 	pathPortalInterval  = "apigee.interval.portal"
 	pathAPIInterval     = "apigee.interval.api"
 	pathFilter          = "apigee.filter"
+	pathDeveloper       = "apigee.developerID"
 )
 
 // AddProperties - adds config needed for apigee client
@@ -43,6 +45,7 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddDurationProperty(pathPortalInterval, 1*time.Minute, "The time interval between checking for new Apigee portals")
 	rootProps.AddDurationProperty(pathAPIInterval, 30*time.Second, "The time interval between checking for new APIs in an Apigee portal")
 	rootProps.AddStringProperty(pathFilter, "", "Filter used on discovering Apigee products")
+	rootProps.AddStringProperty(pathDeveloper, "", "Developer ID used to create applications")
 }
 
 // ParseConfig - parse the config on startup
@@ -50,6 +53,7 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 	return &ApigeeConfig{
 		Organization: rootProps.StringPropertyValue(pathOrganization),
 		Filter:       rootProps.StringPropertyValue(pathFilter),
+		DeveloperID:  rootProps.StringPropertyValue(pathDeveloper),
 		Intervals: &ApigeeIntervals{
 			Product: rootProps.DurationPropertyValue(pathProductInterval),
 			Portal:  rootProps.DurationPropertyValue(pathPortalInterval),
@@ -65,11 +69,15 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 // ValidateCfg - Validates the gateway config
 func (a *ApigeeConfig) ValidateCfg() (err error) {
 	if a.Auth.Username == "" {
-		return errors.New("Invalid APIGEE configuration: username is not configured")
+		return errors.New("invalid APIGEE configuration: username is not configured")
 	}
 
 	if a.Auth.Password == "" {
-		return errors.New("Invalid APIGEE configuration: password is not configured")
+		return errors.New("invalid APIGEE configuration: password is not configured")
+	}
+
+	if a.DeveloperID == "" {
+		return errors.New("invalid APIGEE configuration: developer ID must be configured")
 	}
 
 	return

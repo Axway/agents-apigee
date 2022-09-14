@@ -34,19 +34,18 @@ func (a *ApigeeClient) newRequest(method, url string, options ...func(*apigeeReq
 	return req
 }
 
-//WithDefaultHeaders - add the default headers needed for apigee
+// WithDefaultHeaders - add the default headers needed for apigee
 func WithDefaultHeaders() func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		if r.headers == nil {
 			r.headers = make(map[string]string)
 		}
-		r.headers["Content-Type"] = "application/json"
 		r.headers["Accept"] = "application/json"
 		r.headers["Authorization"] = "Bearer " + r.token
 	}
 }
 
-//WithHeaders - add additional headers to the request
+// WithHeaders - add additional headers to the request
 func WithHeaders(headers map[string]string) func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		if r.headers == nil {
@@ -58,7 +57,7 @@ func WithHeaders(headers map[string]string) func(r *apigeeRequest) {
 	}
 }
 
-//WithHeader - add an additional header to the request
+// WithHeader - add an additional header to the request
 func WithHeader(name, value string) func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		if r.headers == nil {
@@ -68,7 +67,7 @@ func WithHeader(name, value string) func(r *apigeeRequest) {
 	}
 }
 
-//WithQueryParams - add query parameters to the request
+// WithQueryParams - add query parameters to the request
 func WithQueryParams(queryParams map[string]string) func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		if r.queryParams == nil {
@@ -80,7 +79,7 @@ func WithQueryParams(queryParams map[string]string) func(r *apigeeRequest) {
 	}
 }
 
-//WithQueryParam - add a query parameter to the request
+// WithQueryParam - add a query parameter to the request
 func WithQueryParam(name, value string) func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		if r.queryParams == nil {
@@ -90,16 +89,24 @@ func WithQueryParam(name, value string) func(r *apigeeRequest) {
 	}
 }
 
-//WithBody - add a body to the request
+// WithBody - add a body to the request
 func WithBody(body []byte) func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		r.body = body
+		if r.headers == nil {
+			r.headers = make(map[string]string)
+		}
+		r.headers["Content-Type"] = "application/json"
 	}
 }
 
-//WithStringBody - add a body, from a string, to the request
+// WithStringBody - add a body, from a string, to the request
 func WithStringBody(body string) func(r *apigeeRequest) {
 	return func(r *apigeeRequest) {
 		r.body = []byte(body)
+		if r.headers == nil {
+			r.headers = make(map[string]string)
+		}
+		r.headers["Content-Type"] = "application/json"
 	}
 }

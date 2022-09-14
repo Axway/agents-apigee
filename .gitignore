@@ -6,6 +6,7 @@ demo/
 /traceability/data
 
 *env_vars*
+.env*
 apigee_discovery_agent.yml
 gocoverage.out
 goreport.json

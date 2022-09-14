@@ -4,11 +4,6 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
-const (
-	defaultSubscriptionSchema = "apigee-subscription-schema"
-	appNameKey                = "appName"
-)
-
 // grantType values
 type grantType int
 

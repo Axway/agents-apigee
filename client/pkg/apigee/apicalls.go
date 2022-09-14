@@ -8,10 +8,10 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/client/pkg/util"
 )
 
 const (
@@ -19,21 +19,6 @@ const (
 	portalsURL    = "https://apigee.com/portals/api/sites"
 	orgDataAPIURL = "https://apigee.com/dapi/api/organizations/%s"
 )
-
-// GetDevelopers - get the list of developers for the org
-func (a *ApigeeClient) GetDevelopers() []string {
-	// Get the developers
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/developers", a.cfg.Organization),
-		WithDefaultHeaders(),
-	).Execute()
-
-	developers := []string{}
-	if err == nil {
-		json.Unmarshal(response.Body, &developers)
-	}
-
-	return developers
-}
 
 // GetEnvironments - get the list of environments for the org
 func (a *ApigeeClient) GetEnvironments() []string {
@@ -50,50 +35,7 @@ func (a *ApigeeClient) GetEnvironments() []string {
 	return environments
 }
 
-// GetDeveloper - get the developer by email
-func (a *ApigeeClient) GetDeveloper(devEmail string) (*models.Developer, error) {
-	// Get the developers
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf(orgURL+"/developers/%s", a.cfg.Organization, strings.ToLower(devEmail)),
-		WithDefaultHeaders(),
-	).Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	developer := models.Developer{}
-	err = json.Unmarshal(response.Body, &developer)
-	if err != nil {
-		return nil, err
-	}
-
-	return &developer, err
-}
-
-// CreateDeveloper - get the list of developers for the org
-func (a *ApigeeClient) CreateDeveloper(newDev models.Developer) (*models.Developer, error) {
-	// Get the developers
-	data, err := json.Marshal(newDev)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := a.newRequest(http.MethodPost, fmt.Sprintf(orgURL+"/developers", a.cfg.Organization),
-		WithDefaultHeaders(),
-		WithBody(data),
-	).Execute()
-	if err != nil {
-		return nil, err
-	}
-	developer := models.Developer{}
-	err = json.Unmarshal(response.Body, &developer)
-	if err != nil {
-		return nil, err
-	}
-
-	return &developer, err
-}
-
-//CreateDeveloperApp - create an app for the developer
+// CreateDeveloperApp - create an app for the developer
 func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
 	// create a new developer app
 	data, err := json.Marshal(newApp)
@@ -437,6 +379,86 @@ func (a *ApigeeClient) GetAppCredential(appName, devID, key string) (*models.Dev
 	if response.Code != http.StatusOK {
 		return nil, fmt.Errorf(
 			"received an unexpected response code %d from Apigee while retrieving app credentials", response.Code,
+		)
+	}
+
+	creds := &models.DeveloperAppCredentials{}
+	err = json.Unmarshal(response.Body, creds)
+
+	return creds, err
+}
+
+func (a *ApigeeClient) RemoveAppCredential(appName, devID, key string) error {
+	url := fmt.Sprintf(orgURL+"/developers/%s/apps/%s/keys/%s", a.cfg.Organization, devID, appName, key)
+	response, err := a.newRequest(
+		http.MethodDelete, url, WithDefaultHeaders(),
+	).Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if response.Code != http.StatusOK {
+		return fmt.Errorf(
+			"received an unexpected response code %d from Apigee while removing app credentials", response.Code,
+		)
+	}
+
+	return nil
+}
+
+func (a *ApigeeClient) UpdateAppCredential(appName, devID, key string, enable bool) error {
+	url := fmt.Sprintf(orgURL+"/developers/%s/apps/%s/keys/%s", a.cfg.Organization, devID, appName, key)
+
+	action := "revoke"
+	if enable {
+		action = "approve"
+	}
+
+	response, err := a.newRequest(
+		http.MethodPost, url,
+		WithDefaultHeaders(), WithQueryParam("action", action),
+	).Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if response.Code != http.StatusNoContent {
+		return fmt.Errorf(
+			"received an unexpected response code %d from Apigee while revoking/enabling app credentials", response.Code,
+		)
+	}
+
+	return err
+}
+
+func (a *ApigeeClient) CreateAppCredential(appName, devID string, expDays int) (*models.DeveloperAppCredentials, error) {
+	url := fmt.Sprintf(orgURL+"/developers/%s/apps/%s/keys/create", a.cfg.Organization, devID, appName)
+
+	cred := &models.DeveloperAppCredentials{
+		ConsumerKey:    util.RandString(35),
+		ConsumerSecret: util.RandString(19),
+	}
+
+	if expDays > 0 {
+		expTime := time.Now().Add(time.Duration(int64(time.Hour) * int64(24*expDays)))
+		cred.ExpiresAt = int(expTime.UnixMilli())
+	}
+
+	credData, _ := json.Marshal(cred)
+
+	response, err := a.newRequest(
+		http.MethodPost, url, WithDefaultHeaders(), WithBody(credData),
+	).Execute()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.Code != http.StatusCreated {
+		return nil, fmt.Errorf(
+			"received an unexpected response code %d from Apigee while creating app credentials", response.Code,
 		)
 	}
 
