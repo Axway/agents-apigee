@@ -1,18 +1,6 @@
 package apigee
 
-// grantType values
-type grantType int
-
-const (
-	password grantType = iota
-	refresh
-)
-
-func (g grantType) String() string {
-	return [...]string{"password", "refresh_token"}[g]
-}
-
-//AuthResponse - response struct from APIGEE auth call
+// AuthResponse - response struct from APIGEE auth call
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`
@@ -25,7 +13,6 @@ type AuthResponse struct {
 // Headers - Type for request/response headers
 type Headers map[string]string
 
-//
 type metricCache struct {
 	ProxyName           string `json:"proxy"`
 	Timestamp           int64  `json:"timestamp"`
