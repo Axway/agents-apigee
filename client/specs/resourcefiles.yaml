@@ -1,0 +1,638 @@
+---
+openapi: "3.0.0"
+servers:
+- url: "https://api.enterprise.apigee.com/v1"
+info:
+  title: "Resource files API"
+  description: "Manage files containing executable code or definitions used by API\
+    \ policies to enable custom behavior and extensibility. \n\nResource files are\
+    \ executable code or other types of assets (for example XSLT) that are used by\
+    \ API proxies at runtime. Resource files can be stored at one of three levels:\n\
+    * **API proxy**: Available to any policies in an API proxy.\n* **Environment**:\
+    \ Available to any policies in any API proxy deployed in the environment.\n* **Organization**:\
+    \ Available to any API proxy deployed in any environment in an organization.\n\
+    \nResource files are resolved by name. Apigee Edge resolves resource files from\
+    \ most specific (API proxy) to the most general (organization). This enables you\
+    \ to store generic code that provides utility processing at the organization level.\
+    \ This provides for greater maintainability, since generic code is not repeated\
+    \ across multiple API proxies. A good example of code that might be scoped to\
+    \ the organization is a library to do Base64 encoding.\n\nFor more information,\
+    \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+    >Manage resources</a>."
+  version: "1.0"
+security:
+- Basic: []
+- OAuth: []
+paths:
+  /organizations/{org_name}/apis/{api_name}/revisions/{revision_number}/resourcefiles:
+    post:
+      tags:
+      - "Resource Files"
+      summary: "Import a resource file for an API"
+      description: "Imports and creates a resource file for an API proxy revision.\n\
+        \n**Note**: **Currently, you cannot import a resource file using the Try this\
+        \ API panel**.\n\nYou can import the resource file by passing the contents\
+        \ in the request body or by uploading it from a file on your local machine.\
+        \ \n\nFor example, the following curl call imports a resource file by passing\
+        \ its contents in the request body. In this case, set the `Content-type` to\
+        \ `application/octet-stream`.\n\n```\ncurl https://api.enterprise.apigee.com/v1/organizations/myorg/apis/helloworld/revisions/1/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X POST \\\n  -H \"Content-type: application/octet-stream\" \\\n \
+        \ -d 'request.headers[\"RequestPath\"] = context.getVariable(\"proxy.basepath\"\
+        );' \\\n  -u email:password\n\n```\n\nThe following curl call shows how to\
+        \ upload the resources as a file from your local machine. In this case, set\
+        \ the `Content-type` to `multipart/form-data`. It's important to use `-F`\
+        \ for the binary upload in curl in order for the environment- or organization-scoped\
+        \ JavaScript files to be accessible by the JavaScript policy.\n\n```\ncurl\
+        \ https://api.enterprise.apigee.com/v1/organizations/myorg/apis/helloworld/revisions/1/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X POST \\\n  -H \"Content-type:multipart/form-data\" \\\n  -F file=@pathSetter.js\
+        \ \\\n  -u email:password\n\n```        \n\nFor more information, see <a href=\"\
+        https://docs.apigee.com/api-platform/develop/resource-files\">Manage resources</a>."
+      operationId: "importResourceFileAPI"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Body of the resource file."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    get:
+      tags:
+      - "Resource Files"
+      summary: "List resource files in an API"
+      description: "Lists resource files in an API proxy revision. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "listResourceFilesAPI"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  resourceFile:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/ResourceFile"
+              example:
+                resourceFile:
+                - name: "pathSetter.js"
+                  type: "jsc"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/apis/{api_name}/revisions/{revision_number}/resourcefiles/{resource_type}/{resource_name}:
+    put:
+      tags:
+      - "Resource Files"
+      summary: "Update a resource file in an API"
+      description: "Updates a resource file in an API proxy revision.\n\n**Note**:\
+        \ **Currently, you cannot update a resource file using the Try this API panel**.\n\
+        \nYou can update the resource file by passing the contents in the request\
+        \ body or by uploading it from a file on your local machine. \n\nFor example,\
+        \ the following curl call updates a resource file by passing its contents\
+        \ in the request body. In this case, set the `Content-type` to `application/octet-stream`.\n\
+        \n```\ncurl https://api.enterprise.apigee.com/v1/organizations/myorg/apis/helloworld/revisions/1/resourcefiles/jsc/pathSetter.js\
+        \ \\\n  -X PUT \\\n  -H \"Content-type: application/octet-stream\" \\\n  -d\
+        \ 'request.headers[\"RequestPath\"] = context.getVariable(\"proxy.basepath\"\
+        );' \\\n  -u email:password\n\n```\n\nThe following curl call shows how to\
+        \ upload the resources as a file from your local machine. In this case, set\
+        \ the `Content-type` to `multipart/form-data`. It's important to use `-F`\
+        \ for the binary upload in curl in order for the environment- or organization-scoped\
+        \ JavaScript files to be accessible by the JavaScript policy.\n\n```\ncurl\
+        \ https://api.enterprise.apigee.com/v1/organizations/myorg/apis/helloworld/revisions/1/resourcefiles/jsc/pathSetter.js\
+        \ \\\n  -X PUT \\\n  -H \"Content-type:multipart/form-data\" \\\n  -F file=@pathSetter.js\
+        \ \\\n  -u email:password\n\n```        \n\nFor more information, see <a href=\"\
+        https://docs.apigee.com/api-platform/develop/resource-files\">Manage resources</a>."
+      operationId: "updateProxyResourceFileAPI"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Body of the resource file."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    delete:
+      tags:
+      - "Resource Files"
+      summary: "Delete a resource file from an API"
+      description: "Deletes a resource file from an API proxy revision. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "deleteResourceFileAPI"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+    get:
+      tags:
+      - "Resource Files"
+      summary: "Get a resource file in an API"
+      description: "Gets a resource file in an API proxy revision. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "getResourceFileAPI"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/environments/{env_name}/resourcefiles:
+    post:
+      tags:
+      - "Resource Files"
+      summary: "Import a resource file for an environment"
+      description: "Imports and creates a resource file for an environment.\n\n**Note**:\
+        \ **Currently, you cannot import a resource file using the Try this API panel**.\n\
+        \nYou can import the resource file by passing the contents in the request\
+        \ body or by uploading it from a file on your local machine. \n\nFor example,\
+        \ the following curl call imports a resource file by passing its contents\
+        \ in the request body. In this case, set the `Content-type` to `application/octet-stream`.\n\
+        \n```\ncurl https://api.enterprise.apigee.com/v1/organizations/myorg/environments/test/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X POST \\\n  -H \"Content-type: application/octet-stream\" \\\n \
+        \ -d 'request.headers[\"RequestPath\"] = context.getVariable(\"proxy.basepath\"\
+        );' \\\n  -u email:password\n\n```\n\nThe following curl call shows how to\
+        \ upload the resources as a file from your local machine. In this case, set\
+        \ the `Content-type` to `multipart/form-data`. It's important to use `-F`\
+        \ for the binary upload in curl in order for the environment- or organization-scoped\
+        \ JavaScript files to be accessible by the JavaScript policy.\n\n```\ncurl\
+        \ https://api.enterprise.apigee.com/v1/organizations/myorg/environments/test/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X POST \\\n  -H \"Content-type:multipart/form-data\" \\\n  -F file=@pathSetter.js\
+        \ \\\n  -u email:password\n\n```        \n\nFor more information, see <a href=\"\
+        https://docs.apigee.com/api-platform/develop/resource-files\">Manage resources</a>."
+      operationId: "importResourceFileEnv"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Body of the resource file."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    get:
+      tags:
+      - "Resource Files"
+      summary: "List resource files in an environment"
+      description: "Lists resource files in an environment. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "listResourceFilesEnv"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  resourceFile:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/ResourceFile"
+              example:
+                resourceFile:
+                - name: "pathSetter.js"
+                  type: "jsc"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/environments/{env_name}/resourcefiles/{resource_type}/{resource_name}:
+    put:
+      tags:
+      - "Resource Files"
+      summary: "Update a resource file in an environment"
+      description: "Updates a resource file in an environment.\n\n**Note**: **Currently,\
+        \ you cannot update a resource file using the Try this API panel**.\n\nYou\
+        \ can update the resource file by passing the contents in the request body\
+        \ or by uploading it from a file on your local machine. \n\nFor example, the\
+        \ following curl call updates a resource file by passing its contents in the\
+        \ request body. In this case, set the `Content-type` to `application/octet-stream`.\n\
+        \n```\ncurl https://api.enterprise.apigee.com/v1/organizations/myorg/environments/test/resourcefiles/jsc/pathSetter.js\
+        \ \\\n  -X PUT \\\n  -H \"Content-type: application/octet-stream\" \\\n  -d\
+        \ 'request.headers[\"RequestPath\"] = context.getVariable(\"proxy.basepath\"\
+        );' \\\n  -u email:password\n\n```\n\nThe following curl call shows how to\
+        \ upload the resources as a file from your local machine. In this case, set\
+        \ the `Content-type` to `multipart/form-data`. It's important to use `-F`\
+        \ for the binary upload in curl in order for the environment- or organization-scoped\
+        \ JavaScript files to be accessible by the JavaScript policy.\n\n```\ncurl\
+        \ https://api.enterprise.apigee.com/v1/organizations/myorg/environments/test/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X PUT \\\n  -H \"Content-type:multipart/form-data\" \\\n  -F file=@pathSetter.js\
+        \ \\\n  -u email:password\n\n```        \n\nFor more information, see <a href=\"\
+        https://docs.apigee.com/api-platform/develop/resource-files\">Manage resources</a>."
+      operationId: "updateResourceFileEnv"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Body of the resource file."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    delete:
+      tags:
+      - "Resource Files"
+      summary: "Delete a resource file from an environment"
+      description: "Deletes a resource file from an environment. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "deleteResourceFileEnv"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+    get:
+      tags:
+      - "Resource Files"
+      summary: "Get a resource file in an environment"
+      description: "Gets the contents of a resource file in an environment. For more\
+        \ information, see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "getResourceFileEnv"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/env_name"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+              example: "request.headers[\"RequestPath\"] = context.getVariable(\"\
+                proxy.basepath\");"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/resourcefiles:
+    get:
+      tags:
+      - "Resource Files"
+      summary: "List resource files in an organization"
+      description: "Lists resource files in an organization. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "listResourceFilesOrg"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  resourceFile:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/ResourceFile"
+              example:
+                resourceFile:
+                - name: "pathSetter.js"
+                  type: "jsc"
+        "400":
+          description: "Bad request"
+    post:
+      tags:
+      - "Resource Files"
+      summary: "Import a resource file for an organization"
+      description: "Imports and creates a resource file for an organization.\n\n**Note**:\
+        \ **Currently, you cannot import a resource file using the Try this API panel**.\n\
+        \nYou can import the resource file by passing the contents in the request\
+        \ body or by uploading it from a file on your local machine. \n\nFor example,\
+        \ the following curl call imports a resource file by passing its contents\
+        \ in the request body. In this case, set the `Content-type` to `application/octet-stream`.\n\
+        \n```\ncurl https://api.enterprise.apigee.com/v1/organizations/myorg/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X POST \\\n  -H \"Content-type: application/octet-stream\" \\\n \
+        \ -d 'request.headers[\"RequestPath\"] = context.getVariable(\"proxy.basepath\"\
+        );' \\\n  -u email:password\n\n```\n\nThe following curl call shows how to\
+        \ upload the resources as a file from your local machine. In this case, set\
+        \ the `Content-type` to `multipart/form-data`. It's important to use `-F`\
+        \ for the binary upload in curl in order for the environment- or organization-scoped\
+        \ JavaScript files to be accessible by the JavaScript policy.\n\n```\ncurl\
+        \ https://api.enterprise.apigee.com/v1/organizations/myorg/resourcefiles?name=pathSetter.js&type=jsc\
+        \ \\\n  -X POST \\\n  -H \"Content-type:multipart/form-data\" \\\n  -F file=@pathSetter.js\
+        \ \\\n  -u email:password\n\n```        \n\nFor more information, see <a href=\"\
+        https://docs.apigee.com/api-platform/develop/resource-files\">Manage resources</a>."
+      operationId: "importResourceFileOrg"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Body of the resource file."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+  /organizations/{org_name}/resourcefiles/{resource_type}/{resource_name}:
+    get:
+      tags:
+      - "Resource Files"
+      summary: "Get a resource file in an organization"
+      description: "Gets a resource file in an organization. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "getResourceFileOrg"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+        "400":
+          description: "Bad request"
+    put:
+      tags:
+      - "Resource Files"
+      summary: "Update a resource file in an organization"
+      description: "Updates a resource file in an organization.\n\n**Note**: **Currently,\
+        \ you cannot update a resource file using the Try this API panel**.\n\nYou\
+        \ can update the resource file by passing the contents in the request body\
+        \ or by uploading it from a file on your local machine. \n\nFor example, the\
+        \ following curl call updates a resource file by passing its contents in the\
+        \ request body. In this case, set the `Content-type` to `application/octet-stream`.\n\
+        \n```\ncurl https://api.enterprise.apigee.com/v1/organizations/myorg/resourcefiles/jsc/pathSetter.js\
+        \ \\\n  -X PUT \\\n  -H \"Content-type: application/octet-stream\" \\\n  -d\
+        \ 'request.headers[\"RequestPath\"] = context.getVariable(\"proxy.basepath\"\
+        );' \\\n  -u email:password\n\n```\n\nThe following curl call shows how to\
+        \ upload the resources as a file from your local machine. In this case, set\
+        \ the `Content-type` to `multipart/form-data`. It's important to use `-F`\
+        \ for the binary upload in curl in order for the environment- or organization-scoped\
+        \ JavaScript files to be accessible by the JavaScript policy.\n\n```\ncurl\
+        \ https://api.enterprise.apigee.com/v1/organizations/myorg/resourcefiles/jsc/pathSetter.js\
+        \ \\\n  -X PUT \\\n  -H \"Content-type:multipart/form-data\" \\\n  -F file=@pathSetter.js\
+        \ \\\n  -u email:password\n\n```        \n\nFor more information, see <a href=\"\
+        https://docs.apigee.com/api-platform/develop/resource-files\">Manage resources</a>."
+      operationId: "updateOrgResourceFileAPI"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+      requestBody:
+        description: "Body of the resource file."
+        content:
+          application/octet-stream:
+            schema:
+              type: "string"
+          multipart/form-data:
+            schema:
+              type: "string"
+              format: "binary"
+    delete:
+      tags:
+      - "Resource Files"
+      summary: "Delete a resource file from an organization"
+      description: "Deletes a resource file from an organization. For more information,\
+        \ see <a href=\"https://docs.apigee.com/api-platform/develop/resource-files\"\
+        >Manage resources</a>."
+      operationId: "deleteResourceFileOrg"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/resource_type"
+      - $ref: "#/components/parameters/resource_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceFile"
+              example:
+                name: "pathSetter.js"
+                type: "jsc"
+        "400":
+          description: "Bad request"
+components:
+  securitySchemes:
+    Basic:
+      type: "http"
+      scheme: "basic"
+      description: "Multi-factor authentication is not supported."
+    OAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      description: "For OAuth, enter the following in the Key field: Bearer %your-token%\
+        \ (see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens)"
+  parameters:
+    org_name:
+      in: "path"
+      name: "org_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Organization name."
+    env_name:
+      in: "path"
+      name: "env_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Environment name."
+    api_name:
+      in: "path"
+      name: "api_name"
+      required: true
+      schema:
+        type: "string"
+      description: "API proxy name."
+    revision_number:
+      in: "path"
+      name: "revision_number"
+      required: true
+      schema:
+        type: "string"
+      description: "API proxy revision."
+    resource_name:
+      in: "path"
+      name: "resource_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Resource name."
+    resource_type:
+      in: "path"
+      name: "resource_type"
+      required: true
+      schema:
+        type: "string"
+      description: "Resource type."
+    name:
+      in: "query"
+      name: "name"
+      required: true
+      schema:
+        type: "string"
+      description: "Name of the resource including the file type extension."
+    type:
+      in: "query"
+      name: "type"
+      required: true
+      schema:
+        type: "string"
+      description: "Resource type. Valid values include `jsc`, `java`, `py`, `node`,\
+        \ `xsl`, `wsdl`, and `xsd`."
+  schemas:
+    ResourceFile:
+      description: "Resource file details."
+      properties:
+        name:
+          type: "string"
+          description: "Name of the resource file."
+        type:
+          type: "string"
+          description: "Type of the resource file."
