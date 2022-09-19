@@ -4,6 +4,8 @@ import (
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 )
 
+type RequestOption func(*apigeeRequest)
+
 type apigeeRequest struct {
 	method      string
 	url         string
@@ -26,7 +28,7 @@ func (r *apigeeRequest) Execute() (*coreapi.Response, error) {
 	return r.client.Send(request)
 }
 
-func (a *ApigeeClient) newRequest(method, url string, options ...func(*apigeeRequest)) *apigeeRequest {
+func (a *ApigeeClient) newRequest(method, url string, options ...RequestOption) *apigeeRequest {
 	req := &apigeeRequest{method: method, url: url, client: a.apiClient, token: a.accessToken}
 	for _, o := range options {
 		o(req)
@@ -35,7 +37,7 @@ func (a *ApigeeClient) newRequest(method, url string, options ...func(*apigeeReq
 }
 
 // WithDefaultHeaders - add the default headers needed for apigee
-func WithDefaultHeaders() func(r *apigeeRequest) {
+func WithDefaultHeaders() RequestOption {
 	return func(r *apigeeRequest) {
 		if r.headers == nil {
 			r.headers = make(map[string]string)
@@ -46,7 +48,7 @@ func WithDefaultHeaders() func(r *apigeeRequest) {
 }
 
 // WithHeaders - add additional headers to the request
-func WithHeaders(headers map[string]string) func(r *apigeeRequest) {
+func WithHeaders(headers map[string]string) RequestOption {
 	return func(r *apigeeRequest) {
 		if r.headers == nil {
 			r.headers = make(map[string]string)
@@ -58,7 +60,7 @@ func WithHeaders(headers map[string]string) func(r *apigeeRequest) {
 }
 
 // WithHeader - add an additional header to the request
-func WithHeader(name, value string) func(r *apigeeRequest) {
+func WithHeader(name, value string) RequestOption {
 	return func(r *apigeeRequest) {
 		if r.headers == nil {
 			r.headers = make(map[string]string)
@@ -68,7 +70,7 @@ func WithHeader(name, value string) func(r *apigeeRequest) {
 }
 
 // WithQueryParams - add query parameters to the request
-func WithQueryParams(queryParams map[string]string) func(r *apigeeRequest) {
+func WithQueryParams(queryParams map[string]string) RequestOption {
 	return func(r *apigeeRequest) {
 		if r.queryParams == nil {
 			r.queryParams = make(map[string]string)
@@ -80,7 +82,7 @@ func WithQueryParams(queryParams map[string]string) func(r *apigeeRequest) {
 }
 
 // WithQueryParam - add a query parameter to the request
-func WithQueryParam(name, value string) func(r *apigeeRequest) {
+func WithQueryParam(name, value string) RequestOption {
 	return func(r *apigeeRequest) {
 		if r.queryParams == nil {
 			r.queryParams = make(map[string]string)
@@ -89,8 +91,8 @@ func WithQueryParam(name, value string) func(r *apigeeRequest) {
 	}
 }
 
-// WithBody - add a body to the request
-func WithBody(body []byte) func(r *apigeeRequest) {
+// WithBody - add a JSON body to the request
+func WithBody(body []byte) RequestOption {
 	return func(r *apigeeRequest) {
 		r.body = body
 		if r.headers == nil {
@@ -100,8 +102,8 @@ func WithBody(body []byte) func(r *apigeeRequest) {
 	}
 }
 
-// WithStringBody - add a body, from a string, to the request
-func WithStringBody(body string) func(r *apigeeRequest) {
+// WithStringBody - add a JSON body, from a string, to the request
+func WithStringBody(body string) RequestOption {
 	return func(r *apigeeRequest) {
 		r.body = []byte(body)
 		if r.headers == nil {
