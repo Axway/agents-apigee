@@ -21,5 +21,6 @@ sed -i -r 's/Timestamp.string/Timestamp int64/g' /codegen/output/model_metrics_v
 
 # replace the model_metrics_metrics.go file with the template for the custom unmarshal
 cp ./model_metrics_metrics.tmpl /codegen/output/model_metrics_metrics.go
+cp ./model_virtual_host.tmpl /codegen/output/model_virtual_host.go
 
 rm ./openapitools.json
