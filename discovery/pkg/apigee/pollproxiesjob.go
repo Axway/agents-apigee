@@ -62,6 +62,10 @@ func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirst
 	return job
 }
 
+func (j *pollProxiesJob) FirstRunComplete() bool {
+	return !j.firstRun
+}
+
 func (j *pollProxiesJob) Ready() bool {
 	j.logger.Trace("checking if the apigee client is ready for calls")
 	if !j.client.IsReady() {

@@ -75,53 +75,18 @@ func (a *Agent) registerJobs() error {
 		return err
 	}
 
-	_, err = jobs.RegisterIntervalJobWithName(newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete), a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
+	proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete)
+	_, err = jobs.RegisterIntervalJobWithName(proxiesJob, a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
 	if err != nil {
 		return err
 	}
 
-	// // create job that registers the api validator
-	// apiValidatorJob := newRegisterAPIValidatorJob(a.registerValidator)
+	// register the api validator job
+	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(proxiesJob.FirstRunComplete, a.registerValidator), "Register API Validator")
 
-	// // create the product handler job and register it
-	// productHandler := newProductHandlerJob(a.apigeeClient, a.apigeeClient.GetConfig().GetIntervals().Product)
-	// _, err = jobs.RegisterChannelJobWithName(productHandler, productHandler.stopChan, "Product Handler")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // create the portals/portal poller job and register it
-	// _, err = jobs.RegisterIntervalJobWithName(newPollPortalsJob(a.apigeeClient), a.apigeeClient.GetConfig().GetIntervals().Portal, "Poll Portals")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // create the portal handler job and register it
-	// portalHandler := newPortalHandlerJob(a.apigeeClient)
-	// _, err = jobs.RegisterChannelJobWithName(portalHandler, portalHandler.stopChan, "Portal Handler")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // create the api handler job and register it
-	// apiHandler := newPortalAPIHandlerJob(a.apigeeClient, a.shouldPushAPI)
-	// _, err = jobs.RegisterChannelJobWithName(apiHandler, apiHandler.stopChan, "New API Handler")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // create job that starts the subscription manager
-	// _, err = jobs.RegisterSingleRunJobWithName(newStartSubscriptionManager(a.apigeeClient, a.apigeeClient.GetDeveloperID), "Start Subscription Manager")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // register the api validator job
-	// _, err = jobs.RegisterSingleRunJobWithName(apiValidatorJob, "Register API Validator")
-
-	// agent.NewAPIKeyCredentialRequestBuilder(agent.WithCRDIsSuspendable()).Register()
-	// agent.NewAPIKeyAccessRequestBuilder().Register()
-	// agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret(), agent.WithCRDIsSuspendable()).Register()
+	agent.NewAPIKeyCredentialRequestBuilder(agent.WithCRDIsSuspendable()).Register()
+	agent.NewAPIKeyAccessRequestBuilder().Register()
+	agent.NewOAuthCredentialRequestBuilder(agent.WithCRDOAuthSecret(), agent.WithCRDIsSuspendable()).Register()
 	return err
 }
 
