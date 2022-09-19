@@ -41,14 +41,14 @@ func (a *agentCache) AddSpecToCache(id, path string, contentHash uint64, modDate
 	}
 }
 
-func (a *agentCache) GetSpecWithPath(path string) (uint64, error) {
+func (a *agentCache) GetSpecWithPath(path string) (string, error) {
 	data, err := a.cache.GetBySecondaryKey(path)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	contentHash := data.(uint64)
-	return contentHash, nil
+	specItem := data.(specCacheItem)
+	return specItem.ContentPath, nil
 }
 
 // GetSpecPathWithEndpoint - returns the lat modified spec found with this endpoint

@@ -36,7 +36,7 @@ type proxyClient interface {
 }
 
 type proxyCache interface {
-	GetSpecWithPath(path string) (uint64, error)
+	GetSpecWithPath(path string) (string, error)
 	GetSpecPathWithEndpoint(endpoint string) (string, error)
 }
 
@@ -204,7 +204,7 @@ func (j *pollProxiesJob) getSpecFromVirtualHosts(proxyName, envName string, revi
 	return ""
 }
 
-func (j *pollProxiesJob) getSpecFromResourceFile(proxyName, envName string, revision *models.ApiProxyRevision, resourceName, resourceType string) string {
+func (j *pollProxiesJob) getSpecFromResourceFile(proxyName, envName string, revision *models.ApiProxyRevision, resourceType, resourceName string) string {
 	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName).WithField(revNameField, revision.Revision).WithField("filename", resourceName)
 	logger.Info("found openapi resource file on revision")
 
@@ -223,6 +223,7 @@ func (j *pollProxiesJob) getSpecFromResourceFile(proxyName, envName string, revi
 	_, err = j.cache.GetSpecWithPath(associationFile.URL)
 	if err != nil {
 		logger.WithError(err).Error("spec path not found in cache")
+		return ""
 	}
 	return associationFile.URL
 }

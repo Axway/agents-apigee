@@ -84,7 +84,7 @@ func (j *pollSpecsJob) handleSpec(spec apigee.SpecDetails) {
 	logger.Trace("handling spec")
 
 	// get the spec content
-	content, err := j.client.GetSpecFile(spec.SelfLink)
+	content, err := j.client.GetSpecFile(spec.ContentLink)
 	if err != nil {
 		j.logger.WithError(err).Error("getting spec content")
 		return
@@ -112,7 +112,7 @@ func (j *pollSpecsJob) handleSpec(spec apigee.SpecDetails) {
 	// add spec details to cache
 	hash, _ := util.ComputeHash(content)
 	modDate, _ := time.Parse("2006-01-02T15:04:05.000Z", spec.Modified)
-	j.cache.AddSpecToCache(spec.ID, spec.SelfLink, hash, modDate, endpoints...)
+	j.cache.AddSpecToCache(spec.ID, spec.ContentLink, hash, modDate, endpoints...)
 }
 
 func endpointToString(endpoint apic.EndpointDefinition) string {
