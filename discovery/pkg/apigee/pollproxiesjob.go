@@ -1,9 +1,9 @@
 package apigee
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -18,10 +18,12 @@ import (
 )
 
 const (
-	gatewayType    = "Apigee"
-	proxyNameField = "proxy"
-	envNameField   = "environment"
-	revNameField   = "revision"
+	gatewayType = "Apigee"
+
+	proxyNameField ctxKeys = "proxy"
+	envNameField   ctxKeys = "environment"
+	revNameField   ctxKeys = "revision"
+	specPathField  ctxKeys = "specPath"
 )
 
 type proxyClient interface {
@@ -38,6 +40,7 @@ type proxyClient interface {
 type proxyCache interface {
 	GetSpecWithPath(path string) (string, error)
 	GetSpecPathWithEndpoint(endpoint string) (string, error)
+	AddPublishedProxyToCache(cacheKey string, serviceBody *apic.ServiceBody)
 }
 
 // job that will poll for any new portals on APIGEE Edge
@@ -107,8 +110,11 @@ func (j *pollProxiesJob) Execute() error {
 }
 
 func (j *pollProxiesJob) handleProxy(proxyName string) {
-	logger := j.logger.WithField(proxyNameField, proxyName)
+	logger := j.logger.WithField(proxyNameField.String(), proxyName)
 	logger.Debug("handling proxy")
+
+	ctx := addLoggerToContext(context.Background(), logger)
+	ctx = context.WithValue(ctx, proxyNameField, proxyName)
 
 	details, err := j.client.GetDeployments(proxyName)
 	if err != nil {
@@ -121,65 +127,85 @@ func (j *pollProxiesJob) handleProxy(proxyName string) {
 		wg.Add(1)
 		go func(environment models.DeploymentDetailsEnvironment) {
 			defer wg.Done()
-			j.handleEnvironment(proxyName, environment)
+			j.handleEnvironment(ctx, environment)
 		}(env)
 	}
 
 	wg.Wait()
 }
 
-func (j *pollProxiesJob) handleEnvironment(proxyName string, env models.DeploymentDetailsEnvironment) {
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, env.Name)
+func (j *pollProxiesJob) handleEnvironment(ctx context.Context, env models.DeploymentDetailsEnvironment) {
+	logger := getLoggerFromContext(ctx).WithField(envNameField.String(), env.Name)
+	addLoggerToContext(ctx, logger)
 	logger.Debug("handling environment")
+
+	ctx = context.WithValue(ctx, envNameField, env.Name)
 
 	wg := sync.WaitGroup{}
 	for _, rev := range env.Revision {
 		wg.Add(1)
-		go func(revision models.DeploymentDetailsRevision) {
+		go func(revName string) {
 			defer wg.Done()
-			j.handleRevision(proxyName, env.Name, revision)
-		}(rev)
+			j.handleRevision(ctx, revName)
+		}(rev.Name)
 	}
 
 	wg.Wait()
 }
 
-func (j *pollProxiesJob) handleRevision(proxyName, envName string, rev models.DeploymentDetailsRevision) {
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName).WithField(revNameField, rev.Name)
+func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
+	logger := getLoggerFromContext(ctx).WithField(revNameField.String(), revName)
+	addLoggerToContext(ctx, logger)
 	logger.Debug("handling revision")
 
-	revision, err := j.client.GetRevision(proxyName, rev.Name)
+	ctx = context.WithValue(ctx, revNameField, revName)
 
+	revision, err := j.client.GetRevision(getStringFromContext(ctx, proxyNameField), revName)
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
 		return
 	}
+	ctx = context.WithValue(ctx, revNameField, revision)
+	logger = logger.WithField(revNameField.String(), revision.Revision)
+	addLoggerToContext(ctx, logger)
 
 	var specURL string
 	if revision.Spec != nil && revision.Spec != "" {
-		logger.WithField("specURL", revision.Spec).Info("will download spec from URL in revision")
 		specURL = revision.Spec.(string)
+		ctx = context.WithValue(ctx, specPathField, specURL)
 	} else {
-		specURL = j.specFromRevision(proxyName, envName, revision)
+		specURL = j.specFromRevision(ctx)
+		ctx = context.WithValue(ctx, specPathField, specURL)
 	}
 
-	j.publish(proxyName, envName, revision, specURL)
+	if specURL != "" {
+		logger = logger.WithField(specPathField.String(), specURL)
+		addLoggerToContext(ctx, logger)
+		logger.Info("will download spec from URL in revision")
+	}
+
+	j.publish(ctx)
 }
 
-func (j *pollProxiesJob) specFromRevision(proxyName, envName string, revision *models.ApiProxyRevision) string {
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName).WithField(revNameField, revision.Revision)
+func (j *pollProxiesJob) specFromRevision(ctx context.Context) string {
+	logger := getLoggerFromContext(ctx)
 	logger.Trace("checking revision resource files")
+
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	for _, resource := range revision.ResourceFiles.ResourceFile {
 		if resource.Type == openapi && resource.Name == association {
-			return j.getSpecFromResourceFile(proxyName, envName, revision, resource.Type, resource.Name)
+			return j.getSpecFromResourceFile(ctx, resource.Type, resource.Name)
 		}
 	}
 
-	return j.getSpecFromVirtualHosts(proxyName, envName, revision)
+	return j.getSpecFromVirtualHosts(ctx)
 }
 
-func (j *pollProxiesJob) getSpecFromVirtualHosts(proxyName, envName string, revision *models.ApiProxyRevision) string {
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName).WithField(revNameField, revision.Revision)
+func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
+	logger := getLoggerFromContext(ctx)
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
+	envName := getStringFromContext(ctx, envNameField)
+
 	// attempt to get the spec from the endpoints the revision is hosted on
 	for _, virtualHostName := range revision.Proxies {
 		logger := logger.WithField("virtualHostName", virtualHostName)
@@ -208,12 +234,13 @@ func (j *pollProxiesJob) getSpecFromVirtualHosts(proxyName, envName string, revi
 	return ""
 }
 
-func (j *pollProxiesJob) getSpecFromResourceFile(proxyName, envName string, revision *models.ApiProxyRevision, resourceType, resourceName string) string {
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName).WithField(revNameField, revision.Revision).WithField("filename", resourceName)
+func (j *pollProxiesJob) getSpecFromResourceFile(ctx context.Context, resourceType, resourceName string) string {
+	logger := getLoggerFromContext(ctx)
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	logger.Info("found openapi resource file on revision")
 
 	// get the association.json file content
-	resFileContent, err := j.client.GetRevisionResourceFile(proxyName, revision.Revision, resourceType, resourceName)
+	resFileContent, err := j.client.GetRevisionResourceFile(getStringFromContext(ctx, proxyNameField), revision.Revision, resourceType, resourceName)
 	if err != nil {
 		logger.WithError(err).Debug("could not download resource file content")
 	}
@@ -232,66 +259,51 @@ func (j *pollProxiesJob) getSpecFromResourceFile(proxyName, envName string, revi
 	return associationFile.URL
 }
 
-func urlsFromVirtualHost(virtualHost *models.VirtualHost) []string {
-	urls := []string{}
-
-	scheme := "http"
-	port := virtualHost.Port
-	if virtualHost.SSLInfo != nil {
-		scheme = "https"
-		if port == "443" {
-			port = ""
-		}
-	}
-	if scheme == "http" && port == "80" {
-		port = ""
-	}
-
-	for _, host := range virtualHost.HostAliases {
-		thisURL := fmt.Sprintf("%s://%s:%s", scheme, host, port)
-		if port == "" {
-			thisURL = fmt.Sprintf("%s://%s", scheme, host)
-		}
-		urls = append(urls, thisURL)
-	}
-
-	return urls
-}
-
-func (j *pollProxiesJob) publish(proxyName, envName string, revision *models.ApiProxyRevision, specPath string) {
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName)
-
+func (j *pollProxiesJob) publish(ctx context.Context) {
+	logger := getLoggerFromContext(ctx)
+	envName := getStringFromContext(ctx, envNameField)
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	//  start the service Body
-	serviceBody, err := j.buildServiceBody(proxyName, envName, revision, specPath)
+	serviceBody, err := j.buildServiceBody(ctx)
 	if err != nil {
 		logger.WithError(err).Error("building service body")
 		return
 	}
 	serviceBodyHash, _ := coreutil.ComputeHash(*serviceBody)
-
 	hashString := util.ConvertUnitToString(serviceBodyHash)
+	cacheKey := createProxyCacheKey(getStringFromContext(ctx, proxyNameField), envName)
 
 	// Check DiscoveryCache for API
 	j.pubLock.Lock() // only publish one at a time
 	defer j.pubLock.Unlock()
+	value := agent.GetAttributeOnPublishedAPIByID(revision.Name, fmt.Sprintf("%s-hash", envName))
+	update := false
 	if !agent.IsAPIPublishedByID(revision.Name) {
 		// call new API
-		j.publishAPI(*serviceBody, envName, hashString)
-	} else if value := agent.GetAttributeOnPublishedAPIByID(revision.Name, fmt.Sprintf("%s-hash", envName)); value != hashString {
+		update = true
+		j.publishAPI(*serviceBody, envName, hashString, cacheKey)
+	} else if value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", revision.Name)
 		serviceBody.APIUpdateSeverity = "Major"
 		serviceBody.SpecDefinition = []byte{}
 		log.Tracef("%+v", serviceBody)
-		j.publishAPI(*serviceBody, envName, hashString)
+		update = true
+		j.publishAPI(*serviceBody, envName, hashString, cacheKey)
+	}
+
+	if update {
+		j.cache.AddPublishedProxyToCache(cacheKey, serviceBody)
 	}
 }
 
-func (j *pollProxiesJob) buildServiceBody(proxyName, envName string, revision *models.ApiProxyRevision, specPath string) (*apic.ServiceBody, error) {
+func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBody, error) {
+	logger := getLoggerFromContext(ctx)
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
+	specPath := getStringFromContext(ctx, specPathField)
 	// get the spec to build the service body
-	logger := j.logger.WithField(proxyNameField, proxyName).WithField(envNameField, envName)
 	spec := []byte{}
-	if specPath != "" && isFullURL(specPath) {
+	if isFullURL(specPath) {
 		spec, _ = j.client.GetSpecFromURL(specPath)
 	} else if specPath != "" {
 		spec, _ = j.client.GetSpecFile(specPath)
@@ -299,37 +311,29 @@ func (j *pollProxiesJob) buildServiceBody(proxyName, envName string, revision *m
 
 	if len(spec) == 0 {
 		logger.Info("creating without a spec")
-	} else {
-		logger.WithField("spec", specPath)
 	}
-	logger.Info("creating service body")
 
+	logger.Info("creating service body")
 	sb, err := apic.NewServiceBodyBuilder().
 		SetID(revision.Name).
 		SetAPIName(revision.Name).
-		SetStage(envName).
+		SetStage(getStringFromContext(ctx, envNameField)).
 		SetDescription(revision.Description).
 		SetAPISpec(spec).
 		SetTitle(revision.DisplayName).
+		SetVersion(revision.Revision).
 		Build()
 	return &sb, err
 }
 
-func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString string) {
+func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString, cacheKey string) {
 	// Add a few more attributes to the service body
 	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
-	serviceBody.ServiceAttributes[fmt.Sprintf("%s-hash", envName)] = hashString
+	serviceBody.ServiceAgentDetails[fmt.Sprintf("%s-hash", envName)] = hashString
+	serviceBody.InstanceAgentDetails["cacheKey"] = cacheKey
 
 	err := agent.PublishAPI(serviceBody)
 	if err == nil {
 		log.Infof("Published API %s to AMPLIFY Central", serviceBody.NameToPush)
 	}
-}
-
-// isFullURL - returns true if the url arg is a fully qualified URL
-func isFullURL(urlString string) bool {
-	if _, err := url.ParseRequestURI(urlString); err != nil {
-		return true
-	}
-	return false
 }

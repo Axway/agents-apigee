@@ -1,21 +1,6 @@
 package apigee
 
-const (
-	defaultSubscriptionSchema = "apigee-subscription-schema"
-	appDisplayNameKey         = "appDisplayName"
-)
-
-type wgAction int
-
-const (
-	wgAdd wgAction = iota
-	wgDone
-)
-
-type productRequest struct {
-	name     string
-	response chan map[string]string
-}
+import "github.com/Axway/agents-apigee/client/pkg/apigee/models"
 
 const (
 	openapi     = "openapi"
@@ -27,3 +12,7 @@ type Association struct {
 }
 
 type JobFirstRunDone func() bool
+
+type APIRevision struct {
+	models.ApiProxyRevision
+}

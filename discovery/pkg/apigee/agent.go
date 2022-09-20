@@ -1,10 +1,7 @@
 package apigee
 
 import (
-	"fmt"
-
 	"github.com/Axway/agent-sdk/pkg/agent"
-	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/filter"
 	"github.com/Axway/agent-sdk/pkg/jobs"
@@ -101,16 +98,13 @@ func (a *Agent) Stop() {
 }
 
 // apiValidator - registers the agent jobs
-func (a *Agent) apiValidator(productName, portalName string) bool {
+func (a *Agent) apiValidator(proxyName, envName string) bool {
 	// get the api with the product name and portal name
-	cacheKey := fmt.Sprintf("%s-%s", portalName, productName)
+	cacheKey := createProxyCacheKey(proxyName, envName)
 
-	_, err := cache.GetCache().GetBySecondaryKey(cacheKey)
+	_, err := a.agentCache.GetPublishedProxy(cacheKey)
 	if err != nil {
-		_, e := a.apigeeClient.GetProduct(productName)
-		if e != nil {
-			return false
-		}
+		return false
 	}
 
 	return true

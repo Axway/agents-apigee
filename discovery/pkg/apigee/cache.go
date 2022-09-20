@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/cache"
 )
 
@@ -66,4 +67,18 @@ func (a *agentCache) GetSpecPathWithEndpoint(endpoint string) (string, error) {
 	}
 
 	return latest.ContentPath, nil
+}
+
+func (a *agentCache) AddPublishedProxyToCache(cacheKey string, serviceBody *apic.ServiceBody) {
+	a.cache.Set(cacheKey, serviceBody)
+}
+
+func (a *agentCache) GetPublishedProxy(cacheKey string) (*apic.ServiceBody, error) {
+	item, err := a.cache.Get(cacheKey)
+	if err != nil {
+		return nil, err
+	}
+
+	sb := item.(*apic.ServiceBody)
+	return sb, nil
 }
