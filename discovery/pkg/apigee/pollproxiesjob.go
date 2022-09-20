@@ -101,9 +101,6 @@ func (j *pollProxiesJob) Execute() error {
 
 	wg := sync.WaitGroup{}
 	for _, proxyName := range allProxies {
-		if proxyName != "Petstore-X" {
-			continue
-		}
 		wg.Add(1)
 		go func(name string) {
 			defer wg.Done()
@@ -193,7 +190,7 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	if specURL != "" {
 		logger = logger.WithField(specPathField.String(), specURL)
 		addLoggerToContext(ctx, logger)
-		logger.Info("will download spec from URL in revision")
+		logger.Debug("will download spec from URL in revision")
 	}
 
 	j.publish(ctx)
@@ -287,7 +284,7 @@ func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
 func (j *pollProxiesJob) getSpecFromResourceFile(ctx context.Context, resourceType, resourceName string) string {
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
-	logger.Info("found openapi resource file on revision")
+	logger.Debug("found openapi resource file on revision")
 
 	// get the association.json file content
 	resFileContent, err := j.client.GetRevisionResourceFile(getStringFromContext(ctx, proxyNameField), revision.Revision, resourceType, resourceName)
@@ -356,9 +353,9 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	}
 
 	if len(spec) == 0 {
-		logger.Info("creating without a spec")
+		logger.Debug("creating without a spec")
 	}
-	logger.Info("creating service body")
+	logger.Debug("creating service body")
 
 	crds := []string{}
 	if ctx.Value(hasAPIKeyPolicyField) != nil {
