@@ -1,7 +1,5 @@
 package apigee
 
-import "github.com/Axway/agents-apigee/client/pkg/apigee/models"
-
 const (
 	openapi     = "openapi"
 	association = "association.json"
@@ -13,6 +11,12 @@ type Association struct {
 
 type JobFirstRunDone func() bool
 
-type APIRevision struct {
-	models.ApiProxyRevision
-}
+const (
+	quotaPolicy  = "Quota"
+	apiKeyPolicy = "VerifyAPIKey"
+	oauthPolicy  = "Oauthv2"
+)
+
+const (
+	cacheKeyAttribute = "cacheKey"
+)

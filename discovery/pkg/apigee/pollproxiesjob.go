@@ -8,6 +8,7 @@ import (
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
+	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
@@ -20,10 +21,13 @@ import (
 const (
 	gatewayType = "Apigee"
 
-	proxyNameField ctxKeys = "proxy"
-	envNameField   ctxKeys = "environment"
-	revNameField   ctxKeys = "revision"
-	specPathField  ctxKeys = "specPath"
+	proxyNameField       ctxKeys = "proxy"
+	envNameField         ctxKeys = "environment"
+	revNameField         ctxKeys = "revision"
+	specPathField        ctxKeys = "specPath"
+	hasQuotaPolicyField  ctxKeys = "hasQuota"
+	hasAPIKeyPolicyField ctxKeys = "hasAPIKey"
+	hasOAuthPolicyField  ctxKeys = "hasOauth"
 )
 
 type proxyClient interface {
@@ -34,6 +38,7 @@ type proxyClient interface {
 	GetVirtualHost(envName, virtualHostName string) (*models.VirtualHost, error)
 	GetSpecFile(specPath string) ([]byte, error)
 	GetSpecFromURL(url string, options ...apigee.RequestOption) ([]byte, error)
+	GetRevisionPolicyByName(proxyName, revision, policyName string) (*apigee.PolicyDetail, error)
 	IsReady() bool
 }
 
@@ -169,6 +174,8 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	logger = logger.WithField(revNameField.String(), revision.Revision)
 	addLoggerToContext(ctx, logger)
 
+	j.checkPolicies(ctx)
+
 	var specURL string
 	if revision.Spec != nil && revision.Spec != "" {
 		specURL = revision.Spec.(string)
@@ -185,6 +192,33 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	}
 
 	j.publish(ctx)
+}
+
+func (j *pollProxiesJob) checkPolicies(ctx context.Context) context.Context {
+	logger := getLoggerFromContext(ctx)
+	logger.Trace("checking revision policies for authentication")
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
+
+	for _, p := range revision.Policies {
+		logger := logger.WithField("policyName", p)
+		logger.Tracef("getting policy details")
+		policyDetails, err := j.client.GetRevisionPolicyByName(getStringFromContext(ctx, proxyNameField), revision.Revision, p)
+		if err != nil {
+			logger.WithError(err).Debug("getting policy")
+			continue
+		}
+
+		switch policyDetails.PolicyType {
+		case quotaPolicy:
+			ctx = context.WithValue(ctx, hasQuotaPolicyField, true)
+		case apiKeyPolicy:
+			ctx = context.WithValue(ctx, hasAPIKeyPolicyField, true)
+		case oauthPolicy:
+			ctx = context.WithValue(ctx, hasQuotaPolicyField, true)
+		}
+	}
+
+	return ctx
 }
 
 func (j *pollProxiesJob) specFromRevision(ctx context.Context) string {
@@ -277,10 +311,9 @@ func (j *pollProxiesJob) publish(ctx context.Context) {
 	j.pubLock.Lock() // only publish one at a time
 	defer j.pubLock.Unlock()
 	value := agent.GetAttributeOnPublishedAPIByID(revision.Name, fmt.Sprintf("%s-hash", envName))
-	update := false
+
 	if !agent.IsAPIPublishedByID(revision.Name) {
 		// call new API
-		update = true
 		j.publishAPI(*serviceBody, envName, hashString, cacheKey)
 	} else if value != hashString {
 		// handle update
@@ -288,13 +321,10 @@ func (j *pollProxiesJob) publish(ctx context.Context) {
 		serviceBody.APIUpdateSeverity = "Major"
 		serviceBody.SpecDefinition = []byte{}
 		log.Tracef("%+v", serviceBody)
-		update = true
 		j.publishAPI(*serviceBody, envName, hashString, cacheKey)
 	}
 
-	if update {
-		j.cache.AddPublishedProxyToCache(cacheKey, serviceBody)
-	}
+	j.cache.AddPublishedProxyToCache(cacheKey, serviceBody)
 }
 
 func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBody, error) {
@@ -312,8 +342,17 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	if len(spec) == 0 {
 		logger.Info("creating without a spec")
 	}
-
 	logger.Info("creating service body")
+
+	crds := []string{}
+	if ctx.Value(apiKeyPolicy) != nil {
+		crds = append(crds, provisioning.APIKeyCRD)
+	}
+
+	if ctx.Value(oauthPolicy) != nil {
+		crds = append(crds, provisioning.OAuthSecretCRD)
+	}
+
 	sb, err := apic.NewServiceBodyBuilder().
 		SetID(revision.Name).
 		SetAPIName(revision.Name).
@@ -322,6 +361,8 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		SetAPISpec(spec).
 		SetTitle(revision.DisplayName).
 		SetVersion(revision.Revision).
+		SetAccessRequestDefinitionName(provisioning.APIKeyARD, false).
+		SetCredentialRequestDefinitions(crds).
 		Build()
 	return &sb, err
 }
@@ -330,7 +371,7 @@ func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashS
 	// Add a few more attributes to the service body
 	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
 	serviceBody.ServiceAgentDetails[fmt.Sprintf("%s-hash", envName)] = hashString
-	serviceBody.InstanceAgentDetails["cacheKey"] = cacheKey
+	serviceBody.InstanceAgentDetails[cacheKeyAttribute] = cacheKey
 
 	err := agent.PublishAPI(serviceBody)
 	if err == nil {

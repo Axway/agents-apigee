@@ -103,11 +103,7 @@ func (a *Agent) apiValidator(proxyName, envName string) bool {
 	cacheKey := createProxyCacheKey(proxyName, envName)
 
 	_, err := a.agentCache.GetPublishedProxy(cacheKey)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // shouldPushAPI - callback used determine if the Product should be pushed to Central or not
