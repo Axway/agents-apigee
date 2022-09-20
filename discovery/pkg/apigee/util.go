@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 
+	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
@@ -67,4 +69,29 @@ func getLoggerFromContext(ctx context.Context) log.FieldLogger {
 
 func getStringFromContext(ctx context.Context, key ctxKeys) string {
 	return ctx.Value(key).(string)
+}
+
+func createEndpointsFromURLS(urls []string) []apic.EndpointDefinition {
+	endpoints := []apic.EndpointDefinition{}
+
+	for _, ep := range urls {
+		u, err := url.Parse(ep)
+		if err != nil {
+			continue
+		}
+		port := int64(0)
+		if p := u.Port(); p != "" {
+			pt, err := strconv.ParseInt(p, 10, 32)
+			if err == nil {
+				port = pt
+			}
+		}
+		endpoints = append(endpoints, apic.EndpointDefinition{
+			Host:     u.Host,
+			Port:     int32(port),
+			BasePath: u.Path,
+			Protocol: u.Scheme,
+		})
+	}
+	return endpoints
 }
