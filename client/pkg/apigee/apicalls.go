@@ -66,7 +66,7 @@ func (a *ApigeeClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.Deve
 	if err != nil {
 		return nil, err
 	}
-	if response.Code != http.StatusCreated {
+	if response.Code != http.StatusOK {
 		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when creating the app", response.Code)
 	}
 
@@ -189,14 +189,15 @@ func (a *ApigeeClient) GetStats(env, metricSelect string, start, end time.Time) 
 	return stats, nil
 }
 
-func (a *ApigeeClient) CreateApiProduct(org string, product *models.ApiProduct) (*models.ApiProduct, error) {
+func (a *ApigeeClient) CreateApiProduct(_ string, product *models.ApiProduct) (*models.ApiProduct, error) {
 	// create a new developer app
 	data, err := json.Marshal(product)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := a.newRequest(http.MethodPost, fmt.Sprintf("%s/organizations/%s/apiproducts", a.orgURL, org),
+	u := fmt.Sprintf("%s/apiproducts", a.orgURL)
+	response, err := a.newRequest(http.MethodPost, u,
 		WithDefaultHeaders(),
 		WithBody(data),
 	).Execute()

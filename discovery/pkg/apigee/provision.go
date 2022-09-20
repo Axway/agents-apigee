@@ -143,17 +143,20 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	if q := req.GetQuota(); q != nil {
 		quota = fmt.Sprintf("%d", q.GetLimit())
-		quotaTimeUnit = ""
 
 		switch q.GetInterval() {
 		case prov.Daily:
 			quotaTimeUnit = "day"
 		case prov.Weekly:
+			quotaTimeUnit = "day"
+			quotaInterval = "7"
 		case prov.Monthly:
 			quotaTimeUnit = "month"
 		case prov.Annually:
+			quotaTimeUnit = "month"
+			quotaInterval = "12"
 		default:
-			// 	return failed(ps, fmt.Errorf("invalid quota time unit: '%s'. Valid values are month and day", q.GetIntervalString())), nil
+			return failed(ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
 		}
 	}
 
