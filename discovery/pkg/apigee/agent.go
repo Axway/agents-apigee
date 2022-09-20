@@ -46,7 +46,13 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 	}
 
 	// newAgent.handleSubscriptions()
-	// agent.RegisterProvisioner(NewProvisioner(newAgent.apigeeClient, agentCfg.CentralCfg.GetCredentialConfig().GetExpirationDays(), agent.GetCacheManager()))
+	provisioner := NewProvisioner(
+		newAgent.apigeeClient,
+		agentCfg.CentralCfg.GetCredentialConfig().GetExpirationDays(),
+		agentCfg.ApigeeCfg,
+		agent.GetCacheManager(),
+	)
+	agent.RegisterProvisioner(provisioner)
 
 	return newAgent, nil
 }

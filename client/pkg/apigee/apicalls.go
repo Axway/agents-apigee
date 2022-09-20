@@ -52,6 +52,33 @@ func (a *ApigeeClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.D
 	return &devApp, err
 }
 
+// UpdateDeveloperApp - update an app for the developer
+func (a *ApigeeClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error) {
+	data, err := json.Marshal(app)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := a.newRequest(http.MethodPut, fmt.Sprintf("%s/developers/%s/apps/%s", a.orgURL, app.DeveloperId, app.Name),
+		WithDefaultHeaders(),
+		WithBody(data),
+	).Execute()
+	if err != nil {
+		return nil, err
+	}
+	if response.Code != http.StatusCreated {
+		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when creating the app", response.Code)
+	}
+
+	devApp := models.DeveloperApp{}
+	err = json.Unmarshal(response.Body, &devApp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &devApp, err
+}
+
 // GetDeveloperApp gets an app by name
 func (a *ApigeeClient) GetDeveloperApp(name string) (*models.DeveloperApp, error) {
 	url := fmt.Sprintf("%s/developers/%s/apps/%s", a.orgURL, a.GetDeveloperID(), name)
@@ -160,4 +187,34 @@ func (a *ApigeeClient) GetStats(env, metricSelect string, start, end time.Time) 
 	}
 
 	return stats, nil
+}
+
+func (a *ApigeeClient) CreateApiProduct(org string, product *models.ApiProduct) (*models.ApiProduct, error) {
+	// create a new developer app
+	data, err := json.Marshal(product)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := a.newRequest(http.MethodPost, fmt.Sprintf("%s/organizations/%s/apiproducts", a.orgURL, org),
+		WithDefaultHeaders(),
+		WithBody(data),
+	).Execute()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.Code != http.StatusCreated {
+		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when creating the api product", response.Code)
+	}
+
+	newProduct := models.ApiProduct{}
+	err = json.Unmarshal(response.Body, &newProduct)
+	if err != nil {
+		return nil, err
+	}
+
+	return &newProduct, err
+
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/client/pkg/config"
 )
 
 const (
@@ -24,6 +25,7 @@ type provisioner struct {
 	client       client
 	credExpDays  int
 	cacheManager cacheManager
+	cfg          *config.ApigeeConfig
 }
 
 type cacheManager interface {
@@ -42,14 +44,17 @@ type client interface {
 	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
 	RemoveProductCredential(appName, devID, key, productName string) error
 	UpdateAppCredential(appName, devID, key string, enable bool) error
+	CreateApiProduct(org string, product *models.ApiProduct) (*models.ApiProduct, error)
+	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
-func NewProvisioner(client client, credExpDays int, cacheMan cacheManager) prov.Provisioning {
+func NewProvisioner(client client, credExpDays int, cfg *config.ApigeeConfig, cacheMan cacheManager) prov.Provisioning {
 	return &provisioner{
 		client:       client,
 		credExpDays:  credExpDays,
 		cacheManager: cacheMan,
+		cfg:          cfg,
 	}
 }
 
@@ -57,6 +62,8 @@ func NewProvisioner(client client, credExpDays int, cacheMan cacheManager) prov.
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+
+	// remove link between api product and app
 
 	log.Infof("deprovisioning access request for api %s from app %s ", apiID, req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
@@ -108,6 +115,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.RequestStatus, prov.AccessData) {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+	stage := util.ToString(instDetails[defs.AttrExternalAPIStage])
 
 	log.Infof("processing access request for api %s to app %s", apiID, req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
@@ -117,12 +125,66 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID)), nil
 	}
 
+	if stage == "" {
+		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIStage)), nil
+	}
+
 	appName := req.GetApplicationName()
 	if appName == "" {
 		return failed(ps, fmt.Errorf("application name not found")), nil
 	}
 
+	// get plan name from access request
+	// get api product, or create new one
+
+	quota := ""
+	quotaInterval := "1"
+	quotaTimeUnit := ""
+
+	if q := req.GetQuota(); q != nil {
+		quota = fmt.Sprintf("%d", q.GetLimit())
+		quotaTimeUnit = ""
+
+		switch q.GetInterval() {
+		case prov.Daily:
+			quotaTimeUnit = "day"
+		case prov.Weekly:
+		case prov.Monthly:
+			quotaTimeUnit = "month"
+		case prov.Annually:
+		default:
+			// 	return failed(ps, fmt.Errorf("invalid quota time unit: '%s'. Valid values are month and day", q.GetIntervalString())), nil
+		}
+	}
+
+	name := fmt.Sprintf("%s-%s", apiID, appName)
+
+	product := &models.ApiProduct{
+		ApiResources:  []string{},
+		ApprovalType:  "auto",
+		DisplayName:   name,
+		Environments:  []string{stage},
+		Name:          name,
+		Proxies:       []string{apiID},
+		Quota:         quota,
+		QuotaInterval: quotaInterval,
+		QuotaTimeUnit: quotaTimeUnit,
+	}
+
+	log.Infof("creating api product %s for api %s", product.Name, apiID)
+	res, err := p.client.CreateApiProduct(p.cfg.Organization, product)
+	if err != nil {
+		return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
+	}
+
 	app, err := p.client.GetDeveloperApp(appName)
+	if err != nil {
+		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
+	}
+
+	app.ApiProducts = append(app.ApiProducts, res.Name)
+
+	app, err = p.client.UpdateDeveloperApp(*app)
 	if err != nil {
 		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
 	}
