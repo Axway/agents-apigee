@@ -139,6 +139,11 @@ func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error
 	if err != nil {
 		return nil, err
 	}
+
+	if response.Code != http.StatusOK {
+		return nil, fmt.Errorf("received an unexpected response code %d from Apigee when retrieving the app", response.Code)
+	}
+
 	product := &models.ApiProduct{}
 	json.Unmarshal(response.Body, product)
 

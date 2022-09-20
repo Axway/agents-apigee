@@ -46,6 +46,7 @@ type client interface {
 	UpdateAppCredential(appName, devID, key string, enable bool) error
 	CreateApiProduct(org string, product *models.ApiProduct) (*models.ApiProduct, error)
 	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
+	GetProduct(productName string) (*models.ApiProduct, error)
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
@@ -160,34 +161,30 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		}
 	}
 
-	name := fmt.Sprintf("%s-%s", apiID, appName)
+	apiProductName := fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
 
-	product := &models.ApiProduct{
-		ApiResources:  []string{},
-		ApprovalType:  "auto",
-		DisplayName:   name,
-		Environments:  []string{stage},
-		Name:          name,
-		Proxies:       []string{apiID},
-		Quota:         quota,
-		QuotaInterval: quotaInterval,
-		QuotaTimeUnit: quotaTimeUnit,
-	}
-
-	log.Infof("creating api product %s for api %s", product.Name, apiID)
-	res, err := p.client.CreateApiProduct(p.cfg.Organization, product)
+	product, err := p.client.GetProduct(apiProductName)
+	// only create a product if one is not found
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
+		product = &models.ApiProduct{
+			ApiResources:  []string{},
+			ApprovalType:  "auto",
+			DisplayName:   apiProductName,
+			Environments:  []string{stage},
+			Name:          apiProductName,
+			Proxies:       []string{apiID},
+			Quota:         quota,
+			QuotaInterval: quotaInterval,
+			QuotaTimeUnit: quotaTimeUnit,
+		}
+		log.Infof("creating api product %s for api %s", product.Name, apiID)
+		product, err = p.client.CreateApiProduct(p.cfg.Organization, product)
+		if err != nil {
+			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
+		}
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
-	if err != nil {
-		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
-	}
-
-	app.ApiProducts = append(app.ApiProducts, res.Name)
-
-	app, err = p.client.UpdateDeveloperApp(*app)
 	if err != nil {
 		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
 	}
@@ -210,12 +207,12 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		// add the product to this credential
 		if addProd {
 			cpr := apigee.CredentialProvisionRequest{
-				ApiProducts: []string{apiID},
+				ApiProducts: []string{apiProductName},
 			}
 
 			_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
 			if err != nil {
-				return failed(ps, fmt.Errorf("error: %s", err)), nil
+				return failed(ps, fmt.Errorf("failed to add api product %s to credential: %s", apiProductName, err)), nil
 			}
 		}
 	}

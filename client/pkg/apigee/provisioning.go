@@ -127,7 +127,7 @@ func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr Cred
 
 	if response.Code != http.StatusOK {
 		return nil, fmt.Errorf(
-			"received an unexpected response code %d from Apigee while updating app credentials", response.Code,
+			"received an unexpected response code %d from Apigee while updating app credentials: %s", response.Code, response.Body,
 		)
 	}
 

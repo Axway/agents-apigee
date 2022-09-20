@@ -14,6 +14,10 @@ func (a *ApigeeClient) GetDeployments(proxyName string) (*models.DeploymentDetai
 		WithDefaultHeaders(),
 	).Execute()
 
+	if err != nil {
+		return nil, err
+	}
+
 	details := &models.DeploymentDetails{}
 	json.Unmarshal(response.Body, details)
 	if err != nil {
