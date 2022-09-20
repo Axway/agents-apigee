@@ -76,3 +76,21 @@ func (a *ApigeeClient) GetRevisionResourceFile(proxyName, revision, resourceType
 
 	return response.Body, nil
 }
+
+// GetRevisionPolicyByName - get the details about a named policy on a revision
+func (a *ApigeeClient) GetRevisionPolicyByName(proxyName, revision, policyName string) (*PolicyDetail, error) {
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/apis/%s/revisions/%s/policies/%s", a.orgURL, proxyName, revision, policyName),
+		WithDefaultHeaders(),
+	).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	policyDetails := &PolicyDetail{}
+	json.Unmarshal(response.Body, policyDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	return policyDetails, nil
+}

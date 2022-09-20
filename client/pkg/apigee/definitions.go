@@ -97,3 +97,8 @@ type SpecDetails struct {
 
 // VirtualHosts
 type VirtualHosts []string
+
+type PolicyDetail struct {
+	models.Policy
+	PolicyType string `json:"policyType"`
+}
