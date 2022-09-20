@@ -14,7 +14,7 @@ type JobFirstRunDone func() bool
 const (
 	quotaPolicy  = "Quota"
 	apiKeyPolicy = "VerifyAPIKey"
-	oauthPolicy  = "Oauthv2"
+	oauthPolicy  = "OAuthV2"
 )
 
 const (

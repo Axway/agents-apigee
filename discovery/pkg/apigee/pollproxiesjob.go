@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strconv"
 	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -28,6 +30,7 @@ const (
 	hasQuotaPolicyField  ctxKeys = "hasQuota"
 	hasAPIKeyPolicyField ctxKeys = "hasAPIKey"
 	hasOAuthPolicyField  ctxKeys = "hasOauth"
+	endpointsField       ctxKeys = "endpoints"
 )
 
 type proxyClient interface {
@@ -163,18 +166,20 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	addLoggerToContext(ctx, logger)
 	logger.Debug("handling revision")
 
-	ctx = context.WithValue(ctx, revNameField, revName)
-
 	revision, err := j.client.GetRevision(getStringFromContext(ctx, proxyNameField), revName)
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
 		return
 	}
+
 	ctx = context.WithValue(ctx, revNameField, revision)
 	logger = logger.WithField(revNameField.String(), revision.Revision)
 	addLoggerToContext(ctx, logger)
 
-	j.checkPolicies(ctx)
+	ctx = j.checkPolicies(ctx)
+
+	// get URLs
+	ctx = j.getVirtualHostURLs(ctx)
 
 	var specURL string
 	if revision.Spec != nil && revision.Spec != "" {
@@ -214,7 +219,7 @@ func (j *pollProxiesJob) checkPolicies(ctx context.Context) context.Context {
 		case apiKeyPolicy:
 			ctx = context.WithValue(ctx, hasAPIKeyPolicyField, true)
 		case oauthPolicy:
-			ctx = context.WithValue(ctx, hasQuotaPolicyField, true)
+			ctx = context.WithValue(ctx, hasOAuthPolicyField, true)
 		}
 	}
 
@@ -235,12 +240,13 @@ func (j *pollProxiesJob) specFromRevision(ctx context.Context) string {
 	return j.getSpecFromVirtualHosts(ctx)
 }
 
-func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
+func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context {
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	envName := getStringFromContext(ctx, envNameField)
 
 	// attempt to get the spec from the endpoints the revision is hosted on
+	allURLs := []string{}
 	for _, virtualHostName := range revision.Proxies {
 		logger := logger.WithField("virtualHostName", virtualHostName)
 		virtualHost, err := j.client.GetVirtualHost(envName, virtualHostName)
@@ -249,20 +255,30 @@ func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
 			continue
 		}
 		urls := urlsFromVirtualHost(virtualHost)
+		allURLs = append(allURLs, urls...)
+	}
 
-		// using the URLs find the first spec that has a match
-		for _, url := range urls {
-			logger.WithField("host", url)
-			for _, path := range revision.Basepaths {
-				logger.WithField("path", path)
-				path, err := j.cache.GetSpecPathWithEndpoint(url)
-				if err != nil {
-					logger.WithError(err).Debug("could not get spec with endpoint")
-					continue
-				}
-				logger.Debug("found spec with endpoint")
-				return path
+	return context.WithValue(ctx, endpointsField, allURLs)
+}
+
+func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
+	logger := getLoggerFromContext(ctx)
+	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
+
+	urls := ctx.Value(endpointsField).([]string)
+
+	// using the URLs find the first spec that has a match
+	for _, url := range urls {
+		logger.WithField("host", url)
+		for _, path := range revision.Basepaths {
+			logger.WithField("path", path)
+			path, err := j.cache.GetSpecPathWithEndpoint(url)
+			if err != nil {
+				logger.WithError(err).Debug("could not get spec with endpoint")
+				continue
 			}
+			logger.Debug("found spec with endpoint")
+			return path
 		}
 	}
 	return ""
@@ -345,13 +361,15 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	logger.Info("creating service body")
 
 	crds := []string{}
-	if ctx.Value(apiKeyPolicy) != nil {
+	if ctx.Value(hasAPIKeyPolicyField) != nil {
 		crds = append(crds, provisioning.APIKeyCRD)
 	}
-
-	if ctx.Value(oauthPolicy) != nil {
+	if ctx.Value(hasOAuthPolicyField) != nil {
 		crds = append(crds, provisioning.OAuthSecretCRD)
 	}
+
+	urls := ctx.Value(endpointsField).([]string)
+	endpoints := createEndpointsFromURLS(urls)
 
 	sb, err := apic.NewServiceBodyBuilder().
 		SetID(revision.Name).
@@ -363,8 +381,34 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		SetVersion(revision.Revision).
 		SetAccessRequestDefinitionName(provisioning.APIKeyARD, false).
 		SetCredentialRequestDefinitions(crds).
+		SetServiceEndpoints(endpoints).
 		Build()
 	return &sb, err
+}
+
+func createEndpointsFromURLS(urls []string) []apic.EndpointDefinition {
+	endpoints := []apic.EndpointDefinition{}
+
+	for _, ep := range urls {
+		u, err := url.Parse(ep)
+		if err != nil {
+			continue
+		}
+		port := int64(0)
+		if p := u.Port(); p != "" {
+			pt, err := strconv.ParseInt(p, 10, 32)
+			if err == nil {
+				port = pt
+			}
+		}
+		endpoints = append(endpoints, apic.EndpointDefinition{
+			Host:     u.Host,
+			Port:     int32(port),
+			BasePath: u.Path,
+			Protocol: u.Scheme,
+		})
+	}
+	return endpoints
 }
 
 func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString, cacheKey string) {
