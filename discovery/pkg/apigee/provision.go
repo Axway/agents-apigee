@@ -6,26 +6,24 @@ import (
 	"time"
 
 	v1 "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/api/v1"
-	management "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/management/v1alpha1"
 	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
-	"github.com/Axway/agents-apigee/client/pkg/config"
 )
 
 const (
-	credRefKey = "credentialReference"
-	appRefName = "appName"
+	credRefKey  = "credentialReference"
+	appRefName  = "appName"
+	prodNameRef = "product-name"
 )
 
 type provisioner struct {
 	client       client
 	credExpDays  int
 	cacheManager cacheManager
-	cfg          *config.ApigeeConfig
 }
 
 type cacheManager interface {
@@ -44,18 +42,17 @@ type client interface {
 	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
 	RemoveProductCredential(appName, devID, key, productName string) error
 	UpdateAppCredential(appName, devID, key string, enable bool) error
-	CreateApiProduct(org string, product *models.ApiProduct) (*models.ApiProduct, error)
+	CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error)
 	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
 	GetProduct(productName string) (*models.ApiProduct, error)
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
-func NewProvisioner(client client, credExpDays int, cfg *config.ApigeeConfig, cacheMan cacheManager) prov.Provisioning {
+func NewProvisioner(client client, credExpDays int, cacheMan cacheManager) prov.Provisioning {
 	return &provisioner{
 		client:       client,
 		credExpDays:  credExpDays,
 		cacheManager: cacheMan,
-		cfg:          cfg,
 	}
 }
 
@@ -178,7 +175,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 			QuotaTimeUnit: quotaTimeUnit,
 		}
 		log.Infof("creating api product %s for api %s", product.Name, apiID)
-		product, err = p.client.CreateApiProduct(p.cfg.Organization, product)
+		product, err = p.client.CreateAPIProduct(product)
 		if err != nil {
 			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
@@ -219,7 +216,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	log.Infof("granted access for api %s to app %s", apiID, req.GetApplicationName())
 
-	return ps.Success(), nil
+	return ps.AddProperty(prodNameRef, product.Name).Success(), nil
 }
 
 // ApplicationRequestDeprovision - removes an app from apigee
@@ -327,12 +324,9 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 	accReqs := p.cacheManager.GetAccessRequestsByApp(appName)
 	products := []string{}
 	for _, arInst := range accReqs {
-		accReq := management.NewAccessRequest("", "")
-		accReq.FromInstance(arInst)
-		inst, _ := p.cacheManager.GetAPIServiceInstanceByName(accReq.Spec.ApiServiceInstance)
-		apiID, err := util.GetAgentDetailsValue(inst, defs.AttrExternalAPIID)
-		if err == nil && apiID != "" {
-			products = append(products, apiID)
+		productName, err := util.GetAgentDetailsValue(arInst, prodNameRef)
+		if err == nil && productName != "" {
+			products = append(products, productName)
 		}
 	}
 	if len(products) == 0 {

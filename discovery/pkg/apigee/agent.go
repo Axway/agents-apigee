@@ -49,7 +49,6 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 	provisioner := NewProvisioner(
 		newAgent.apigeeClient,
 		agentCfg.CentralCfg.GetCredentialConfig().GetExpirationDays(),
-		agentCfg.ApigeeCfg,
 		agent.GetCacheManager(),
 	)
 	agent.RegisterProvisioner(provisioner)

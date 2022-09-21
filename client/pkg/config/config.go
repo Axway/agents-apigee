@@ -24,27 +24,20 @@ type ApigeeConfig struct {
 
 // ApigeeIntervals - intervals for the apigee agent to use
 type ApigeeIntervals struct {
-	Proxy   time.Duration `config:"proxy"`
-	Spec    time.Duration `config:"spec"`
-	Product time.Duration `config:"product"`
-	Portal  time.Duration `config:"portal"`
-	API     time.Duration `config:"api"`
+	Proxy time.Duration `config:"proxy"`
+	Spec  time.Duration `config:"spec"`
 }
 
 const (
-	pathURL             = "apigee.url"
-	pathDataURL         = "apigee.dataURL"
-	pathAPIVersion      = "apigee.apiVersion"
-	pathOrganization    = "apigee.organization"
-	pathAuthUsername    = "apigee.auth.username"
-	pathAuthPassword    = "apigee.auth.password"
-	pathSpecInterval    = "apigee.interval.spec"
-	pathProxyInterval   = "apigee.interval.proxy"
-	pathProductInterval = "apigee.interval.product"
-	pathPortalInterval  = "apigee.interval.portal"
-	pathAPIInterval     = "apigee.interval.api"
-	pathFilter          = "apigee.filter"
-	pathDeveloper       = "apigee.developerID"
+	pathURL           = "apigee.url"
+	pathDataURL       = "apigee.dataURL"
+	pathAPIVersion    = "apigee.apiVersion"
+	pathOrganization  = "apigee.organization"
+	pathAuthUsername  = "apigee.auth.username"
+	pathAuthPassword  = "apigee.auth.password"
+	pathSpecInterval  = "apigee.interval.spec"
+	pathProxyInterval = "apigee.interval.proxy"
+	pathDeveloper     = "apigee.developerID"
 )
 
 // AddProperties - adds config needed for apigee client
@@ -57,10 +50,6 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs")
 	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies")
-	rootProps.AddDurationProperty(pathProductInterval, 5*time.Minute, "The time interval between updating a products attributes")
-	rootProps.AddDurationProperty(pathPortalInterval, 1*time.Minute, "The time interval between checking for new Apigee portals")
-	rootProps.AddDurationProperty(pathAPIInterval, 30*time.Second, "The time interval between checking for new APIs in an Apigee portal")
-	rootProps.AddStringProperty(pathFilter, "", "Filter used on discovering Apigee products")
 	rootProps.AddStringProperty(pathDeveloper, "", "Developer ID used to create applications")
 }
 
@@ -72,14 +61,10 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 		URL:          strings.TrimSuffix(rootProps.StringPropertyValue(pathURL), "/"),
 		APIVersion:   rootProps.StringPropertyValue(pathAPIVersion),
 		DataURL:      strings.TrimSuffix(rootProps.StringPropertyValue(pathDataURL), "/"),
-		Filter:       rootProps.StringPropertyValue(pathFilter),
 		DeveloperID:  rootProps.StringPropertyValue(pathDeveloper),
 		Intervals: &ApigeeIntervals{
-			Proxy:   rootProps.DurationPropertyValue(pathProxyInterval),
-			Spec:    rootProps.DurationPropertyValue(pathSpecInterval),
-			Product: rootProps.DurationPropertyValue(pathProductInterval),
-			Portal:  rootProps.DurationPropertyValue(pathPortalInterval),
-			API:     rootProps.DurationPropertyValue(pathAPIInterval),
+			Proxy: rootProps.DurationPropertyValue(pathProxyInterval),
+			Spec:  rootProps.DurationPropertyValue(pathSpecInterval),
 		},
 		Auth: &AuthConfig{
 			Username: rootProps.StringPropertyValue(pathAuthUsername),

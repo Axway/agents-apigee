@@ -194,7 +194,7 @@ func (a *ApigeeClient) GetStats(env, metricSelect string, start, end time.Time) 
 	return stats, nil
 }
 
-func (a *ApigeeClient) CreateApiProduct(_ string, product *models.ApiProduct) (*models.ApiProduct, error) {
+func (a *ApigeeClient) CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error) {
 	// create a new developer app
 	data, err := json.Marshal(product)
 	if err != nil {

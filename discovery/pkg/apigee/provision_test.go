@@ -668,6 +668,18 @@ func (m mockClient) UpdateAppCredential(appName, devID, key string, enable bool)
 	return nil
 }
 
+func (m mockClient) CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error) {
+	return nil, nil
+}
+
+func (m mockClient) GetProduct(productName string) (*models.ApiProduct, error) {
+	return nil, nil
+}
+
+func (m mockClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error) {
+	return nil, nil
+}
+
 func newApp(apiID string, appName string) *models.DeveloperApp {
 	cred := &models.DeveloperApp{
 		Credentials: []models.DeveloperAppCredentials{
