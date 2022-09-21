@@ -139,6 +139,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	quotaInterval := "1"
 	quotaTimeUnit := ""
 
+	apiProductName := apiID
 	if q := req.GetQuota(); q != nil {
 		quota = fmt.Sprintf("%d", q.GetLimit())
 
@@ -156,9 +157,9 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		default:
 			return failed(ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
 		}
-	}
 
-	apiProductName := fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
+		apiProductName = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
+	}
 
 	product, err := p.client.GetProduct(apiProductName)
 	// only create a product if one is not found
@@ -188,7 +189,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	if len(app.Credentials) == 0 {
 		// no credentials to add access too
-		return ps.Success(), nil
+		return ps.AddProperty(prodNameRef, product.Name).Success(), nil
 	}
 
 	// add api to credentials that are not associated with it

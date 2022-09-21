@@ -110,32 +110,38 @@ func TestAccessRequestDeprovision(t *testing.T) {
 
 func TestAccessRequestProvision(t *testing.T) {
 	tests := []struct {
-		name        string
-		status      provisioning.Status
-		appName     string
-		apiID       string
-		getAppErr   error
-		addCredErr  error
-		noCreds     bool
-		isApiLinked bool
+		name         string
+		status       provisioning.Status
+		appName      string
+		apiID        string
+		apiStage     string
+		getAppErr    error
+		addCredErr   error
+		addProdErr   error
+		existingProd bool
+		noCreds      bool
+		isApiLinked  bool
 	}{
 		{
-			name:    "should provision an access request",
-			appName: "app-one",
-			apiID:   "abc-123",
-			status:  provisioning.Success,
+			name:     "should provision an access request",
+			appName:  "app-one",
+			apiID:    "abc-123",
+			apiStage: "prod",
+			status:   provisioning.Success,
 		},
 		{
-			name:    "should provision an access request when there are no credentials on the app",
-			appName: "app-one",
-			apiID:   "abc-123",
-			status:  provisioning.Success,
-			noCreds: true,
+			name:     "should provision an access request when there are no credentials on the app",
+			appName:  "app-one",
+			apiID:    "abc-123",
+			apiStage: "prod",
+			status:   provisioning.Success,
+			noCreds:  true,
 		},
 		{
 			name:        "should provision an access request when the api is already linked to a credential",
 			appName:     "app-one",
 			apiID:       "abc-123",
+			apiStage:    "prod",
 			status:      provisioning.Success,
 			isApiLinked: true,
 		},
@@ -143,6 +149,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:       "should fail to deprovision an access request",
 			appName:    "app-one",
 			apiID:      "abc-123",
+			apiStage:   "prod",
 			status:     provisioning.Error,
 			addCredErr: fmt.Errorf("error"),
 		},
@@ -150,20 +157,23 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:      "should fail to deprovision when unable to retrieve the app",
 			appName:   "app-one",
 			apiID:     "abc-123",
+			apiStage:  "prod",
 			status:    provisioning.Error,
 			getAppErr: fmt.Errorf("error"),
 		},
 		{
-			name:    "should return an error when the apiID is not found",
-			appName: "app-one",
-			apiID:   "",
-			status:  provisioning.Error,
+			name:     "should return an error when the apiID is not found",
+			appName:  "app-one",
+			apiID:    "",
+			apiStage: "prod",
+			status:   provisioning.Error,
 		},
 		{
-			name:    "should return an error when the appName is not found",
-			appName: "",
-			apiID:   "abc-123",
-			status:  provisioning.Error,
+			name:     "should return an error when the appName is not found",
+			appName:  "",
+			apiID:    "abc-123",
+			apiStage: "prod",
+			status:   provisioning.Error,
 		},
 	}
 
@@ -194,7 +204,8 @@ func TestAccessRequestProvision(t *testing.T) {
 
 			mar := mock.MockAccessRequest{
 				InstanceDetails: map[string]interface{}{
-					defs.AttrExternalAPIID: tc.apiID,
+					defs.AttrExternalAPIID:    tc.apiID,
+					defs.AttrExternalAPIStage: tc.apiStage,
 				},
 				AppDetails: nil,
 				AppName:    tc.appName,
@@ -202,7 +213,11 @@ func TestAccessRequestProvision(t *testing.T) {
 
 			status, _ := p.AccessRequestProvision(&mar)
 			assert.Equal(t, tc.status.String(), status.GetStatus().String())
-			assert.Equal(t, 0, len(status.GetProperties()))
+			if tc.status == provisioning.Success {
+				assert.Equal(t, 1, len(status.GetProperties()))
+			} else {
+				assert.Equal(t, 0, len(status.GetProperties()))
+			}
 		})
 	}
 }
@@ -591,6 +606,7 @@ type mockClient struct {
 	rmAppErr     error
 	rmCredErr    error
 	enable       bool
+	existingProd bool
 	t            *testing.T
 }
 
@@ -669,11 +685,22 @@ func (m mockClient) UpdateAppCredential(appName, devID, key string, enable bool)
 }
 
 func (m mockClient) CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error) {
+	if !m.existingProd {
+		assert.Equal(m.t, m.productName, product.Name)
+		return &models.ApiProduct{
+			Name: m.productName,
+		}, nil
+	}
 	return nil, nil
 }
 
 func (m mockClient) GetProduct(productName string) (*models.ApiProduct, error) {
-	return nil, nil
+	if m.existingProd {
+		return &models.ApiProduct{
+			Name: m.productName,
+		}, nil
+	}
+	return nil, fmt.Errorf("error")
 }
 
 func (m mockClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error) {
@@ -713,6 +740,7 @@ func (m *mockCache) GetAccessRequestsByApp(managedAppName string) []*v1.Resource
 	assert.Equal(m.t, m.appName, managedAppName)
 	ar1 := management.NewAccessRequest("ar1", "env")
 	ar1.Spec.ManagedApplication = m.appName
+	util.SetAgentDetailsKey(ar1, prodNameRef, "product")
 	ri, _ := ar1.AsInstance()
 	return []*v1.ResourceInstance{ri}
 }
