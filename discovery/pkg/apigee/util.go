@@ -13,8 +13,8 @@ import (
 
 // isFullURL - returns true if the url arg is a fully qualified URL
 func isFullURL(urlString string) bool {
-	if _, err := url.ParseRequestURI(urlString); err != nil {
-		return true
+	if parsed, err := url.ParseRequestURI(urlString); err == nil {
+		return (parsed.Host != "" && parsed.Scheme != "")
 	}
 	return false
 }

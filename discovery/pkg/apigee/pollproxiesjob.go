@@ -35,7 +35,7 @@ type proxyClient interface {
 	GetAllProxies() (apigee.Proxies, error)
 	GetRevision(proxyName, revision string) (*models.ApiProxyRevision, error)
 	GetRevisionResourceFile(proxyName, revision, resourceType, resourceName string) ([]byte, error)
-	GetDeployments(apiname string) (*models.DeploymentDetails, error)
+	GetDeployments(apiName string) (*models.DeploymentDetails, error)
 	GetVirtualHost(envName, virtualHostName string) (*models.VirtualHost, error)
 	GetSpecFile(specPath string) ([]byte, error)
 	GetSpecFromURL(url string, options ...apigee.RequestOption) ([]byte, error)
@@ -52,21 +52,23 @@ type proxyCache interface {
 // job that will poll for any new portals on APIGEE Edge
 type pollProxiesJob struct {
 	jobs.Job
-	client     proxyClient
-	cache      proxyCache
-	firstRun   bool
-	logger     log.FieldLogger
-	specsReady JobFirstRunDone
-	pubLock    sync.Mutex
+	client      proxyClient
+	cache       proxyCache
+	firstRun    bool
+	logger      log.FieldLogger
+	specsReady  JobFirstRunDone
+	pubLock     sync.Mutex
+	publishFunc agent.PublishAPIFunc
 }
 
 func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirstRunDone) *pollProxiesJob {
 	job := &pollProxiesJob{
-		client:     client,
-		cache:      cache,
-		firstRun:   true,
-		specsReady: specsReady,
-		logger:     log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
+		client:      client,
+		cache:       cache,
+		firstRun:    true,
+		specsReady:  specsReady,
+		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
+		publishFunc: agent.PublishAPI,
 	}
 	return job
 }
@@ -344,10 +346,16 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	specPath := getStringFromContext(ctx, specPathField)
 	// get the spec to build the service body
 	spec := []byte{}
+	var err error
 	if isFullURL(specPath) {
-		spec, _ = j.client.GetSpecFromURL(specPath)
+		spec, err = j.client.GetSpecFromURL(specPath)
 	} else if specPath != "" {
-		spec, _ = j.client.GetSpecFile(specPath)
+		spec, err = j.client.GetSpecFile(specPath)
+	}
+
+	// if we should have a spec and can not get it then fall out
+	if err != nil {
+		return nil, err
 	}
 
 	if len(spec) == 0 {
@@ -387,7 +395,7 @@ func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashS
 	serviceBody.ServiceAgentDetails[fmt.Sprintf("%s-hash", envName)] = hashString
 	serviceBody.InstanceAgentDetails[cacheKeyAttribute] = cacheKey
 
-	err := agent.PublishAPI(serviceBody)
+	err := j.publishFunc(serviceBody)
 	if err == nil {
 		log.Infof("Published API %s to AMPLIFY Central", serviceBody.NameToPush)
 	}
