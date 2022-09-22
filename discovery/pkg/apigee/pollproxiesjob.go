@@ -241,6 +241,7 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	envName := getStringFromContext(ctx, envNameField)
+	proxyName := getStringFromContext(ctx, proxyNameField)
 
 	// attempt to get the spec from the endpoints the revision is hosted on
 	allURLs := []string{}
@@ -251,7 +252,7 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 			logger.WithError(err).Debug("could not get virtual host details")
 			continue
 		}
-		urls := urlsFromVirtualHost(virtualHost)
+		urls := urlsFromVirtualHost(virtualHost, proxyName)
 		allURLs = append(allURLs, urls...)
 	}
 
@@ -321,8 +322,8 @@ func (j *pollProxiesJob) publish(ctx context.Context) {
 	cacheKey := createProxyCacheKey(getStringFromContext(ctx, proxyNameField), envName)
 
 	// Check DiscoveryCache for API
-	j.pubLock.Lock() // only publish one at a time
-	defer j.pubLock.Unlock()
+	// j.pubLock.Lock() // only publish one at a time
+	// defer j.pubLock.Unlock()
 	value := agent.GetAttributeOnPublishedAPIByID(revision.Name, fmt.Sprintf("%s-hash", envName))
 
 	if !agent.IsAPIPublishedByID(revision.Name) {
