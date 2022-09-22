@@ -36,8 +36,8 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/Axway/agent-sdk v1.1.34-0.20220914192940-c6158589fb4f h1:5NeyMGvkCKL0I63QxJhZkWaBLyoP31WnGO9LoKbxVbs=
-github.com/Axway/agent-sdk v1.1.34-0.20220914192940-c6158589fb4f/go.mod h1:dj9d7QcFV6kAh4I2dApyCVi/LxT9hVVAD/Bmh15rn4g=
+github.com/Axway/agent-sdk v1.1.35-0.20220921230317-6059537fee70 h1:/f78NIx5xup87ft8waF2NiWvZnYTSKN707pPqhKb0LM=
+github.com/Axway/agent-sdk v1.1.35-0.20220921230317-6059537fee70/go.mod h1:dj9d7QcFV6kAh4I2dApyCVi/LxT9hVVAD/Bmh15rn4g=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=
 github.com/Azure/go-autorest v12.2.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
 github.com/Azure/go-autorest/autorest v0.11.12/go.mod h1:eipySxLmqSyC5s5k1CLupqet0PSENBEDP93LQ9a8QYw=
