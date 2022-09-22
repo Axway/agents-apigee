@@ -278,7 +278,7 @@ func (p provisioner) CredentialDeprovision(req prov.CredentialRequest) prov.Requ
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
 		log.Trace("application had previously been removed")
-		ps.Success()
+		return ps.Success()
 	}
 
 	credKey := ""
