@@ -17,13 +17,13 @@ The following make targets are available
 
 ### Build (Docker)
 
-```
+```shell
 make docker-build
 ```
 
 ### Run (Docker)
 
-```
+```shell
 docker run --env-file env_vars -v `pwd`/keys:/keys apigee-discovery-agent:latest
 ```
 
@@ -48,7 +48,7 @@ go build -tags static_all \
 ./apigee_discovery_agent.exe --envFile env_vars
 ```
 
-## Discovery agent proxy discovery
+## Proxy discovery
 
 * Find all specs
 * Find all Deployed API Proxies
@@ -63,7 +63,7 @@ go build -tags static_all \
     * If spec was not found create as unstructured  
     * Attach appropriate Credential Request Definition based on policy in proxy
 
-## Discovery agent provisioning process
+## Provisioning process
 
 * Managed Application
   * Creates a new App on Apigee under the configured developer
@@ -73,7 +73,33 @@ go build -tags static_all \
 * Credential
   * Creates a new Credential on the App and associates all Access Requests products to it
 
-## Discovery agent variables
+### Quota enforcement
+
+The provisioning process will set quota values on the created Product when handling Access Requests. In order for Apigee to enforce quota based on the values set in teh Product a Quota Enforcement Policy needs to be set on the deployed Proxy.
+
+Here is a sample Quota policy that may be added to the desired Proxies.
+
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Quota async="false" continueOnError="false" enabled="true" name="impose-quota">
+    <DisplayName>Impose Quota</DisplayName>
+    <Synchronous>true</Synchronous>
+    <Distributed>true</Distributed>
+    <Identifier ref="developer.app.name"/>
+    <Allow countRef="verifyapikey.Verify-API-Key-1.apiproduct.developer.quota.limit"/>
+    <Interval ref="verifyapikey.Verify-API-Key-1.apiproduct.developer.quota.interval "/>
+    <TimeUnit ref="verifyapikey.Verify-API-Key-1.apiproduct.developer.quota.timeunit"/>
+</Quota>
+```
+
+* Display Name - the name of the policy
+* Distributed and Synchronous - set to true to ensure the counter is updated and enforced in a distributed and synchronous manner. Setting to false may allow extra calls.
+* Identifier - how the proxy will count usage across multiple apps, so each get their own quota
+* Allow - in this case using the API Key policy gets the quota limit from the product definition
+* Interval - in this case using the API Key policy gets the quota interval from the product definition
+* TimeUnit - in this case using the API Key policy gets the quota time unit from the product definition
+
+## Agent variables
 
 | Environment Variable  | Description                                               | Default (if applicable)           |
 | --------------------- | --------------------------------------------------------- | --------------------------------- |
