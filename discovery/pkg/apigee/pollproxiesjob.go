@@ -322,23 +322,26 @@ func (j *pollProxiesJob) publish(ctx context.Context) {
 	cacheKey := createProxyCacheKey(getStringFromContext(ctx, proxyNameField), envName)
 
 	// Check DiscoveryCache for API
-	// j.pubLock.Lock() // only publish one at a time
-	// defer j.pubLock.Unlock()
+	j.pubLock.Lock() // only publish one at a time
+	defer j.pubLock.Unlock()
 	value := agent.GetAttributeOnPublishedAPIByID(revision.Name, fmt.Sprintf("%s-hash", envName))
 
+	err = nil
 	if !agent.IsAPIPublishedByID(revision.Name) {
 		// call new API
-		j.publishAPI(*serviceBody, envName, hashString, cacheKey)
+		err = j.publishAPI(*serviceBody, envName, hashString, cacheKey)
 	} else if value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", revision.Name)
 		serviceBody.APIUpdateSeverity = "Major"
 		serviceBody.SpecDefinition = []byte{}
 		log.Tracef("%+v", serviceBody)
-		j.publishAPI(*serviceBody, envName, hashString, cacheKey)
+		err = j.publishAPI(*serviceBody, envName, hashString, cacheKey)
 	}
 
-	j.cache.AddPublishedProxyToCache(cacheKey, serviceBody)
+	if err == nil {
+		j.cache.AddPublishedProxyToCache(cacheKey, serviceBody)
+	}
 }
 
 func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBody, error) {
@@ -390,7 +393,7 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	return &sb, err
 }
 
-func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString, cacheKey string) {
+func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString, cacheKey string) error {
 	// Add a few more attributes to the service body
 	serviceBody.ServiceAttributes["GatewayType"] = gatewayType
 	serviceBody.ServiceAgentDetails[fmt.Sprintf("%s-hash", envName)] = hashString
@@ -399,5 +402,7 @@ func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashS
 	err := j.publishFunc(serviceBody)
 	if err == nil {
 		log.Infof("Published API %s to AMPLIFY Central", serviceBody.NameToPush)
+		return err
 	}
+	return nil
 }

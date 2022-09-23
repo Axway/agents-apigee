@@ -111,12 +111,6 @@ func (a *Agent) apiValidator(proxyName, envName string) bool {
 	return err == nil
 }
 
-// shouldPushAPI - callback used determine if the Product should be pushed to Central or not
-func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
-	// Evaluate the filter condition
-	return a.discoveryFilter.Evaluate(attributes)
-}
-
 func (a *Agent) registerValidator() {
 	agent.RegisterAPIValidator(a.apiValidator)
 }
