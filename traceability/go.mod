@@ -7,7 +7,7 @@ go 1.18
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.32
+	github.com/Axway/agent-sdk v1.1.35-0.20220923023651-3b9feb426670
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/elastic/beats/v7 v7.17.5
 	github.com/stretchr/testify v1.8.0

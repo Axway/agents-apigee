@@ -3,10 +3,14 @@ package apigee
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	v1 "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/api/v1"
+	management "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/management/v1alpha1"
 	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning/mock"
+	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 	"github.com/stretchr/testify/assert"
@@ -72,7 +76,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			app := newApp(tc.apiID)
+			app := newApp(tc.apiID, tc.appName)
 
 			p := NewProvisioner(&mockClient{
 				t:           t,
@@ -83,7 +87,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 				appName:     tc.appName,
 				key:         app.Credentials[0].ConsumerKey,
 				productName: tc.apiID,
-			})
+			}, 30, &mockCache{t: t})
 
 			if tc.missingCred {
 				app.Credentials = nil
@@ -122,6 +126,20 @@ func TestAccessRequestProvision(t *testing.T) {
 			status:  provisioning.Success,
 		},
 		{
+			name:    "should provision an access request when there are no credentials on the app",
+			appName: "app-one",
+			apiID:   "abc-123",
+			status:  provisioning.Success,
+			noCreds: true,
+		},
+		{
+			name:        "should provision an access request when the api is already linked to a credential",
+			appName:     "app-one",
+			apiID:       "abc-123",
+			status:      provisioning.Success,
+			isApiLinked: true,
+		},
+		{
 			name:       "should fail to deprovision an access request",
 			appName:    "app-one",
 			apiID:      "abc-123",
@@ -147,20 +165,6 @@ func TestAccessRequestProvision(t *testing.T) {
 			apiID:   "abc-123",
 			status:  provisioning.Error,
 		},
-		{
-			name:    "should return an error when there are no credentials on the app",
-			appName: "app-one",
-			apiID:   "abc-123",
-			status:  provisioning.Error,
-			noCreds: true,
-		},
-		{
-			name:        "should return an error when the api is already linked to a credential",
-			appName:     "app-one",
-			apiID:       "abc-123",
-			status:      provisioning.Error,
-			isApiLinked: true,
-		},
 	}
 
 	for _, tc := range tests {
@@ -169,7 +173,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			if tc.isApiLinked {
 				apiID = tc.apiID
 			}
-			app := newApp(apiID)
+			app := newApp(apiID, tc.appName)
 
 			key := app.Credentials[0].ConsumerKey
 
@@ -186,7 +190,7 @@ func TestAccessRequestProvision(t *testing.T) {
 				getAppErr:   tc.getAppErr,
 				productName: tc.apiID,
 				t:           t,
-			})
+			}, 30, &mockCache{t: t})
 
 			mar := mock.MockAccessRequest{
 				InstanceDetails: map[string]interface{}{
@@ -240,16 +244,17 @@ func TestApplicationRequestDeprovision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			app := newApp(tc.apiID)
+			app := newApp(tc.apiID, tc.appName)
 
 			p := NewProvisioner(&mockClient{
 				app:         app,
 				appName:     tc.appName,
+				key:         "key",
 				devID:       "dev-id-123",
 				productName: tc.apiID,
 				t:           t,
 				rmAppErr:    tc.rmAppErr,
-			})
+			}, 30, &mockCache{t: t})
 
 			mar := mock.MockApplicationRequest{
 				AppName:  tc.appName,
@@ -288,7 +293,7 @@ func TestApplicationRequestProvision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			app := newApp(tc.apiID)
+			app := newApp(tc.apiID, tc.appName)
 
 			p := NewProvisioner(&mockClient{
 				app:          app,
@@ -297,7 +302,7 @@ func TestApplicationRequestProvision(t *testing.T) {
 				productName:  tc.apiID,
 				t:            t,
 				createAppErr: tc.createAppErr,
-			})
+			}, 30, &mockCache{t: t})
 
 			mar := mock.MockApplicationRequest{
 				AppName:  tc.appName,
@@ -312,11 +317,83 @@ func TestApplicationRequestProvision(t *testing.T) {
 }
 
 func TestCredentialDeprovision(t *testing.T) {
-	p := NewProvisioner(&mockClient{})
-	mcr := mock.MockCredentialRequest{}
-	status := p.CredentialDeprovision(mcr)
-	assert.Equal(t, provisioning.Success, status.GetStatus())
-	assert.NotEmpty(t, status.GetMessage())
+	tests := []struct {
+		name      string
+		status    provisioning.Status
+		appName   string
+		apiID     string
+		getAppErr error
+		credType  string
+	}{
+		{
+			name:     "should deprovision an api-key credential",
+			status:   provisioning.Success,
+			appName:  "app-one",
+			apiID:    "api-123",
+			credType: "api-key",
+		},
+		{
+			name:     "should deprovision an oauth credential",
+			status:   provisioning.Success,
+			appName:  "app-one",
+			apiID:    "api-123",
+			credType: "oauth",
+		},
+		{
+			name:      "should return success when unable to retrieve the app",
+			status:    provisioning.Success,
+			appName:   "app-one",
+			apiID:     "api-123",
+			getAppErr: fmt.Errorf("err"),
+			credType:  "oauth",
+		},
+		{
+			name:    "should return success when credential not on app",
+			status:  provisioning.Success,
+			appName: "app-one",
+			apiID:   "api-123",
+		},
+		{
+			name:     "should return an error when the app name is not found",
+			status:   provisioning.Error,
+			appName:  "",
+			apiID:    "api-123",
+			credType: "oauth",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			app := newApp(tc.apiID, tc.appName)
+
+			key := "consumer-key"
+			if tc.credType == "" {
+				key = ""
+			}
+			p := NewProvisioner(&mockClient{
+				app:         app,
+				appName:     tc.appName,
+				key:         key,
+				devID:       "dev-id-123",
+				productName: tc.apiID,
+				t:           t,
+				getAppErr:   tc.getAppErr,
+			}, 30, &mockCache{t: t, appName: tc.appName})
+
+			thisHash, _ := util.ComputeHash(key)
+			mcr := mock.MockCredentialRequest{
+				AppName:     tc.appName,
+				CredDefName: tc.credType,
+				Details: map[string]string{
+					appRefName: tc.appName,
+					credRefKey: fmt.Sprintf("%v", thisHash),
+				},
+			}
+
+			status := p.CredentialDeprovision(&mcr)
+			assert.Equal(t, tc.status.String(), status.GetStatus().String())
+		})
+	}
 }
 
 func TestCredentialProvision(t *testing.T) {
@@ -361,7 +438,7 @@ func TestCredentialProvision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			app := newApp(tc.apiID)
+			app := newApp(tc.apiID, tc.appName)
 
 			p := NewProvisioner(&mockClient{
 				app:         app,
@@ -370,7 +447,7 @@ func TestCredentialProvision(t *testing.T) {
 				productName: tc.apiID,
 				t:           t,
 				getAppErr:   tc.getAppErr,
-			})
+			}, 30, &mockCache{t: t, appName: tc.appName})
 
 			mcr := mock.MockCredentialRequest{
 				AppName:     tc.appName,
@@ -380,8 +457,10 @@ func TestCredentialProvision(t *testing.T) {
 			status, cred := p.CredentialProvision(&mcr)
 			if tc.status == provisioning.Error {
 				assert.Nil(t, cred)
+				assert.Equal(t, 0, len(status.GetProperties()))
 			} else {
 				assert.NotNil(t, cred)
+				assert.Equal(t, 2, len(status.GetProperties()))
 				if tc.credType == "oauth" {
 					assert.Contains(t, cred.GetData(), provisioning.OauthClientID)
 					assert.Contains(t, cred.GetData(), provisioning.OauthClientSecret)
@@ -393,7 +472,109 @@ func TestCredentialProvision(t *testing.T) {
 				}
 			}
 			assert.Equal(t, tc.status.String(), status.GetStatus().String())
-			assert.Equal(t, 0, len(status.GetProperties()))
+		})
+	}
+}
+
+func TestCredentialUpdate(t *testing.T) {
+	tests := []struct {
+		name           string
+		status         provisioning.Status
+		appName        string
+		apiID          string
+		getAppErr      error
+		credType       string
+		skipAppDetail  bool
+		skipCredDetail bool
+		action         provisioning.CredentialAction
+	}{
+		{
+			name:     "should revoke credential",
+			status:   provisioning.Success,
+			appName:  "app-one",
+			apiID:    "api-123",
+			credType: "api-key",
+			action:   provisioning.Suspend,
+		},
+		{
+			name:     "should enable credential",
+			status:   provisioning.Success,
+			appName:  "app-one",
+			apiID:    "api-123",
+			credType: "api-key",
+			action:   provisioning.Enable,
+		},
+		{
+			name:          "should return an error when unable to get appName detail",
+			status:        provisioning.Error,
+			appName:       "app-one",
+			skipAppDetail: true,
+			apiID:         "api-123",
+		},
+		{
+			name:           "should return an error when unable to get cred ref detail",
+			status:         provisioning.Error,
+			appName:        "app-one",
+			skipCredDetail: true,
+			apiID:          "api-123",
+		},
+		{
+			name:      "should return an error when unable to retrieve the app",
+			status:    provisioning.Error,
+			appName:   "app-one",
+			apiID:     "api-123",
+			getAppErr: fmt.Errorf("err"),
+		},
+		{
+			name:     "should return an error when credential action unknown",
+			status:   provisioning.Error,
+			appName:  "app-one",
+			apiID:    "api-123",
+			credType: "api-key",
+			action:   provisioning.Rotate,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			app := newApp(tc.apiID, tc.appName)
+
+			key := "consumer-key"
+			if tc.credType == "" {
+				key = ""
+			}
+			p := NewProvisioner(&mockClient{
+				app:         app,
+				appName:     tc.appName,
+				key:         key,
+				devID:       "dev-id-123",
+				productName: tc.apiID,
+				t:           t,
+				getAppErr:   tc.getAppErr,
+				enable:      tc.action == provisioning.Enable,
+			}, 30, &mockCache{t: t, appName: tc.appName})
+
+			thisHash, _ := util.ComputeHash(key)
+			details := map[string]string{
+				appRefName: tc.appName,
+				credRefKey: fmt.Sprintf("%v", thisHash),
+			}
+			if tc.skipAppDetail {
+				delete(details, appRefName)
+			}
+			if tc.skipCredDetail {
+				delete(details, credRefKey)
+			}
+
+			mcr := mock.MockCredentialRequest{
+				AppName:     tc.appName,
+				CredDefName: tc.credType,
+				Details:     details,
+				Action:      tc.action,
+			}
+
+			status, _ := p.CredentialUpdate(&mcr)
+			assert.Equal(t, tc.status.String(), status.GetStatus().String())
 		})
 	}
 }
@@ -409,13 +590,21 @@ type mockClient struct {
 	productName  string
 	rmAppErr     error
 	rmCredErr    error
+	enable       bool
 	t            *testing.T
 }
 
 func (m mockClient) CreateDeveloperApp(newApp models.DeveloperApp) (*models.DeveloperApp, error) {
 	assert.Equal(m.t, m.appName, newApp.Name)
 	assert.Equal(m.t, m.devID, newApp.DeveloperId)
-	return nil, m.createAppErr
+	return &models.DeveloperApp{
+		Credentials: []models.DeveloperAppCredentials{
+			{
+				ConsumerKey:    m.key,
+				ConsumerSecret: "secret",
+			},
+		},
+	}, m.createAppErr
 }
 
 func (m mockClient) RemoveDeveloperApp(appName, developerID string) error {
@@ -440,6 +629,23 @@ func (m mockClient) GetAppCredential(appName, devID, key string) (*models.Develo
 	return nil, nil
 }
 
+func (m mockClient) RemoveAppCredential(appName, devID, key string) error {
+	assert.Equal(m.t, m.appName, appName)
+	assert.Equal(m.t, m.devID, devID)
+	assert.Equal(m.t, m.key, key)
+	return nil
+}
+
+func (m mockClient) CreateAppCredential(appName, devID string, products []string, expDays int) (*models.DeveloperApp, error) {
+	return &models.DeveloperApp{
+		Credentials: []models.DeveloperAppCredentials{
+			{
+				ExpiresAt: int(time.Now().Add(time.Duration(int64(time.Hour) * int64(24*expDays))).UnixMilli()),
+			},
+		},
+	}, nil
+}
+
 func (m mockClient) AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
 	assert.Equal(m.t, m.appName, appName)
 	assert.Equal(m.t, m.devID, devID)
@@ -455,7 +661,14 @@ func (m mockClient) RemoveProductCredential(appName, devID, key, productName str
 	return m.rmCredErr
 }
 
-func newApp(apiID string) *models.DeveloperApp {
+func (m mockClient) UpdateAppCredential(appName, devID, key string, enable bool) error {
+	assert.Equal(m.t, m.appName, appName)
+	assert.Equal(m.t, m.devID, devID)
+	assert.Equal(m.t, m.enable, enable)
+	return nil
+}
+
+func newApp(apiID string, appName string) *models.DeveloperApp {
 	cred := &models.DeveloperApp{
 		Credentials: []models.DeveloperAppCredentials{
 			{
@@ -464,6 +677,7 @@ func newApp(apiID string) *models.DeveloperApp {
 				ConsumerSecret: "consumer-secret",
 			},
 		},
+		Name: appName,
 	}
 
 	if apiID != "" {
@@ -475,4 +689,26 @@ func newApp(apiID string) *models.DeveloperApp {
 	}
 
 	return cred
+}
+
+type mockCache struct {
+	t       *testing.T
+	appName string
+	apiName string
+}
+
+func (m *mockCache) GetAccessRequestsByApp(managedAppName string) []*v1.ResourceInstance {
+	assert.Equal(m.t, m.appName, managedAppName)
+	ar1 := management.NewAccessRequest("ar1", "env")
+	ar1.Spec.ManagedApplication = m.appName
+	ri, _ := ar1.AsInstance()
+	return []*v1.ResourceInstance{ri}
+}
+
+func (m *mockCache) GetAPIServiceInstanceByName(apiName string) (*v1.ResourceInstance, error) {
+	assert.Equal(m.t, m.apiName, apiName)
+	apisi := management.NewAPIServiceInstance(apiName, "env")
+	util.SetAgentDetailsKey(apisi, defs.AttrExternalAPIID, "apiName")
+	ri, _ := apisi.AsInstance()
+	return ri, nil
 }

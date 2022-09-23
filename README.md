@@ -46,6 +46,7 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 
 * Create an Apigee account
 * Note the username and password used as the agents will need this to run
+* Add a developer that will be the owner of all applications created by the agent
 
 ## Setup agent Environment Variables
 
@@ -63,6 +64,7 @@ CENTRAL_AUTH_PUBLICKEY=/keys/public_key.pem              # path to the key file 
 APIGEE_ORGANIZATION=<Apigee Organization>                # created in Prepare Apigee step
 APIGEE_AUTH_USERNAME=<Apigee Username>                   # created in Prepare Apigee step
 APIGEE_AUTH_PASSWORD=<Apigee Password>                   # created in Prepare Apigee step
+APIGEE_DEVELOPERID=dev@email.address                     # created in Prepare Apigee step
 
 LOG_LEVEL=info
 LOG_OUTPUT=stdout

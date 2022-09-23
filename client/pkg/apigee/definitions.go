@@ -4,11 +4,6 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
-const (
-	defaultSubscriptionSchema = "apigee-subscription-schema"
-	appNameKey                = "appName"
-)
-
 // grantType values
 type grantType int
 
@@ -79,4 +74,6 @@ type PortalData struct {
 type CredentialProvisionRequest struct {
 	ApiProducts []string           `json:"apiProducts"`
 	Attributes  []models.Attribute `json:"attributes,omitempty"`
+	// The number of milliseconds the key will live
+	KeyExpiresIn int `json:"keyExpiresIn,omitempty"`
 }
