@@ -77,3 +77,28 @@ type CredentialProvisionRequest struct {
 	// The number of milliseconds the key will live
 	KeyExpiresIn int `json:"keyExpiresIn,omitempty"`
 }
+
+type SpecDetails struct {
+	ID          string        `json:"id"`
+	Kind        string        `json:"kind"`
+	Name        string        `json:"name"`
+	Created     string        `json:"created"`
+	Creator     string        `json:"creator"`
+	Modified    string        `json:"modified"`
+	IsTrashed   bool          `json:"isTrashed"`
+	Permissions *string       `json:"permissions"`
+	SelfLink    string        `json:"self"`
+	ContentLink string        `json:"content"`
+	Contents    []SpecDetails `json:"contents"`
+	FolderLink  string        `json:"folder"`
+	FolderID    string        `json:"folderId"`
+	Body        *string       `json:"body"`
+}
+
+// VirtualHosts
+type VirtualHosts []string
+
+type PolicyDetail struct {
+	models.Policy
+	PolicyType string `json:"policyType"`
+}

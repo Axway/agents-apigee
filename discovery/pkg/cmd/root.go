@@ -31,7 +31,6 @@ func init() {
 	config.AddProperties(rootProps)
 
 	migrate.MatchAttrPattern("-hash")
-	migrate.MatchAttr("PortalCatalogID", "PortalID")
 }
 
 // Callback that agent will call to process the execution

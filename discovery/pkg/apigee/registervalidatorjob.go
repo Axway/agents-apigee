@@ -1,49 +1,25 @@
 package apigee
 
 import (
-	"sync"
-
 	"github.com/Axway/agent-sdk/pkg/jobs"
 )
 
 type registerAPIValidatorJob struct {
 	jobs.Job
-	waitGroup         sync.WaitGroup
-	wgActionChan      chan interface{}
-	topicID           string
+	proxiesReady      JobFirstRunDone
 	registerValidator func()
 }
 
-func newRegisterAPIValidatorJob(registerValidator func()) *registerAPIValidatorJob {
-	wgActionChan, id, _ := subscribeToTopic(apiValidatorWait)
+func newRegisterAPIValidatorJob(proxiesReady JobFirstRunDone, registerValidator func()) *registerAPIValidatorJob {
 	job := &registerAPIValidatorJob{
-		waitGroup:         sync.WaitGroup{},
-		wgActionChan:      wgActionChan,
-		topicID:           id,
+		proxiesReady:      proxiesReady,
 		registerValidator: registerValidator,
 	}
-	go job.acceptActions()
 	return job
 }
 
-func (j *registerAPIValidatorJob) acceptActions() {
-	for {
-		select {
-		case action, ok := <-j.wgActionChan:
-			if !ok {
-				return
-			}
-			if action.(wgAction) == wgAdd {
-				j.waitGroup.Add(1)
-			} else {
-				j.waitGroup.Done()
-			}
-		}
-	}
-}
-
 func (j *registerAPIValidatorJob) Ready() bool {
-	return true
+	return j.proxiesReady()
 }
 
 func (j *registerAPIValidatorJob) Status() error {
@@ -51,8 +27,6 @@ func (j *registerAPIValidatorJob) Status() error {
 }
 
 func (j *registerAPIValidatorJob) Execute() error {
-	j.waitGroup.Wait()
 	j.registerValidator()
-	unsubscribeFromTopic(apiValidatorWait, j.topicID)
 	return nil
 }

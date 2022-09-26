@@ -6,7 +6,6 @@ import (
 	"time"
 
 	v1 "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/api/v1"
-	management "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/management/v1alpha1"
 	defs "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	prov "github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/util"
@@ -16,8 +15,9 @@ import (
 )
 
 const (
-	credRefKey = "credentialReference"
-	appRefName = "appName"
+	credRefKey  = "credentialReference"
+	appRefName  = "appName"
+	prodNameRef = "product-name"
 )
 
 type provisioner struct {
@@ -42,6 +42,9 @@ type client interface {
 	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
 	RemoveProductCredential(appName, devID, key, productName string) error
 	UpdateAppCredential(appName, devID, key string, enable bool) error
+	CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error)
+	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
+	GetProduct(productName string) (*models.ApiProduct, error)
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
@@ -57,6 +60,8 @@ func NewProvisioner(client client, credExpDays int, cacheMan cacheManager) prov.
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+
+	// remove link between api product and app
 
 	log.Infof("deprovisioning access request for api %s from app %s ", apiID, req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
@@ -108,6 +113,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.RequestStatus, prov.AccessData) {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+	stage := util.ToString(instDetails[defs.AttrExternalAPIStage])
 
 	log.Infof("processing access request for api %s to app %s", apiID, req.GetApplicationName())
 	ps := prov.NewRequestStatusBuilder()
@@ -117,9 +123,63 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID)), nil
 	}
 
+	if stage == "" {
+		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIStage)), nil
+	}
+
 	appName := req.GetApplicationName()
 	if appName == "" {
 		return failed(ps, fmt.Errorf("application name not found")), nil
+	}
+
+	// get plan name from access request
+	// get api product, or create new one
+
+	quota := ""
+	quotaInterval := "1"
+	quotaTimeUnit := ""
+
+	apiProductName := apiID
+	if q := req.GetQuota(); q != nil {
+		quota = fmt.Sprintf("%d", q.GetLimit())
+
+		switch q.GetInterval() {
+		case prov.Daily:
+			quotaTimeUnit = "day"
+		case prov.Weekly:
+			quotaTimeUnit = "day"
+			quotaInterval = "7"
+		case prov.Monthly:
+			quotaTimeUnit = "month"
+		case prov.Annually:
+			quotaTimeUnit = "month"
+			quotaInterval = "12"
+		default:
+			return failed(ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
+		}
+
+		apiProductName = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
+	}
+
+	product, err := p.client.GetProduct(apiProductName)
+	// only create a product if one is not found
+	if err != nil {
+		product = &models.ApiProduct{
+			ApiResources:  []string{},
+			ApprovalType:  "auto",
+			DisplayName:   apiProductName,
+			Environments:  []string{stage},
+			Name:          apiProductName,
+			Proxies:       []string{apiID},
+			Quota:         quota,
+			QuotaInterval: quotaInterval,
+			QuotaTimeUnit: quotaTimeUnit,
+		}
+		log.Infof("creating api product %s for api %s", product.Name, apiID)
+		product, err = p.client.CreateAPIProduct(product)
+		if err != nil {
+			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
+		}
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
@@ -129,7 +189,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	if len(app.Credentials) == 0 {
 		// no credentials to add access too
-		return ps.Success(), nil
+		return ps.AddProperty(prodNameRef, product.Name).Success(), nil
 	}
 
 	// add api to credentials that are not associated with it
@@ -145,19 +205,19 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		// add the product to this credential
 		if addProd {
 			cpr := apigee.CredentialProvisionRequest{
-				ApiProducts: []string{apiID},
+				ApiProducts: []string{apiProductName},
 			}
 
 			_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
 			if err != nil {
-				return failed(ps, fmt.Errorf("error: %s", err)), nil
+				return failed(ps, fmt.Errorf("failed to add api product %s to credential: %s", apiProductName, err)), nil
 			}
 		}
 	}
 
 	log.Infof("granted access for api %s to app %s", apiID, req.GetApplicationName())
 
-	return ps.Success(), nil
+	return ps.AddProperty(prodNameRef, product.Name).Success(), nil
 }
 
 // ApplicationRequestDeprovision - removes an app from apigee
@@ -218,7 +278,7 @@ func (p provisioner) CredentialDeprovision(req prov.CredentialRequest) prov.Requ
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
 		log.Trace("application had previously been removed")
-		ps.Success()
+		return ps.Success()
 	}
 
 	credKey := ""
@@ -265,12 +325,9 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 	accReqs := p.cacheManager.GetAccessRequestsByApp(appName)
 	products := []string{}
 	for _, arInst := range accReqs {
-		accReq := management.NewAccessRequest("", "")
-		accReq.FromInstance(arInst)
-		inst, _ := p.cacheManager.GetAPIServiceInstanceByName(accReq.Spec.ApiServiceInstance)
-		apiID, err := util.GetAgentDetailsValue(inst, defs.AttrExternalAPIID)
-		if err == nil && apiID != "" {
-			products = append(products, apiID)
+		productName, err := util.GetAgentDetailsValue(arInst, prodNameRef)
+		if err == nil && productName != "" {
+			products = append(products, productName)
 		}
 	}
 	if len(products) == 0 {

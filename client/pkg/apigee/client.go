@@ -1,6 +1,7 @@
 package apigee
 
 import (
+	"fmt"
 	"time"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
@@ -17,6 +18,8 @@ type ApigeeClient struct {
 	developerID string
 	envToURLs   map[string][]string
 	isReady     bool
+	orgURL      string
+	dataURL     string
 }
 
 // NewClient - Creates a new Gateway Client
@@ -27,6 +30,8 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 		envToURLs:   make(map[string][]string),
 		isReady:     false,
 		developerID: apigeeCfg.DeveloperID,
+		orgURL:      fmt.Sprintf("%s/%s/organizations/%s", apigeeCfg.URL, apigeeCfg.APIVersion, apigeeCfg.Organization),
+		dataURL:     apigeeCfg.DataURL,
 	}
 
 	// create the auth job and register it

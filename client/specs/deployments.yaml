@@ -1,0 +1,1187 @@
+openapi: 3.0.0
+servers:
+- url: https://api.enterprise.apigee.com/v1
+info:
+  title: Deployments
+  description: >-
+    Manage API proxy and shared flow deployments.
+  version: '1.0'
+security:
+- Basic: []
+- OAuth: []
+paths:
+  "/organizations/{org_name}/apis/{api_name}/deployments":
+    get:
+      tags: ["Deployments", "API Proxy"]
+      summary: Get API proxy deployment details
+      description: >-
+        Gets details for all deployments of the API proxy across all environments (test, prod, and so on).
+      operationId: 'getAPIProxyDeploymentDetails'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/api_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentDetails'
+              example:
+                environment:
+                - name: test
+                  revision:
+                  - configuration:
+                      basePath: "/"
+                      steps: []
+                    name: '1'
+                    server: []
+                    state: deployed
+                name: hotels
+                organization: myorg
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/sharedflows/{sharedflow_name}/deployments":
+    get:
+      tags: ["Deployments", "Shared Flows"]
+      summary: Get shared flow deployment details
+      description: >-
+        Gets details for all deployments of the shared flows across all environments (test, prod, and so on).
+      operationId: 'getSharedFlowDeploymentDetails'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/sharedflow_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentDetails'
+              example:
+                environment:
+                - name: test
+                  revision:
+                  - configuration:
+                      basePath: "/"
+                      steps: []
+                    name: '1'
+                    server: []
+                    state: deployed
+                name: mySharedFlow
+                organization: myorg
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/apis/{api_name}/revisions/{revision_number}/deployments":
+    post:
+      tags: ["Deployments"]
+      summary: Force undeployment of API proxy
+      description: >-
+        Forces the undeployment of an API proxy. This may be necessary if the API proxy is partially deployed and you need to undeploy and then redeploy it.
+        
+
+        Because multiple revisions of the same API proxy can be deployed in the same environment if the base paths are different, you must specify the revision number of the API proxy.
+
+
+        See also <a href="/docs/deployments/1/routes/organizations/%7Borg_name%7D/environments/%7Benv_name%7D/apis/%7Bapi_name%7D/revisions/%7Brevision_number%7D/deployments/delete">Undeploy an API proxy revision</a>.
+      operationId: 'forceAPIProxyUndeploy'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/api_name'
+      - $ref: '#/components/parameters/revision_number'
+      - $ref: '#/components/parameters/action'
+      - $ref: '#/components/parameters/env'
+      - $ref: '#/components/parameters/force'
+      - $ref: '#/components/parameters/content-type'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyRevisionDeploymentDetailsEnv'
+              example:
+                aPIProxy: restaurantproxy
+                configuration:
+                  basePath: "/"
+                  steps: []
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                state: deployed
+        '400':
+          description: Bad request
+    get:
+      tags: ["Deployments"]
+      summary: Get API proxy revision deployments
+      description: >-
+        Gets deployment details for a specific revision of an API proxy.
+        
+
+        **Note:** On Edge for Private Cloud, you can troubleshoot deployment status on a router or message processor (MP) by noting its ID and checking your server logs.
+        You may need to restart the router or MP that has the deployment issue.
+      operationId: 'getAPIProxyRevisionDeployments'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/api_name'
+      - $ref: '#/components/parameters/revision_number'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyRevisionDeployments'
+              example:
+                aPIProxy: hotels
+                environment:
+                - configuration:
+                    basePath: "/"
+                    steps: []
+                  name: test
+                  server: []
+                  state: deployed
+                name: '1'
+                organization: myorg
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/deployments":
+    get:
+      tags: ["Deployments"]
+      summary: Get all API proxy deployments for all environments in an organization
+      description: >-
+        Lists all API proxies that are deployed for all environments in an organization.
+      operationId: 'getDeployments'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/includeServerStatus'
+      - $ref: '#/components/parameters/includeApiConfig'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyDeploymentsOrg'
+              example:
+                environment:
+                - aPIProxy:
+                  - name: weather
+                    revision:
+                    - configuration:
+                        basePath: "/"
+                        steps: []
+                      name: '5'
+                      server: []
+                      state: deployed
+                - aPIProxy:
+                  - name: hotels
+                    revision:
+                    - configuration:
+                        basePath: "/"
+                        steps: []
+                      name: '1'
+                      server: []
+                      state: deployed
+                  name: test
+                name: myorg
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/environments/{env_name}/apis/{api_name}/revisions/{revision_number}/deployments":
+    post:
+      tags: ["Deployments"]
+      summary: Deploy API proxy
+      description: >-
+        Deploys a revision of an API proxy to an environment in an organization.
+        
+
+        For seamless deployment with zero downtime, set the `override` parameter to `true`. In this case, the new revision
+        is deployed fully before the existing revision is undeployed. If the deployment of the new revision fails, the existing revision
+        remains deployed. See <a href="https://docs.apigee.com/api-platform/deploy/deploy-api-proxies-using-management-api#seamless">Seamless deployment (zero downtime)</a>.
+        
+
+        You cannot invoke an API proxy until it has been deployed to an environment. After an API proxy revision is deployed, it cannot
+        be edited. The size limit of an API proxy bundle is 15 MB.
+        
+
+        **About API proxies that use shared flows**
+        
+
+        Apigee Edge does not validate the dependencies between <a href="https://docs.apigee.com/api-platform/fundamentals/shared-flows">shared flows</a> and API proxies at deployment time.
+        For example, if the <a href="https://docs.apigee.com/api-platform/reference/policies/flow-callout-policy">Flow Callout policy</a> in an API proxy references a shared flow that
+        either doesn't exist or isn't deployed, the API proxy deployment still succeeds. At runtime, when Edge checks the dependency if validation fails Edge throws an API proxy error with a 500 HTTP status code.
+      operationId: 'deployAPIProxy'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/api_name'
+      - $ref: '#/components/parameters/revision_number'
+      - $ref: '#/components/parameters/delay'
+      - $ref: '#/components/parameters/override'
+      - $ref: '#/components/parameters/content-type'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyRevisionDeploymentDetailsEnv'
+              example:
+                aPIProxy: restaurantproxy
+                configuration:
+                  basePath: "/"
+                  steps: []
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                state: deployed
+        '400':
+          description: Bad request
+    get:
+      tags: ["Deployments"]
+      summary: Get deployment details for an API proxy revision in an environment
+      description: >-
+        Gets deployment details for a specific revision of an API proxy.
+
+        
+        **Note**: On Edge for Private Cloud, you can troubleshoot deployment status on a router or message processor by noting the router or message processor ID and checking your server logs. You may need to restart the router or message processor that has a deployment issue.
+      operationId: 'getAPIProxyRevisionDeploymentsEnv'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/api_name'
+      - $ref: '#/components/parameters/revision_number'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyRevisionDeploymentDetailsEnv'
+              example:
+                aPIProxy: restaurantproxy
+                configuration:
+                  basePath: "/"
+                  steps: []
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                state: deployed
+        '400':
+          description: Bad request
+    delete:
+      tags: ["Deployments"]
+      summary: Undeploy an API proxy revision in an environment
+      description: >-
+        Undeploys an API proxy revision from an environment.
+        
+
+        Because multiple revisions of the same API proxy can be deployed in the same environment if the base paths are different, you must specify the revision number of the API proxy.
+        
+
+        See also <a href="/docs/deployments/1/routes/organizations/%7Borg_name%7D/apis/%7Bapi_name%7D/revisions/%7Brevision_number%7D/deployments/post">Force undeployment of an API proxy</a> to force the undeployment of an API proxy.
+      operationId: 'deleteAPIProxyRevisionDeploymentsEnv'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/api_name'
+      - $ref: '#/components/parameters/revision_number'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyRevisionDeploymentDetailsEnv'
+              example:
+                aPIProxy: restaurantproxy
+                configuration:
+                  basePath: "/"
+                  steps: []
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                state: deployed
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/environments/{env_name}/sharedflows/{sharedflow_name}/revisions/{revision_number}/deployments":
+    post:
+      tags: ["Deployments", "Shared Flows"]
+      summary: Deploy shared flow
+      description: >-
+        Deploys a revision of a shared flow to an environment in an organization.
+        
+
+        For seamless deployment with zero downtime, set the `override` parameter to `true`. In this case, the new revision
+        is deployed fully before the existing revision is undeployed. If the deployment of the new revision fails, the existing revision
+        remains deployed. See <a href="https://docs.apigee.com/api-platform/deploy/deploy-api-proxies-using-management-api#seamless">Seamless deployment (zero downtime)</a>.
+        
+        
+        If you experience HTTP 500 errors during deployment, consider using the `override` parameter to deploy the shared flow in place of a revision currently deployed.
+        
+
+        The size limit of a shared flow bundle is 15 MBs.
+      operationId: 'deploySharedFlow'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/sharedflow_name'
+      - $ref: '#/components/parameters/revision_number'
+      - $ref: '#/components/parameters/delay'
+      - $ref: '#/components/parameters/override'
+      - $ref: '#/components/parameters/content-type'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SharedFlowRevisionDeploymentDetails'
+              example:
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                sharedFlow: mySharedFlow
+                state: deployed
+        '400':
+          description: Bad request
+    get:
+      tags: ["Deployments", "Shared Flows"]
+      summary: Get deployment details for a shared flow revision in an environment
+      description: >-
+        Gets deployment details for a specific revision of a shared flow.
+
+        
+        **Note**: On Edge for Private Cloud, you can troubleshoot deployment status on a router or message processor by noting the router or message processor ID and checking your server logs. You may need to restart the router or message processor that has a deployment issue.
+      operationId: 'getSharedFlowRevisionDeploymentsEnv'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/sharedflow_name'
+      - $ref: '#/components/parameters/revision_number'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SharedFlowRevisionDeploymentDetails'
+              example:
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                sharedFlow: mySharedFlow
+                state: deployed
+        '400':
+          description: Bad request
+    delete:
+      tags: ["Deployments", "Shared Flows"]
+      summary: Undeploy a shared flow revision in an environment
+      description: >-
+        Undeploys a shared flow revision from an environment.
+        
+
+        Because multiple revisions of the same shared flow can be deployed in the same environment if the base paths are different, you must specify the revision number of the shared flow.
+      operationId: 'deleteSharedFlowRevisionDeploymentsEnv'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/sharedflow_name'
+      - $ref: '#/components/parameters/revision_number'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SharedFlowRevisionDeploymentDetails'
+              example:
+                environment: test
+                name: '1'
+                organization: myorg
+                revision: '1'
+                server: []
+                sharedFlow: mySharedFlow
+                state: undeployed
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/environments/{env_name}/apis/{api_name}/deployments":
+    get:
+      tags: ["Environment", "API Proxy", "Deployment"]
+      summary: Get deployment details for an API proxy in an environment
+      description: >-
+        Gets deployment details for an API proxy in an environment.
+      operationId: 'getAPIProxyDeploymentEnv'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      - $ref: '#/components/parameters/api_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyDeploymentDetailsEnv'
+              example:
+                environment: test
+                name: hotels
+                organization: myorg
+                revision:
+                - configuration:
+                    basePath: "/"
+                    steps: []
+                  name: '1'
+                  server: []
+                  state: deployed  
+        '400':
+          description: Bad request
+  "/organizations/{org_name}/environments/{env_name}/deployments":
+    get:
+      tags: ["Environment", "API Proxy", "Deployment"]
+      summary: Get API proxy deployments for an environment
+      description: >-
+        Lists all API proxies that are deployed to the specified environment.
+
+        The `server` information is used by Apigee support to identify servers that support the API proxy deployment.
+      operationId: 'getAPIProxyDeploymentsEnv'
+      parameters:
+      - $ref: '#/components/parameters/org_name'
+      - $ref: '#/components/parameters/env_name'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIProxyDeploymentsEnv'
+              example:
+                aPIProxy:
+                - name: hotels
+                  revision:
+                  - configuration:
+                      basePath: "/"
+                      steps: []
+                    name: '1'
+                    server: []
+                    state: deployed
+                name: test
+                organization: myorg
+        '400':
+          description: Bad request
+components:
+  securitySchemes:
+    Basic:
+      type: http
+      scheme: basic
+      description: >-
+        Multi-factor authentication is not supported.
+    OAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: >-
+        For OAuth, enter the following in the Key field: Bearer %your-token%
+        (see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens)
+  parameters:
+    org_name:
+      in: path
+      name: org_name
+      required: true
+      schema:
+        type: string
+      description: Organization name.
+    env_name:
+      in: path
+      name: env_name
+      required: true
+      schema:
+        type: string
+      description: Environment name.
+    api_name:
+      in: path
+      name: api_name
+      required: true
+      schema:
+        type: string
+      description: API proxy name.
+    sharedflow_name:
+      in: path
+      name: sharedflow_name
+      required: true
+      schema:
+        type: string
+      description: Shared flow name.
+    revision_number:
+      in: path
+      name: revision_number
+      required: true
+      schema:
+        type: string
+      description: Revision number.
+    delay:
+      in: query
+      name: delay
+      required: false
+      schema:
+        type: number
+      description: >-
+        Time interval, in seconds, to wait before undeploying the currently deployed API proxy revision.
+        Use this setting in conjunction with `override` parameter to minimize the impact of deployment on in-flight transactions and the occurrence of 502 Bad Gateway or 504 Gateway Timeout errors. Negative values are treated as 0.
+    override:
+      in: query
+      name: override
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Flag that specifies whether to force the deployment of the new revision over the currently deployed revision.
+        Set this parameter to `true` to provide seamless deployment. In this case, the existing revision remains deployed until the new revision is fully deployed. Use in conjunction with the `delay` parameter to control undeployment and
+        minimize the impact on in-flight transaction. If set to `false`, you must undeploy the currently deployed revision before deploying the new revision.
+    includeServerStatus:
+      in: query
+      name: includeServerStatus
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Flag that specifies whether to include server information. The `server` information is used by Apigee support to identify servers that support the API proxy deployment. Set this value to `false` to omit server information. Defaults to `true`.
+    includeApiConfig:
+      in: query
+      name: includeApiConfig
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Flag that specifies whether to include configuration information. Set this value to `false` to omit configuration information. Defaults to `true`.
+    action:
+      in: query
+      name: action
+      required: true
+      schema:
+        type: string
+      description: >-
+        Set to `undeploy`.
+    env:
+      in: query
+      name: env
+      required: true
+      schema:
+        type: string
+      description: >-
+        Environment in which the API proxy is deployed.
+    force:
+      in: query
+      name: force
+      required: true
+      schema:
+        type: boolean
+      description: >-
+        Set to `true` to force undeployment. Defaults to `false`.
+    content-type:
+      in: header
+      name: Content-type
+      required: true
+      schema:
+        type: string
+      description: >-
+        Must be set to `application/x-www-form-urlencoded`.
+  schemas:
+    APIProxyDeployments:
+      description: API proxy deployments.
+      type: object
+      properties:
+        environment:
+          description: >-
+            Environment details.
+          type: array
+          items:
+            type: string
+        name:
+          description: >-
+            Name of the API proxy.
+          type: string
+        organization:
+          description: >-
+            Name of the organization.
+          type: string
+    APIProxyRevisionDeployments:
+      description: API proxy revision deployments.
+      type: object
+      properties:
+        aPIProxy:
+          description: Name of the API proxy
+        environment:
+          description: >-
+            API proxy deployment details in the environment.
+          type: array
+          items:
+            type: object
+            properties:
+              configuration:
+                type: object
+                properties:
+                  basePath:
+                    type: string
+                    description: Basepath of the API proxy revision.
+                  steps: 
+                    type: array
+                    items:
+                      type: string
+              name: 
+                type: string
+                description: Revision of the API proxy.
+              server:
+                type: array
+                description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                items:
+                  type: object
+                  properties:
+                    pod:
+                      type: object
+                      description: Pod details.
+                      properties:
+                        name: 
+                          type: string
+                          description: Pod name.
+                        region:
+                          type: string
+                          description: Pod region.
+                    status:
+                      type: string
+                      description: Deployment status.
+                    type:
+                      type: array
+                      description: Pod type.
+                      items:
+                        type: string
+                    uUID: 
+                      type: string
+                      description: Server ID.
+              state:
+                type: string
+                description: Deployment status, such as `deployed`.
+        name:
+          description: >-
+            Revision of the API proxy.
+          type: string
+        organization:
+          description: >-
+            Name of the organization.
+          type: string
+    DeploymentDetails:
+      description: API proxy or shared flow deployment details.
+      type: object
+      properties:
+        environment:
+          description: >-
+            API proxy or shared flow deployment details in the environment.
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string 
+                description: Name of the environment.
+              revision:
+                type: array
+                description: Revision details.
+                items:
+                  type: object
+                  properties:
+                    configuration:
+                      type: object
+                      properties:
+                        basePath:
+                          type: string
+                          description: Basepath of the API proxy or shared flow revision.
+                        steps: 
+                          type: array
+                          items:
+                            type: string
+                    name: 
+                      type: string
+                      description: Revision of the API proxy or shared flow.
+                    server:
+                      type: array
+                      description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                      items:
+                        type: object
+                        properties:
+                          pod:
+                            type: object
+                            description: Pod details.
+                            properties:
+                              name: 
+                                type: string
+                                description: Pod name.
+                              region:
+                                type: string
+                                description: Pod region.
+                          status:
+                            type: string
+                            description: Deployment status.
+                          type:
+                            type: array
+                            description: Pod type.
+                            items:
+                              type: string
+                          uUID: 
+                            type: string
+                            description: Server ID.
+                    state:
+                      type: string
+                      description: Deployment status, such as `deployed`.
+        name:
+          description: >-
+            Name of the API proxy or shared flow.
+          type: string
+        organization:
+          description: >-
+            Name of the organization.
+          type: string
+    APIProxyDeploymentDetailsEnv:
+      description: API proxy deployment details in an environment.
+      type: object
+      properties:
+        environment:
+          description: >-
+            Name of the environment.
+          type: string
+        revision:
+          type: array
+          description: Revision details.
+          items:
+            type: object
+            properties:
+              configuration:
+                type: object
+                properties:
+                  basePath:
+                    type: string
+                    description: Basepath of the API proxy revision.
+                  steps: 
+                    type: array
+                    items:
+                      type: string
+              name: 
+                type: string
+                description: Revision of the API proxy.
+              server:
+                type: array
+                description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                items:
+                  type: object
+                  properties:
+                    pod:
+                      type: object
+                      description: Pod details.
+                      properties:
+                        name: 
+                          type: string
+                          description: Pod name.
+                        region:
+                          type: string
+                          description: Pod region.
+                    status:
+                      type: string
+                      description: Deployment status.
+                    type:
+                      type: array
+                      description: Pod type.
+                      items:
+                        type: string
+                    uUID: 
+                      type: string
+                      description: Server ID.
+              state:
+                type: string
+                description: Deployment status, such as `deployed`.
+        name:
+          description: >-
+            Name of the API proxy.
+          type: string
+        organization:
+          description: >-
+            Name of the organization.
+          type: string
+    APIProxyRevisionDeploymentDetails:
+      description: API proxy revision deployment details in an environment.
+      type: object
+      properties:
+        environment:
+          description: >-
+            API proxy revision deployment details in the environment.
+          type: array
+          items:
+            type: object
+            properties:
+              configuration:
+                type: object
+                properties:
+                  basePath:
+                    type: string
+                    description: Basepath of the API proxy revision.
+                  steps: 
+                    type: array
+                    items:
+                      type: string
+              name: 
+                type: string
+                description: Revision of the API proxy.
+              server:
+                type: array
+                description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                items:
+                  type: object
+                  properties:
+                    pod:
+                      type: object
+                      description: Pod details.
+                      properties:
+                        name: 
+                          type: string
+                          description: Pod name.
+                        region:
+                          type: string
+                          description: Pod region.
+                    status:
+                      type: string
+                      description: Deployment status.
+                    type:
+                      type: array
+                      description: Pod type.
+                      items:
+                        type: string
+                    uUID: 
+                      type: string
+                      description: Server ID.
+              state:
+                type: string
+                description: Deployment status, such as `deployed` or `undeployed`.
+        name:
+          description: >-
+            Name of the API proxy.
+          type: string
+        organization:
+          description: >-
+            Name of the organization.
+          type: string
+    APIProxyRevisionDeploymentDetailsEnv:
+      description: API proxy revision deployment details in an environment.
+      type: object
+      properties:
+        aPIProxy:
+          type: string
+          description: Name of the API proxy.
+        configuration:
+          type: object
+          properties:
+            basePath:
+              type: string
+              description: Basepath of the API proxy revision.
+            steps: 
+              type: array
+              items:
+                type: string
+        environment:
+          type: string
+          description: Name of the environment.
+        name: 
+          type: string
+          description: Revision of the API proxy.
+        organization: 
+          type: string
+          description: Name of the organization.
+        revision: 
+          type: string
+          description: Revision of the API proxy.
+        server:
+          type: array
+          description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+          items:
+            type: object
+            properties:
+              pod:
+                type: object
+                description: Pod details.
+                properties:
+                  name: 
+                    type: string
+                    description: Pod name.
+                  region:
+                    type: string
+                    description: Pod region.
+              status:
+                type: string
+                description: Deployment status.
+              type:
+                type: array
+                description: Pod type.
+                items:
+                  type: string
+              uUID: 
+                type: string
+                description: Server ID.
+        state:
+          type: string
+          description: Deployment status, such as `deployed` or `undeployed`.
+    SharedFlowRevisionDeploymentDetails:
+      description: Shared flow revision deployment details in an environment.
+      type: object
+      properties:
+        environment:
+          type: string
+          description: Name of the environment.
+        name: 
+          type: string
+          description: Revision of the shared flow.
+        organization: 
+          type: string
+          description: Name of the organization.
+        revision: 
+          type: string
+          description: Revision of the shared flow.
+        server:
+          type: array
+          description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+          items:
+            type: object
+            properties:
+              pod:
+                type: object
+                description: Pod details.
+                properties:
+                  name: 
+                    type: string
+                    description: Pod name.
+                  region:
+                    type: string
+                    description: Pod region.
+              status:
+                type: string
+                description: Deployment status.
+              type:
+                type: array
+                description: Pod type.
+                items:
+                  type: string
+              uUID: 
+                type: string
+                description: Server ID.
+        sharedFlow:
+          type: string
+          description: Name of the shared flow.
+        state:
+          type: string
+          description: Deployment status, such as `deployed` or `undeployed`.
+    SharedFlowRevisionDeploymentDetailsEnv:
+      description: Shared flow revision deployed environment details.
+      type: object
+      properties:
+        environment:
+          type: array
+          description: Environment details.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Environment name.
+              server:
+                type: array
+                description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                items:
+                  type: object
+                  properties:
+                    pod:
+                      type: object
+                      description: Pod details.
+                      properties:
+                        name: 
+                          type: string
+                          description: Pod name.
+                        region:
+                          type: string
+                          description: Pod region.
+                    status:
+                      type: string
+                      description: Deployment status.
+                    type:
+                      type: array
+                      description: Pod type.
+                      items:
+                        type: string
+                    uUID: 
+                      type: string
+                      description: Server ID.
+              state:
+                type: string
+                description: Deployment status, such as `deployed` or `undeployed`.
+        name: 
+          type: string
+          description: Revision of the shared flow.
+        organization: 
+          type: string
+          description: Name of the organization.
+        sharedFlow:
+          type: string
+          description: Name of the shared flow.
+
+    APIProxyDeploymentsEnv:
+      description: API proxy deployments in an environment.
+      type: object
+      properties:
+        aPIProxy:
+          description: >-
+            API proxy name and revision details.
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string 
+                description: Name of the API proxy.
+              revision:
+                type: array
+                description: Revision details.
+                items:
+                  type: object
+                  properties:
+                    configuration:
+                      type: object
+                      properties:
+                        basePath:
+                          type: string
+                          description: Basepath of the API proxy revision.
+                        steps: 
+                          type: array
+                          items:
+                            type: string
+                    name: 
+                      type: string
+                      description: Revision of the API proxy.
+                    server:
+                      type: array
+                      description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                      items:
+                        type: object
+                        properties:
+                          pod:
+                            type: object
+                            description: Pod details.
+                            properties:
+                              name: 
+                                type: string
+                                description: Pod name.
+                              region:
+                                type: string
+                                description: Pod region.
+                          status:
+                            type: string
+                            description: Deployment status.
+                          type:
+                            type: array
+                            description: Pod type.
+                            items:
+                              type: string
+                          uUID: 
+                            type: string
+                            description: Server ID.
+                    state:
+                      type: string
+                      description: Deployment status, such as `deployed` or `undeployed`.
+        name:
+          description: >-
+            Name of the API proxy.
+          type: string
+        organization:
+          description: >-
+            Name of the organization.
+          type: string
+    APIProxyDeploymentsOrg:
+      description: API proxy deployment details for an organization.
+      type: object
+      properties:
+        environment:
+          description: Name of the environment.
+          type: array
+          items:
+            type: object
+            properties:
+              aPIProxy:
+                description: API proxy name and revision details.
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string 
+                      description: Name of the API proxy.
+                    revision:
+                      type: array
+                      description: Revision details.
+                      items:
+                        type: object
+                        properties:
+                          configuration:
+                            type: object
+                            properties:
+                              basePath:
+                                type: string
+                                description: Basepath of the API proxy revision.
+                              steps: 
+                                type: array
+                                items:
+                                  type: string
+                          name: 
+                            type: string
+                            description: Revision of the API proxy.
+                          server:
+                            type: array
+                            description: Used by Apigee support to identify servers that support the API proxy or shared flow deployment.
+                            items:
+                              type: object
+                              properties:
+                                pod:
+                                  type: object
+                                  description: Pod details.
+                                  properties:
+                                    name: 
+                                      type: string
+                                      description: Pod name.
+                                    region:
+                                      type: string
+                                      description: Pod region.
+                                status:
+                                  type: string
+                                  description: Deployment status.
+                                type:
+                                  type: array
+                                  description: Pod type.
+                                  items:
+                                    type: string
+                                uUID: 
+                                  type: string
+                                  description: Server ID.
+                          state:
+                            type: string
+                            description: Deployment status, such as `deployed` or `undeployed`.
+              name:
+                type: string
+                description: Name of the environment.
+        name:
+          type: string
+          description: Name of the organization.

@@ -1,0 +1,207 @@
+---
+openapi: "3.0.0"
+servers:
+- url: "https://api.enterprise.apigee.com/v1"
+info:
+  title: "Policies API"
+  description: "Apigee Edge out-of-the-box policies augment your APIs to control traffic,enhance\
+    \ performance, enforce security, and increase the utility of your APIs, without\
+    \ requiring you to write any code or modify any backend services. In addition,\
+    \ Apigee provides extension policies that let you implement custom logic in the\
+    \ form of JavaScript, Python, Java, and XSLT stylesheets."
+  version: "1.0"
+security:
+- Basic: []
+- OAuth: []
+paths:
+  /organizations/{org_name}/apis/{api_name}/revisions/{revision_number}/policies:
+    post:
+      tags:
+      - "Policy"
+      summary: "Create a policy for an API proxy revision"
+      description: "Creates a policy for a specific API proxy revision. \n\nApigee\
+        \ Edge validates the policy, and you'll receive an error if the policy is\
+        \ invalid. For more information about creating policies, see <a href=\"https://docs.apigee.com/api-platform/reference/policies/reference-overview-policy\"\
+        >Policy reference overview</a>.\nTo use the new policy in the API proxy revision,\
+        \ you must attach it to the desired place in the proxy flow. "
+      operationId: "createPolicy"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          description: "Bad request"
+      requestBody:
+        content:
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/Policy"
+    get:
+      tags:
+      - "Policy"
+      summary: "List policies for an API proxy revision"
+      description: "Lists policies for an API proxy revision."
+      operationId: "getPolicies"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+        "400":
+          description: "Bad request"
+  /organizations/{org_name}/apis/{api_name}/revisions/{revision_number}/policies/{policy_name}:
+    get:
+      tags:
+      - "Policy"
+      summary: "Get policy for an API proxy revision"
+      description: "Gets policy details for an API proxy revision."
+      operationId: "getPolicy"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/policy_name"
+      - $ref: "#/components/parameters/Accept"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          description: "Bad request"
+    delete:
+      tags:
+      - "Policy"
+      summary: "Delete policy for an API proxy revision"
+      description: "Deletes a policy for an API proxy revision."
+      operationId: "deletePolicy"
+      parameters:
+      - $ref: "#/components/parameters/org_name"
+      - $ref: "#/components/parameters/api_name"
+      - $ref: "#/components/parameters/revision_number"
+      - $ref: "#/components/parameters/policy_name"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          description: "Bad request"
+components:
+  securitySchemes:
+    Basic:
+      type: "http"
+      scheme: "basic"
+      description: "Multi-factor authentication is not supported."
+    OAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      description: "For OAuth, enter the following in the Key field: Bearer %your-token%\
+        \ (see https://docs.apigee.com/api-platform/system-administration/using-oauth2#get-the-tokens)"
+  parameters:
+    org_name:
+      in: "path"
+      name: "org_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Organization name."
+    api_name:
+      in: "path"
+      name: "api_name"
+      required: true
+      schema:
+        type: "string"
+      description: "API proxy name."
+    revision_number:
+      in: "path"
+      name: "revision_number"
+      required: true
+      schema:
+        type: "string"
+      description: "Revision number."
+    policy_name:
+      in: "path"
+      name: "policy_name"
+      required: true
+      schema:
+        type: "string"
+      description: "Name of the policy."
+    Accept:
+      in: "header"
+      name: "Accept"
+      required: true
+      schema:
+        type: "string"
+      description: "Set to `application/json` or `application/xml`."
+  schemas:
+    Policy:
+      description: "Policy details. Descriptions of common policy elements and attributes\
+        \ are provided below. For information about the complete set of elements available\
+        \ for each policy type, see <a href=\"https://docs.apigee.com/api-platform/reference/policies/reference-overview-policy\"\
+        >Policy reference overview</a>."
+      type: "object"
+      properties:
+        async:
+          type: "string"
+          description: "This attribute is deprecated."
+        continueOnError:
+          type: "string"
+          description: "Flag that specifies whether to continue flow execution even\
+            \ after the policy fails. Set to `true` to continue flow execution. Defaults\
+            \ to `false`."
+        DisplayName:
+          type: "string"
+          description: "Display name used to label the policy in the Edge UI proxy\
+            \ editor with a different, natural-language name."
+        enabled:
+          type: "string"
+          description: "Flag that specifies whether the policy is enabled. Set to\
+            \ `false` to \"turn off\" the policy. Defaults to `true`."
+        name:
+          type: "string"
+          description: "Internal name of the policy. The value of the name attribute\
+            \ can contain letters, numbers, spaces, hyphens, underscores, and periods.\
+            \ This value cannot exceed 255 characters. Optionally, set `DisplayName`\
+            \ to label the policy in the Edge UI proxy editor with a different, natural-language\
+            \ name."
+      example:
+        VerifyAPIKey:
+          DisplayName: "VerifyAPIKey"
+          FaultRules: ""
+          Properties: ""
+          APIKey:
+            _ref: "request.header.x-DNA-Api-Key"
+          _async: "false"
+          _continueOnError: "false"
+          _enabled: "true"
+          _name: "VerifyAPIKey"

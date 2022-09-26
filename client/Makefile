@@ -48,4 +48,4 @@ sonar: test-sonar
 	./build/scripts/sonar.sh $(sonarHost)
 
 apigee-generate: ## generate apigee resources
-	./scripts/apigee_generate.sh
+	docker run --rm -v $(shell pwd)/specs:/codegen/specs -v $(shell pwd)/scripts:/codegen/scripts -v $(shell pwd)/pkg/apigee/models:/codegen/output  -e USERID=$(shell id -u) -e GROUPID=$(shell id -g) -w /codegen/scripts --entrypoint ./apigee_generate.sh ampc-beano-docker-snapshot-phx.artifactory-phx.ecd.axway.int/beano-alpine-codegen:latest
