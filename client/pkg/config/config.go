@@ -29,15 +29,18 @@ type ApigeeIntervals struct {
 }
 
 const (
-	pathURL           = "apigee.url"
-	pathDataURL       = "apigee.dataURL"
-	pathAPIVersion    = "apigee.apiVersion"
-	pathOrganization  = "apigee.organization"
-	pathAuthUsername  = "apigee.auth.username"
-	pathAuthPassword  = "apigee.auth.password"
-	pathSpecInterval  = "apigee.interval.spec"
-	pathProxyInterval = "apigee.interval.proxy"
-	pathDeveloper     = "apigee.developerID"
+	pathURL                = "apigee.url"
+	pathDataURL            = "apigee.dataURL"
+	pathAPIVersion         = "apigee.apiVersion"
+	pathOrganization       = "apigee.organization"
+	pathAuthURL            = "apigee.auth.url"
+	pathAuthServerUsername = "apigee.auth.serverUsername"
+	pathAuthServerPassword = "apigee.auth.serverPassword"
+	pathAuthUsername       = "apigee.auth.username"
+	pathAuthPassword       = "apigee.auth.password"
+	pathSpecInterval       = "apigee.interval.spec"
+	pathProxyInterval      = "apigee.interval.proxy"
+	pathDeveloper          = "apigee.developerID"
 )
 
 // AddProperties - adds config needed for apigee client
@@ -46,6 +49,9 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddStringProperty(pathURL, "https://api.enterprise.apigee.com", "APIGEE Base URL")
 	rootProps.AddStringProperty(pathAPIVersion, "v1", "APIGEE API Version")
 	rootProps.AddStringProperty(pathDataURL, "https://apigee.com/dapi/api", "APIGEE Data API URL")
+	rootProps.AddStringProperty(pathAuthURL, "https://login.apigee.com", "URL to use when authenticting to APIGEE")
+	rootProps.AddStringProperty(pathAuthServerUsername, "edgecli", "Username to use to when requesting APIGEE token")
+	rootProps.AddStringProperty(pathAuthServerPassword, "edgeclisecret", "Password to use to when requesting APIGEE token")
 	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs")
@@ -67,8 +73,11 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 			Spec:  rootProps.DurationPropertyValue(pathSpecInterval),
 		},
 		Auth: &AuthConfig{
-			Username: rootProps.StringPropertyValue(pathAuthUsername),
-			Password: rootProps.StringPropertyValue(pathAuthPassword),
+			Username:       rootProps.StringPropertyValue(pathAuthUsername),
+			Password:       rootProps.StringPropertyValue(pathAuthPassword),
+			ServerUsername: rootProps.StringPropertyValue(pathAuthServerUsername),
+			ServerPassword: rootProps.StringPropertyValue(pathAuthServerPassword),
+			URL:            rootProps.StringPropertyValue(pathAuthURL),
 		},
 	}
 }
