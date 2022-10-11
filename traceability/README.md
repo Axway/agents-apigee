@@ -7,7 +7,7 @@ The Traceability agent finds logs from consumed Apigee proxies and sends the tra
 The following make targets are available
 
 | Target       | Description                                                    | Output(s)                        |
-|--------------|----------------------------------------------------------------|----------------------------------|
+| ------------ | -------------------------------------------------------------- | -------------------------------- |
 | lint         | runs go lint against all source files                          | linter results                   |
 | dep          | downloads all dependencies needed to build the discovery agent | /vendor                          |
 | test         | runs go test against all test files int he repo                | test results                     |
@@ -50,8 +50,13 @@ go build -tags static_all \
 
 ## Traceability agent variables
 
-| Environment Variable | Description                               | Default (if applicable) |
-|----------------------|-------------------------------------------|-------------------------|
-| APIGEE_ORGANIZATION  | The Apigee organization name              |                         |
-| APIGEE_AUTH_USERNAME | The Apigee account username/email address |                         |
-| APIGEE_AUTH_PASSWORD | The Apigee account password               |                         |
+| Environment Variable       | Description                                      | Default (if applicable)           |
+| -------------------------- | ------------------------------------------------ | --------------------------------- |
+| APIGEE_URL                 | The base Apigee URL for this agent to connect to | https://api.enterprise.apigee.com |
+| APIGEE_APIVERSION          | The version of the API for the agent to use      | v1                                |
+| APIGEE_ORGANIZATION        | The Apigee organization name                     |                                   |
+| APIGEE_AUTH_USERNAME       | The Apigee account username/email address        |                                   |
+| APIGEE_AUTH_PASSWORD       | The Apigee account password                      |                                   |
+| APIGEE_AUTH_URL            | The IDP URL                                      | https://login.apigee.com          |
+| APIGEE_AUTH_SERVERUSERNAME | The IDP username for requesting tokens           | edgecli                           |
+| APIGEE_AUTH_SERVERPASSWORD | The IDP password for requesting tokens           | edgeclisecret                     |

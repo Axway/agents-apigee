@@ -10,3 +10,4 @@ apigee_discovery_agent.yml
 gocoverage.out
 **/.idea/
 __debug_bin
+*/.env*

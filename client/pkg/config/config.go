@@ -25,18 +25,24 @@ type ApigeeIntervals struct {
 }
 
 const (
-	pathOrganization    = "apigee.organization"
-	pathAuthUsername    = "apigee.auth.username"
-	pathAuthPassword    = "apigee.auth.password"
-	pathProductInterval = "apigee.interval.product"
-	pathPortalInterval  = "apigee.interval.portal"
-	pathAPIInterval     = "apigee.interval.api"
-	pathFilter          = "apigee.filter"
+	pathOrganization       = "apigee.organization"
+	pathAuthURL            = "apigee.auth.url"
+	pathAuthServerUsername = "apigee.auth.serverUsername"
+	pathAuthServerPassword = "apigee.auth.serverPassword"
+	pathAuthUsername       = "apigee.auth.username"
+	pathAuthPassword       = "apigee.auth.password"
+	pathProductInterval    = "apigee.interval.product"
+	pathPortalInterval     = "apigee.interval.portal"
+	pathAPIInterval        = "apigee.interval.api"
+	pathFilter             = "apigee.filter"
 )
 
 // AddProperties - adds config needed for apigee client
 func AddProperties(rootProps properties.Properties) {
 	rootProps.AddStringProperty(pathOrganization, "", "APIGEE Organization")
+	rootProps.AddStringProperty(pathAuthURL, "https://login.apigee.com", "URL to use when authenticting to APIGEE")
+	rootProps.AddStringProperty(pathAuthServerUsername, "edgecli", "Username to use to when requesting APIGEE token")
+	rootProps.AddStringProperty(pathAuthServerPassword, "edgeclisecret", "Password to use to when requesting APIGEE token")
 	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
 	rootProps.AddDurationProperty(pathProductInterval, 5*time.Minute, "The time interval between updating a products attributes")
@@ -56,8 +62,11 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 			API:     rootProps.DurationPropertyValue(pathAPIInterval),
 		},
 		Auth: &AuthConfig{
-			Username: rootProps.StringPropertyValue(pathAuthUsername),
-			Password: rootProps.StringPropertyValue(pathAuthPassword),
+			Username:       rootProps.StringPropertyValue(pathAuthUsername),
+			Password:       rootProps.StringPropertyValue(pathAuthPassword),
+			ServerUsername: rootProps.StringPropertyValue(pathAuthServerUsername),
+			ServerPassword: rootProps.StringPropertyValue(pathAuthServerPassword),
+			URL:            rootProps.StringPropertyValue(pathAuthURL),
 		},
 	}
 }

@@ -63,6 +63,9 @@ CENTRAL_AUTH_PUBLICKEY=/keys/public_key.pem              # path to the key file 
 APIGEE_ORGANIZATION=<Apigee Organization>                # created in Prepare Apigee step
 APIGEE_AUTH_USERNAME=<Apigee Username>                   # created in Prepare Apigee step
 APIGEE_AUTH_PASSWORD=<Apigee Password>                   # created in Prepare Apigee step
+APIGEE_AUTH_URL=<IDP URL>                                # The IDP the agent should request an auth token from for Apigee API Access (default: https://login.apigee.com)
+APIGEE_AUTH_SERVERUSERNAME=<Auth Server Username>        # The username for requesting a token from the IDP server (default: edgecli)
+APIGEE_AUTH_SERVERPASSWORD=<Auth Server Password>        # The password for requesting a token from the IDP server (default: edgeclisecret)
 
 LOG_LEVEL=info
 LOG_OUTPUT=stdout
