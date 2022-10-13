@@ -89,7 +89,7 @@ func Test_pollProxiesJob(t *testing.T) {
 				hasAPIKey:        tc.hasAPIKey,
 				hasOauth:         tc.hasOauth,
 			}
-			proxyJob := newPollProxiesJob(client, mockProxyCache{}, func() bool { return true })
+			proxyJob := newPollProxiesJob(client, mockProxyCache{}, func() bool { return true }, 10)
 			assert.False(t, proxyJob.FirstRunComplete())
 
 			// receive the publish call and validate what was published

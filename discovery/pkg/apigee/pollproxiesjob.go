@@ -59,9 +59,10 @@ type pollProxiesJob struct {
 	specsReady  JobFirstRunDone
 	pubLock     sync.Mutex
 	publishFunc agent.PublishAPIFunc
+	workers     int
 }
 
-func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirstRunDone) *pollProxiesJob {
+func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirstRunDone, workers int) *pollProxiesJob {
 	job := &pollProxiesJob{
 		client:      client,
 		cache:       cache,
@@ -69,6 +70,7 @@ func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirst
 		specsReady:  specsReady,
 		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
 		publishFunc: agent.PublishAPI,
+		workers:     workers,
 	}
 	return job
 }
@@ -99,16 +101,21 @@ func (j *pollProxiesJob) Execute() error {
 		return err
 	}
 
+	limiter := make(chan string, j.workers)
+
 	wg := sync.WaitGroup{}
 	for _, proxyName := range allProxies {
 		wg.Add(1)
-		go func(name string) {
+		go func() {
 			defer wg.Done()
+			name := <-limiter
 			j.handleProxy(name)
-		}(proxyName)
+		}()
+		limiter <- proxyName
 	}
 
 	wg.Wait()
+	close(limiter)
 
 	j.firstRun = false
 	return nil

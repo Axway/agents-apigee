@@ -18,6 +18,7 @@ type ApigeeConfig struct {
 	APIVersion   string           `config:"apiVersion"`
 	Auth         *AuthConfig      `config:"auth"`
 	Intervals    *ApigeeIntervals `config:"intervals"`
+	Workers      *ApigeeWorkers   `config:"workers"`
 	Filter       string           `config:"filter"`
 	DeveloperID  string           `config:"developerID"`
 }
@@ -26,6 +27,12 @@ type ApigeeConfig struct {
 type ApigeeIntervals struct {
 	Proxy time.Duration `config:"proxy"`
 	Spec  time.Duration `config:"spec"`
+}
+
+// ApigeeWorkers - number of workers for the apigee agent to use
+type ApigeeWorkers struct {
+	Proxy int `config:"proxy"`
+	Spec  int `config:"spec"`
 }
 
 const (
@@ -41,6 +48,8 @@ const (
 	pathSpecInterval       = "apigee.interval.spec"
 	pathProxyInterval      = "apigee.interval.proxy"
 	pathDeveloper          = "apigee.developerID"
+	pathSpecWorkers        = "apigee.workers.spec"
+	pathProxyWorkers       = "apigee.workers.proxy"
 )
 
 // AddProperties - adds config needed for apigee client
@@ -57,6 +66,8 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs")
 	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies")
 	rootProps.AddStringProperty(pathDeveloper, "", "Developer ID used to create applications")
+	rootProps.AddIntProperty(pathProxyWorkers, 10, "Max number of workers discovering proxies")
+	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
 }
 
 // ParseConfig - parse the config on startup
@@ -71,6 +82,10 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 		Intervals: &ApigeeIntervals{
 			Proxy: rootProps.DurationPropertyValue(pathProxyInterval),
 			Spec:  rootProps.DurationPropertyValue(pathSpecInterval),
+		},
+		Workers: &ApigeeWorkers{
+			Proxy: rootProps.IntPropertyValue(pathProxyWorkers),
+			Spec:  rootProps.IntPropertyValue(pathSpecWorkers),
 		},
 		Auth: &AuthConfig{
 			Username:       rootProps.StringPropertyValue(pathAuthUsername),
@@ -108,6 +123,14 @@ func (a *ApigeeConfig) ValidateCfg() (err error) {
 		return errors.New("invalid APIGEE configuration: developer ID must be configured")
 	}
 
+	if a.Workers.Proxy < 1 {
+		return errors.New("invalid APIGEE configuration: proxy workers must be greater than 0")
+	}
+
+	if a.Workers.Spec < 1 {
+		return errors.New("invalid APIGEE configuration: spec workers must be greater than 0")
+	}
+
 	return
 }
 
@@ -116,7 +139,12 @@ func (a *ApigeeConfig) GetAuth() *AuthConfig {
 	return a.Auth
 }
 
-// GetPollInterval - Returns the Poll Interval
+// GetIntervals - Returns the Intervals
 func (a *ApigeeConfig) GetIntervals() *ApigeeIntervals {
 	return a.Intervals
+}
+
+// GetWorkers - Returns the number of Workers
+func (a *ApigeeConfig) GetWorkers() *ApigeeWorkers {
+	return a.Workers
 }

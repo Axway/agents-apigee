@@ -71,13 +71,13 @@ func (a *Agent) registerJobs() error {
 	var err error
 	// createTopics()
 
-	specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache)
+	specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache, a.cfg.ApigeeCfg.GetWorkers().Proxy)
 	_, err = jobs.RegisterIntervalJobWithName(specsJob, a.apigeeClient.GetConfig().GetIntervals().Spec, "Poll Specs")
 	if err != nil {
 		return err
 	}
 
-	proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete)
+	proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Proxy)
 	_, err = jobs.RegisterIntervalJobWithName(proxiesJob, a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
 	if err != nil {
 		return err
