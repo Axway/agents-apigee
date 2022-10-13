@@ -109,6 +109,8 @@ Here is a sample Quota policy that may be added to the desired Proxies.
 | APIGEE_DEVELOPERID         | The Apigee developer, email, that will own all apps       |                                   |
 | APIGEE_INTERVAL_PROXY      | The polling interval checking for API Proxy changes       | 30s (30 seconds)                  |
 | APIGEE_INTERVAL_SPEC       | The polling interval for checking for new Specs           | 30m (30 minute)                   |
+| APIGEE_WORKERS_PROXY       | The number of workers processing API Proxies              | 10                                |
+| APIGEE_WORKERS_SPEC        | The number of workers processing API Specs                | 15                                |
 | APIGEE_AUTH_USERNAME       | The Apigee account username/email address                 |                                   |
 | APIGEE_AUTH_PASSWORD       | The Apigee account password                               |                                   |
 | APIGEE_AUTH_URL            | The IDP URL                                               | https://login.apigee.com          |
