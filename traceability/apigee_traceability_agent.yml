@@ -2,6 +2,9 @@ apigee_traceability_agent:
   apigee:
     organization: ${APIGEE_ORGANIZATION}
     auth:
+      url: ${APIGEE_AUTH_URL}
+      serverUsername: ${APIGEE_AUTH_SERVERUSERNAME}
+      serverPassword: ${APIGEE_AUTH_SERVERPASSWORD}
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}
   # Settings for connecting to Amplify Central
