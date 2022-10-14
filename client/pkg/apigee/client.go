@@ -35,7 +35,15 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 	}
 
 	// create the auth job and register it
-	authentication := newAuthJob(client.apiClient, apigeeCfg.Auth.GetUsername(), apigeeCfg.Auth.GetPassword(), client.setAccessToken)
+	authentication := newAuthJob(
+		withAPIClient(client.apiClient),
+		withUsername(apigeeCfg.Auth.GetUsername()),
+		withPassword(apigeeCfg.Auth.GetPassword()),
+		withURL(apigeeCfg.Auth.GetURL()),
+		withAuthServerUsername(apigeeCfg.Auth.GetServerUsername()),
+		withAuthServerPassword(apigeeCfg.Auth.GetServerPassword()),
+		withTokenSetter(client.setAccessToken),
+	)
 	jobs.RegisterIntervalJobWithName(authentication, 10*time.Minute, "APIGEE Auth Token")
 
 	return client, nil

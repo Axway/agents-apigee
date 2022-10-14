@@ -31,14 +31,16 @@ type pollSpecsJob struct {
 	cache    specCache
 	firstRun bool
 	logger   log.FieldLogger
+	workers  int
 }
 
-func newPollSpecsJob(client specClient, cache specCache) *pollSpecsJob {
+func newPollSpecsJob(client specClient, cache specCache, workers int) *pollSpecsJob {
 	job := &pollSpecsJob{
 		client:   client,
 		cache:    cache,
 		firstRun: true,
 		logger:   log.NewFieldLogger().WithComponent("pollSpecs").WithPackage("apigee"),
+		workers:  workers,
 	}
 	return job
 }
@@ -60,16 +62,21 @@ func (j *pollSpecsJob) Execute() error {
 		return err
 	}
 
+	limiter := make(chan apigee.SpecDetails, j.workers)
+
 	wg := sync.WaitGroup{}
 	for _, spec := range allSpecs {
 		wg.Add(1)
-		go func(specDetails apigee.SpecDetails) {
+		go func() {
 			defer wg.Done()
+			specDetails := <-limiter
 			j.handleSpec(specDetails)
-		}(spec)
+		}()
+		limiter <- spec
 	}
 
 	wg.Wait()
+	close(limiter)
 
 	j.firstRun = false
 	return nil

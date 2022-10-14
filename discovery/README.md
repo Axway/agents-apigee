@@ -98,17 +98,21 @@ Here is a sample Quota policy that may be added to the desired Proxies.
 * Allow - in this case using the API Key policy gets the quota limit from the product definition
 * Interval - in this case using the API Key policy gets the quota interval from the product definition
 * TimeUnit - in this case using the API Key policy gets the quota time unit from the product definition
+Í
 
-## Agent variables
-
-| Environment Variable  | Description                                               | Default (if applicable)           |
-| --------------------- | --------------------------------------------------------- | --------------------------------- |
-| APIGEE_ORGANIZATION   | The Apigee organization name                              |                                   |
-| APIGEE_AUTH_USERNAME  | The Apigee account username/email address                 |                                   |
-| APIGEE_AUTH_PASSWORD  | The Apigee account password                               |                                   |
-| APIGEE_DEVELOPERID    | The Apigee developer, email, that will own all apps               |                                   |
-| APIGEE_URL            | The base Apigee URL for this agent to connect to          | https://api.enterprise.apigee.com |
-| APIGEE_APIVERSION     | The version of the API for the agent to use               | v1                                |
-| APIGEE_DATAURL        | The base Apigee Data API URL for this agent to connect to | https://apigee.com/dapi/api       |
-| APIGEE_INTERVAL_PROXY | The polling interval checking for API Proxy changes       | 30s (30 seconds)                  |
-| APIGEE_INTERVAL_SPEC  | The polling interval for checking for new Specs           | 30m (30 minute)                   |
+| Environment Variable       | Description                                               | Default (if applicable)           |
+| -------------------------- | --------------------------------------------------------- | --------------------------------- |
+| APIGEE_URL                 | The base Apigee URL for this agent to connect to          | https://api.enterprise.apigee.com |
+| APIGEE_APIVERSION          | The version of the API for the agent to use               | v1                                |
+| APIGEE_DATAURL             | The base Apigee Data API URL for this agent to connect to | https://apigee.com/dapi/api       |
+| APIGEE_ORGANIZATION        | The Apigee organization name                              |                                   |
+| APIGEE_DEVELOPERID         | The Apigee developer, email, that will own all apps       |                                   |
+| APIGEE_INTERVAL_PROXY      | The polling interval checking for API Proxy changes       | 30s (30 seconds)                  |
+| APIGEE_INTERVAL_SPEC       | The polling interval for checking for new Specs           | 30m (30 minute)                   |
+| APIGEE_WORKERS_PROXY       | The number of workers processing API Proxies              | 10                                |
+| APIGEE_WORKERS_SPEC        | The number of workers processing API Specs                | 15                                |
+| APIGEE_AUTH_USERNAME       | The Apigee account username/email address                 |                                   |
+| APIGEE_AUTH_PASSWORD       | The Apigee account password                               |                                   |
+| APIGEE_AUTH_URL            | The IDP URL                                               | https://login.apigee.com          |
+| APIGEE_AUTH_SERVERUSERNAME | The IDP username for requesting tokens                    | edgecli                           |
+| APIGEE_AUTH_SERVERPASSWORD | The IDP password for requesting tokens                    | edgeclisecret                     |

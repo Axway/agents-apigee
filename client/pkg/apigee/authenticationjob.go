@@ -1,7 +1,10 @@
 package apigee
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/url"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
@@ -10,31 +13,76 @@ import (
 )
 
 const (
-	apigeeAuthURL      = "https://login.apigee.com/oauth/token"
-	apigeeAuthCheckURL = "https://login.apigee.com/login"
-	apigeeAuthToken    = "ZWRnZWNsaTplZGdlY2xpc2VjcmV0" //hardcoded to edgecli:edgeclisecret
-	grantTypeKey       = "grant_type"
-	usernameKey        = "username"
-	passwordKey        = "password"
-	refreshTokenKey    = "refresh_token"
+	apigeeAuthPath      = "/oauth/token"
+	apigeeAuthCheckPath = "/login"
+	grantTypeKey        = "grant_type"
+	usernameKey         = "username"
+	passwordKey         = "password"
+	refreshTokenKey     = "refresh_token"
 )
 
-func newAuthJob(apiclient coreapi.Client, username, password string, tokenSetter func(string)) *authJob {
-	return &authJob{
-		apiClient:   apiclient,
-		username:    username,
-		password:    password,
-		tokenSetter: tokenSetter,
+type authJobOpt func(*authJob)
+
+func newAuthJob(opts ...authJobOpt) *authJob {
+	a := &authJob{}
+	for _, o := range opts {
+		o(a)
+	}
+	return a
+}
+
+func withAPIClient(apiClient coreapi.Client) authJobOpt {
+	return func(a *authJob) {
+		a.apiClient = apiClient
+	}
+}
+
+func withUsername(username string) authJobOpt {
+	return func(a *authJob) {
+		a.username = username
+	}
+}
+
+func withPassword(password string) authJobOpt {
+	return func(a *authJob) {
+		a.password = password
+	}
+}
+
+func withTokenSetter(tokenSetter func(string)) authJobOpt {
+	return func(a *authJob) {
+		a.tokenSetter = tokenSetter
+	}
+}
+
+func withURL(url string) authJobOpt {
+	return func(a *authJob) {
+		a.url = url
+	}
+}
+
+func withAuthServerUsername(username string) authJobOpt {
+	return func(a *authJob) {
+		a.serverUsername = username
+	}
+}
+
+func withAuthServerPassword(password string) authJobOpt {
+	return func(a *authJob) {
+		a.serverPassword = password
 	}
 }
 
 type authJob struct {
 	jobs.Job
-	apiClient    coreapi.Client
-	refreshToken string
-	username     string
-	password     string
-	tokenSetter  func(string)
+	apiClient      coreapi.Client
+	refreshToken   string
+	username       string
+	password       string
+	url            string
+	serverUsername string
+	serverPassword string
+	tokenSetter    func(string)
 }
 
 func (j *authJob) Ready() bool {
@@ -53,7 +101,7 @@ func (j *authJob) Status() error {
 func (j *authJob) checkConnection() error {
 	request := coreapi.Request{
 		Method: coreapi.GET,
-		URL:    apigeeAuthCheckURL,
+		URL:    fmt.Sprintf("%s%s", j.url, apigeeAuthCheckPath),
 	}
 
 	// Validate we can reach the apigee auth server
@@ -106,12 +154,13 @@ func (j *authJob) refreshAuth() error {
 }
 
 func (j *authJob) postAuth(authData url.Values) error {
+	basicAuth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", j.serverUsername, j.serverPassword)))
 	request := coreapi.Request{
 		Method: coreapi.POST,
-		URL:    apigeeAuthURL,
+		URL:    fmt.Sprintf("%s%s", j.url, apigeeAuthPath),
 		Headers: map[string]string{
 			"Content-Type":  "application/x-www-form-urlencoded",
-			"Authorization": "Basic " + apigeeAuthToken,
+			"Authorization": "Basic " + basicAuth,
 		},
 		Body: []byte(authData.Encode()),
 	}
@@ -120,6 +169,13 @@ func (j *authJob) postAuth(authData url.Values) error {
 	response, err := j.apiClient.Send(request)
 	if err != nil {
 		log.Errorf(err.Error())
+		return err
+	}
+
+	// if the response code is not ok log and return an err
+	if response.Code != http.StatusOK {
+		err := fmt.Errorf("unexpected response code %d from authentication call: %s", response.Code, response.Body)
+		log.Error(err)
 		return err
 	}
 
