@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
@@ -171,6 +172,12 @@ func (j *authJob) postAuth(authData url.Values) error {
 		return err
 	}
 
+	// if the response code is not ok log and return an err
+	if response.Code != http.StatusOK {
+		err := fmt.Errorf("unexpected response code %d from authentication call: %s", response.Code, response.Body)
+		log.Error(err)
+		return err
+	}
 	// save this refreshToken and send the token to the client
 	authResponse := AuthResponse{}
 	json.Unmarshal(response.Body, &authResponse)
