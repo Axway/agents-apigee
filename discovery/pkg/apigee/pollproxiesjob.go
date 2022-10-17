@@ -60,6 +60,8 @@ type pollProxiesJob struct {
 	pubLock     sync.Mutex
 	publishFunc agent.PublishAPIFunc
 	workers     int
+	running     bool
+	runningLock sync.Mutex
 }
 
 func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirstRunDone, workers int) *pollProxiesJob {
@@ -71,6 +73,7 @@ func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirst
 		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
 		publishFunc: agent.PublishAPI,
 		workers:     workers,
+		runningLock: sync.Mutex{},
 	}
 	return job
 }
@@ -93,8 +96,28 @@ func (j *pollProxiesJob) Status() error {
 	return nil
 }
 
+func (j *pollProxiesJob) updateRunning(running bool) {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	j.running = running
+}
+
+func (j *pollProxiesJob) isRunning() bool {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	return j.running
+}
+
 func (j *pollProxiesJob) Execute() error {
 	j.logger.Trace("executing")
+
+	if j.isRunning() {
+		j.logger.Warn("previous proxies poll job run has not completed, will run again on next interval")
+		return nil
+	}
+	j.updateRunning(true)
+	defer j.updateRunning(false)
+
 	allProxies, err := j.client.GetAllProxies()
 	if err != nil {
 		j.logger.WithError(err).Error("getting proxies")
