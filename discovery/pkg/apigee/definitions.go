@@ -9,7 +9,7 @@ type Association struct {
 	URL string `json:"url"`
 }
 
-type JobFirstRunDone func() bool
+type jobFirstRunDone func() bool
 
 const (
 	quotaPolicy  = "Quota"
