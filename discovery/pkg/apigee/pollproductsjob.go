@@ -44,6 +44,8 @@ type pollProductsJob struct {
 	publishFunc agent.PublishAPIFunc
 	logger      log.FieldLogger
 	workers     int
+	running     bool
+	runningLock sync.Mutex
 }
 
 func newPollProductsJob(client productClient, cache productCache, specsReady jobFirstRunDone, workers int) *pollProductsJob {
@@ -55,6 +57,7 @@ func newPollProductsJob(client productClient, cache productCache, specsReady job
 		logger:      log.NewFieldLogger().WithComponent("pollProducts").WithPackage("apigee"),
 		publishFunc: agent.PublishAPI,
 		workers:     workers,
+		runningLock: sync.Mutex{},
 	}
 	return job
 }
@@ -73,8 +76,28 @@ func (j *pollProductsJob) Status() error {
 	return nil
 }
 
+func (j *pollProductsJob) updateRunning(running bool) {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	j.running = running
+}
+
+func (j *pollProductsJob) isRunning() bool {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	return j.running
+}
+
 func (j *pollProductsJob) Execute() error {
 	j.logger.Trace("executing")
+
+	if j.isRunning() {
+		j.logger.Warn("previous spec poll job run has not completed, will run again on next interval")
+		return nil
+	}
+	j.updateRunning(true)
+	defer j.updateRunning(false)
+
 	products, err := j.client.GetProducts()
 	if err != nil {
 		j.logger.WithError(err).Error("getting products")

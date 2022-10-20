@@ -57,6 +57,12 @@ func (j *pollSpecsJob) Status() error {
 	return nil
 }
 
+func (j *pollSpecsJob) updateRunning(running bool) {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	j.running = running
+}
+
 func (j *pollSpecsJob) isRunning() bool {
 	j.runningLock.Lock()
 	defer j.runningLock.Unlock()
