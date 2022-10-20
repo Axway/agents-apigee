@@ -27,20 +27,23 @@ type specCache interface {
 // job that will poll for any new portals on APIGEE Edge
 type pollSpecsJob struct {
 	jobs.Job
-	client   specClient
-	cache    specCache
-	firstRun bool
-	logger   log.FieldLogger
-	workers  int
+	client      specClient
+	cache       specCache
+	firstRun    bool
+	logger      log.FieldLogger
+	workers     int
+	running     bool
+	runningLock sync.Mutex
 }
 
 func newPollSpecsJob(client specClient, cache specCache, workers int) *pollSpecsJob {
 	job := &pollSpecsJob{
-		client:   client,
-		cache:    cache,
-		firstRun: true,
-		logger:   log.NewFieldLogger().WithComponent("pollSpecs").WithPackage("apigee"),
-		workers:  workers,
+		client:      client,
+		cache:       cache,
+		firstRun:    true,
+		logger:      log.NewFieldLogger().WithComponent("pollSpecs").WithPackage("apigee"),
+		workers:     workers,
+		runningLock: sync.Mutex{},
 	}
 	return job
 }
@@ -54,8 +57,28 @@ func (j *pollSpecsJob) Status() error {
 	return nil
 }
 
+func (j *pollSpecsJob) updateRunning(running bool) {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	j.running = running
+}
+
+func (j *pollSpecsJob) isRunning() bool {
+	j.runningLock.Lock()
+	defer j.runningLock.Unlock()
+	return j.running
+}
+
 func (j *pollSpecsJob) Execute() error {
 	j.logger.Trace("executing")
+
+	if j.isRunning() {
+		j.logger.Warn("previous spec poll job run has not completed, will run again on next interval")
+		return nil
+	}
+	j.updateRunning(true)
+	defer j.updateRunning(false)
+
 	allSpecs, err := j.client.GetAllSpecs()
 	if err != nil {
 		j.logger.WithError(err).Error("getting specs")
