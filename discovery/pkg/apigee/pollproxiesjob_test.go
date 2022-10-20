@@ -250,6 +250,12 @@ func (m mockProxyClient) IsReady() bool { return false }
 
 type mockProxyCache struct{}
 
-func (m mockProxyCache) GetSpecWithPath(path string) (string, error)                             { return "", nil }
-func (m mockProxyCache) GetSpecPathWithEndpoint(endpoint string) (string, error)                 { return "", nil }
-func (m mockProxyCache) AddPublishedProxyToCache(cacheKey string, serviceBody *apic.ServiceBody) {}
+func (m mockProxyCache) GetSpecWithPath(path string) (*specCacheItem, error) {
+	return &specCacheItem{}, nil
+}
+
+func (m mockProxyCache) GetSpecPathWithEndpoint(endpoint string) (string, error) {
+	return "", nil
+}
+
+func (m mockProxyCache) AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody) {}

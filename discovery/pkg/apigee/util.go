@@ -54,6 +54,10 @@ func createProxyCacheKey(id, envName string) string {
 	return fmt.Sprintf("apiproxy-%s-%s", envName, id)
 }
 
+func createProductCacheKey(name string) string {
+	return fmt.Sprintf("apiproduct-%s", name)
+}
+
 type ctxKeys string
 
 const (

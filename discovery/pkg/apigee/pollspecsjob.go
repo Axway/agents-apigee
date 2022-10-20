@@ -8,7 +8,6 @@ import (
 
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/jobs"
-	"github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
@@ -21,7 +20,8 @@ type specClient interface {
 }
 
 type specCache interface {
-	AddSpecToCache(id, path string, contentHash uint64, modDate time.Time, endpoints ...string)
+	AddSpecToCache(id, path, name string, modDate time.Time, endpoints ...string)
+	HasSpecChanged(is string, modDate time.Time) bool
 }
 
 // job that will poll for any new portals on APIGEE Edge
@@ -57,12 +57,6 @@ func (j *pollSpecsJob) Status() error {
 	return nil
 }
 
-func (j *pollSpecsJob) updateRunning(running bool) {
-	j.runningLock.Lock()
-	defer j.runningLock.Unlock()
-	j.running = running
-}
-
 func (j *pollSpecsJob) isRunning() bool {
 	j.runningLock.Lock()
 	defer j.runningLock.Unlock()
@@ -88,8 +82,8 @@ func (j *pollSpecsJob) Execute() error {
 	limiter := make(chan apigee.SpecDetails, j.workers)
 
 	wg := sync.WaitGroup{}
+	wg.Add(len(allSpecs))
 	for _, spec := range allSpecs {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			specDetails := <-limiter
@@ -110,8 +104,14 @@ func (j *pollSpecsJob) FirstRunComplete() bool {
 }
 
 func (j *pollSpecsJob) handleSpec(spec apigee.SpecDetails) {
-	logger := j.logger.WithField("specName", spec.Name)
+	logger := j.logger.WithField("specName", spec.Name).WithField("specID", spec.ID)
 	logger.Trace("handling spec")
+	modDate, _ := time.Parse("2006-01-02T15:04:05.000Z", spec.Modified)
+
+	if !j.cache.HasSpecChanged(spec.ID, modDate) {
+		logger.Trace("spec has not been modified")
+		return
+	}
 
 	// get the spec content
 	content, err := j.client.GetSpecFile(spec.ContentLink)
@@ -140,9 +140,7 @@ func (j *pollSpecsJob) handleSpec(spec apigee.SpecDetails) {
 	}
 
 	// add spec details to cache
-	hash, _ := util.ComputeHash(content)
-	modDate, _ := time.Parse("2006-01-02T15:04:05.000Z", spec.Modified)
-	j.cache.AddSpecToCache(spec.ID, spec.ContentLink, hash, modDate, endpoints...)
+	j.cache.AddSpecToCache(spec.ID, spec.ContentLink, spec.Name, modDate, endpoints...)
 }
 
 func endpointToString(endpoint apic.EndpointDefinition) string {

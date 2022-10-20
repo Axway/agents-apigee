@@ -69,22 +69,35 @@ func (a *Agent) Run() error {
 // registerJobs - registers the agent jobs
 func (a *Agent) registerJobs() error {
 	var err error
-	// createTopics()
 
-	specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache, a.cfg.ApigeeCfg.GetWorkers().Proxy)
+	specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache, a.cfg.ApigeeCfg.GetWorkers().Spec)
 	_, err = jobs.RegisterIntervalJobWithName(specsJob, a.apigeeClient.GetConfig().GetIntervals().Spec, "Poll Specs")
 	if err != nil {
 		return err
 	}
 
-	proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Proxy)
-	_, err = jobs.RegisterIntervalJobWithName(proxiesJob, a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
-	if err != nil {
-		return err
-	}
+	var validatorReady jobFirstRunDone
 
-	// register the api validator job
-	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(proxiesJob.FirstRunComplete, a.registerValidator), "Register API Validator")
+	if a.cfg.ApigeeCfg.IsProxyMode() {
+		proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Proxy)
+		_, err = jobs.RegisterIntervalJobWithName(proxiesJob, a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
+		if err != nil {
+			return err
+		}
+
+		// register the api validator job
+		validatorReady = proxiesJob.FirstRunComplete
+	} else {
+		productsJob := newPollProductsJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Product)
+		_, err = jobs.RegisterIntervalJobWithName(productsJob, a.apigeeClient.GetConfig().GetIntervals().Product, "Poll Products")
+		if err != nil {
+			return err
+		}
+
+		// register the api validator job
+		validatorReady = productsJob.FirstRunComplete
+	}
+	_, err = jobs.RegisterSingleRunJobWithName(newRegisterAPIValidatorJob(validatorReady, a.registerValidator), "Register API Validator")
 
 	agent.NewAPIKeyCredentialRequestBuilder(agent.WithCRDIsSuspendable()).Register()
 	agent.NewAPIKeyAccessRequestBuilder().Register()
@@ -105,10 +118,7 @@ func (a *Agent) Stop() {
 // apiValidator - registers the agent jobs
 func (a *Agent) apiValidator(proxyName, envName string) bool {
 	// get the api with the product name and portal name
-	cacheKey := createProxyCacheKey(proxyName, envName)
-
-	_, err := a.agentCache.GetPublishedProxy(cacheKey)
-	return err == nil
+	return true
 }
 
 func (a *Agent) registerValidator() {
