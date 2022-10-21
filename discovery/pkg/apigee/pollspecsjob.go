@@ -27,16 +27,17 @@ type specCache interface {
 // job that will poll for any new portals on APIGEE Edge
 type pollSpecsJob struct {
 	jobs.Job
+	firstRun    bool
+	running     bool
+	parseSpec   bool
+	workers     int
 	client      specClient
 	cache       specCache
-	firstRun    bool
 	logger      log.FieldLogger
-	workers     int
-	running     bool
 	runningLock sync.Mutex
 }
 
-func newPollSpecsJob(client specClient, cache specCache, workers int) *pollSpecsJob {
+func newPollSpecsJob(client specClient, cache specCache, workers int, parseSpec bool) *pollSpecsJob {
 	job := &pollSpecsJob{
 		client:      client,
 		cache:       cache,
@@ -44,6 +45,7 @@ func newPollSpecsJob(client specClient, cache specCache, workers int) *pollSpecs
 		logger:      log.NewFieldLogger().WithComponent("pollSpecs").WithPackage("apigee"),
 		workers:     workers,
 		runningLock: sync.Mutex{},
+		parseSpec:   parseSpec,
 	}
 	return job
 }
@@ -119,30 +121,32 @@ func (j *pollSpecsJob) handleSpec(spec apigee.SpecDetails) {
 		return
 	}
 
-	// get the spec content
-	content, err := j.client.GetSpecFile(spec.ContentLink)
-	if err != nil {
-		j.logger.WithError(err).Error("getting spec content")
-		return
-	}
-
-	// parse the spec
-	parser := apic.NewSpecResourceParser(content, "")
-	err = parser.Parse()
-	if err != nil {
-		j.logger.WithError(err).Error("could not parse spec")
-		return
-	}
-
-	// gather spec info
 	endpoints := []string{}
-	endpointDefs, err := parser.GetSpecProcessor().GetEndpoints()
-	if err != nil {
-		j.logger.WithError(err).Error("could not get spec endpoints")
-		return
-	}
-	for _, ep := range endpointDefs {
-		endpoints = append(endpoints, endpointToString(ep))
+	if j.parseSpec {
+		// get the spec content
+		content, err := j.client.GetSpecFile(spec.ContentLink)
+		if err != nil {
+			j.logger.WithError(err).Error("getting spec content")
+			return
+		}
+
+		// parse the spec
+		parser := apic.NewSpecResourceParser(content, "")
+		err = parser.Parse()
+		if err != nil {
+			j.logger.WithError(err).Error("could not parse spec")
+			return
+		}
+
+		// gather spec info
+		endpointDefs, err := parser.GetSpecProcessor().GetEndpoints()
+		if err != nil {
+			j.logger.WithError(err).Error("could not get spec endpoints")
+			return
+		}
+		for _, ep := range endpointDefs {
+			endpoints = append(endpoints, endpointToString(ep))
+		}
 	}
 
 	// add spec details to cache
