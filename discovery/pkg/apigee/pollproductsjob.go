@@ -209,7 +209,7 @@ func (j *pollProductsJob) shouldPublishProduct(ctx context.Context) bool {
 		}
 		attributes[att.Name] = att.Value
 	}
-	j.logger.WithField("Attributes", attributes).Trace("checking against discovery filter")
+	j.logger.WithField("attributes", attributes).Trace("checking against discovery filter")
 	return j.shouldPushAPI(attributes)
 }
 

@@ -36,8 +36,9 @@ func (a *agentCache) AddSpecToCache(id, path, name string, modDate time.Time, en
 		ModDate:     modDate,
 	}
 
-	a.cache.SetWithSecondaryKey(id, path, item)
-	a.cache.SetSecondaryKey(id, name)
+	a.cache.SetWithSecondaryKey(name, path, item)
+	a.cache.SetSecondaryKey(name, strings.ToLower(name))
+	a.cache.SetSecondaryKey(name, id)
 	for _, ep := range endpoints {
 		if _, found := a.specEndpointToKeys[ep]; !found {
 			a.specEndpointToKeys[ep] = []specCacheItem{}
@@ -46,8 +47,8 @@ func (a *agentCache) AddSpecToCache(id, path, name string, modDate time.Time, en
 	}
 }
 
-func (a *agentCache) HasSpecChanged(id string, modDate time.Time) bool {
-	data, err := a.cache.Get(id)
+func (a *agentCache) HasSpecChanged(name string, modDate time.Time) bool {
+	data, err := a.cache.GetBySecondaryKey(name)
 	if err != nil {
 		// spec not in cache
 		return true
