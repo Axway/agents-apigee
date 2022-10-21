@@ -2,6 +2,7 @@ package apigee
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/apic"
@@ -30,7 +31,7 @@ func newAgentCache() *agentCache {
 func (a *agentCache) AddSpecToCache(id, path, name string, modDate time.Time, endpoints ...string) {
 	item := specCacheItem{
 		ID:          id,
-		Name:        name,
+		Name:        strings.ToLower(name),
 		ContentPath: path,
 		ModDate:     modDate,
 	}
@@ -67,7 +68,7 @@ func (a *agentCache) GetSpecWithPath(path string) (*specCacheItem, error) {
 }
 
 func (a *agentCache) GetSpecWithName(name string) (*specCacheItem, error) {
-	data, err := a.cache.GetBySecondaryKey(name)
+	data, err := a.cache.GetBySecondaryKey(strings.ToLower(name))
 	if err != nil {
 		return nil, err
 	}

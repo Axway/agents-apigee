@@ -88,7 +88,7 @@ func (a *Agent) registerJobs() error {
 		// register the api validator job
 		validatorReady = proxiesJob.FirstRunComplete
 	} else {
-		productsJob := newPollProductsJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Product)
+		productsJob := newPollProductsJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Product, a.shouldPushAPI)
 		_, err = jobs.RegisterIntervalJobWithName(productsJob, a.apigeeClient.GetConfig().GetIntervals().Product, "Poll Products")
 		if err != nil {
 			return err
@@ -113,6 +113,12 @@ func (a *Agent) running() {
 // Stop - signals the agent to stop
 func (a *Agent) Stop() {
 	a.stopChan <- struct{}{}
+}
+
+// shouldPushAPI - callback used determine if the Product should be pushed to Central or not
+func (a *Agent) shouldPushAPI(attributes map[string]string) bool {
+	// Evaluate the filter condition
+	return a.discoveryFilter.Evaluate(attributes)
 }
 
 // apiValidator - registers the agent jobs

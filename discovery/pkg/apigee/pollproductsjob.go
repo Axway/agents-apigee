@@ -3,6 +3,7 @@ package apigee
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -17,8 +18,9 @@ import (
 )
 
 const (
-	productNameField    ctxKeys = "product"
-	productDetailsField ctxKeys = "productDetails"
+	productNameField        ctxKeys = "product"
+	productDisplayNameField ctxKeys = "productDisplay"
+	productDetailsField     ctxKeys = "productDetails"
 )
 
 type productClient interface {
@@ -33,31 +35,37 @@ type productCache interface {
 	AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody)
 }
 
+type IsPublishedFunc func(string) bool
+
 // job that will poll for any new portals on APIGEE Edge
 type pollProductsJob struct {
 	jobs.Job
-	client      productClient
-	cache       productCache
-	firstRun    bool
-	specsReady  jobFirstRunDone
-	pubLock     sync.Mutex
-	publishFunc agent.PublishAPIFunc
-	logger      log.FieldLogger
-	workers     int
-	running     bool
-	runningLock sync.Mutex
+	client          productClient
+	cache           productCache
+	firstRun        bool
+	specsReady      jobFirstRunDone
+	pubLock         sync.Mutex
+	isPublishedFunc IsPublishedFunc
+	publishFunc     agent.PublishAPIFunc
+	logger          log.FieldLogger
+	workers         int
+	running         bool
+	runningLock     sync.Mutex
+	shouldPushAPI   func(map[string]string) bool
 }
 
-func newPollProductsJob(client productClient, cache productCache, specsReady jobFirstRunDone, workers int) *pollProductsJob {
+func newPollProductsJob(client productClient, cache productCache, specsReady jobFirstRunDone, workers int, shouldPushAPI func(map[string]string) bool) *pollProductsJob {
 	job := &pollProductsJob{
-		client:      client,
-		cache:       cache,
-		firstRun:    true,
-		specsReady:  specsReady,
-		logger:      log.NewFieldLogger().WithComponent("pollProducts").WithPackage("apigee"),
-		publishFunc: agent.PublishAPI,
-		workers:     workers,
-		runningLock: sync.Mutex{},
+		client:          client,
+		cache:           cache,
+		firstRun:        true,
+		specsReady:      specsReady,
+		logger:          log.NewFieldLogger().WithComponent("pollProducts").WithPackage("apigee"),
+		isPublishedFunc: agent.IsAPIPublishedByID,
+		publishFunc:     agent.PublishAPI,
+		workers:         workers,
+		runningLock:     sync.Mutex{},
+		shouldPushAPI:   shouldPushAPI,
 	}
 	return job
 }
@@ -135,14 +143,6 @@ func (j *pollProductsJob) handleProduct(productName string) {
 	ctx := addLoggerToContext(context.Background(), logger)
 	ctx = context.WithValue(ctx, productNameField, productName)
 
-	// try to get spec by using the name of the product
-	specDetails, err := j.cache.GetSpecWithName(productName)
-	if err != nil {
-		logger.WithError(err).Trace("could not find spec for product by name")
-		return
-	}
-	ctx = context.WithValue(ctx, specPathField, specDetails.ContentPath)
-
 	// get the full product details
 	productDetails, err := j.client.GetProduct(productName)
 	if err != nil {
@@ -150,6 +150,21 @@ func (j *pollProductsJob) handleProduct(productName string) {
 		return
 	}
 	ctx = context.WithValue(ctx, productDetailsField, productDetails)
+	ctx = context.WithValue(ctx, productDisplayNameField, productDetails.DisplayName)
+	logger = logger.WithField(productDisplayNameField.String(), productDetails.DisplayName)
+
+	if !j.shouldPublishProduct(ctx) {
+		logger.Trace("product has been filtered out")
+		return
+	}
+
+	// try to get spec by using the name of the product
+	specDetails, err := j.getSpecDetails(ctx)
+	if err != nil {
+		logger.Trace("could not find spec for product by name")
+		return
+	}
+	ctx = context.WithValue(ctx, specPathField, specDetails.ContentPath)
 
 	// create service
 	serviceBody, err := j.buildServiceBody(ctx)
@@ -167,14 +182,13 @@ func (j *pollProductsJob) handleProduct(productName string) {
 	value := agent.GetAttributeOnPublishedAPIByID(productName, "hash")
 
 	err = nil
-	if !agent.IsAPIPublishedByID(productName) {
+	if !j.isPublishedFunc(productName) {
 		// call new API
 		err = j.publishAPI(*serviceBody, hashString, cacheKey)
 	} else if value != hashString {
 		// handle update
 		log.Tracef("%s has been updated, push new revision", productName)
 		serviceBody.APIUpdateSeverity = "Major"
-		serviceBody.SpecDefinition = []byte{}
 		log.Tracef("%+v", serviceBody)
 		err = j.publishAPI(*serviceBody, hashString, cacheKey)
 	}
@@ -182,6 +196,33 @@ func (j *pollProductsJob) handleProduct(productName string) {
 	if err == nil {
 		j.cache.AddPublishedServiceToCache(cacheKey, serviceBody)
 	}
+}
+
+func (j *pollProductsJob) shouldPublishProduct(ctx context.Context) bool {
+	product := ctx.Value(productDetailsField).(*models.ApiProduct)
+	// get the product attributes in a map
+	attributes := make(map[string]string)
+	for _, att := range product.Attributes {
+		// ignore access attribute
+		if strings.ToLower(att.Name) == "access" {
+			continue
+		}
+		attributes[att.Name] = att.Value
+	}
+	j.logger.WithField("Attributes", attributes).Trace("checking against discovery filter")
+	return j.shouldPushAPI(attributes)
+}
+
+func (j *pollProductsJob) getSpecDetails(ctx context.Context) (*specCacheItem, error) {
+	productName := getStringFromContext(ctx, productNameField)
+	displayName := getStringFromContext(ctx, productDisplayNameField)
+
+	specDetails, err := j.cache.GetSpecWithName(productName)
+	if err != nil {
+		// try to find the spec details with the display name before giving up
+		specDetails, err = j.cache.GetSpecWithName(displayName)
+	}
+	return specDetails, err
 }
 
 func (j *pollProductsJob) buildServiceBody(ctx context.Context) (*apic.ServiceBody, error) {
@@ -200,6 +241,14 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context) (*apic.ServiceBo
 		return nil, fmt.Errorf("spec had no content")
 	}
 
+	// create attributes to be added to service
+	serviceAttributes := make(map[string]string)
+	for _, att := range product.Attributes {
+		name := strings.ToLower(att.Name)
+		name = strings.ReplaceAll(name, " ", "_")
+		serviceAttributes[name] = att.Value
+	}
+
 	logger.Debug("creating service body")
 
 	sb, err := apic.NewServiceBodyBuilder().
@@ -208,6 +257,7 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context) (*apic.ServiceBo
 		SetDescription(product.Description).
 		SetAPISpec(spec).
 		SetTitle(product.DisplayName).
+		SetServiceAttribute(serviceAttributes).
 		Build()
 	return &sb, err
 }
