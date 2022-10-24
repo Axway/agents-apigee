@@ -1,6 +1,6 @@
 # Build image
-# golang:1.19.1
-FROM docker.io/golang@sha256:ca4f0513119dfbdc65ae7b76b69688f0723ed00d9ecf9de68abbf6ed01ef11bf as builder
+# golang:1.19.2
+FROM docker.io/golang@sha256:46752c2ee3bd8388608e41362964c84f7a6dffe99d86faeddc82d917740c5968 as builder
 
 ENV GOFLAGS "-mod=mod"
 ENV GOWORK "off"
