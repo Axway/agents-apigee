@@ -235,3 +235,14 @@ func (m mockProductCache) GetSpecWithName(name string) (*specCacheItem, error) {
 
 func (m mockProductCache) AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody) {
 }
+
+func (m mockProductCache) AddProductToCache(name string, modDate time.Time, specModDate time.Time) {
+}
+
+func (m mockProductCache) HasProductChanged(name string, modDate time.Time, specModDate time.Time) bool {
+	return true
+}
+
+func (m mockProductCache) GetProductWithName(name string) (*productCacheItem, error) {
+	return nil, nil
+}

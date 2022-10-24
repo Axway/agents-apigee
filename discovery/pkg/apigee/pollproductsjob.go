@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
+	v1 "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/api/v1"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
@@ -21,6 +23,9 @@ const (
 	productNameField        ctxKeys = "product"
 	productDisplayNameField ctxKeys = "productDisplay"
 	productDetailsField     ctxKeys = "productDetails"
+	productModDateField     ctxKeys = "productModDate"
+	specDetailsField        ctxKeys = "specDetails"
+	specModDateField        ctxKeys = "specModDate"
 )
 
 type productClient interface {
@@ -30,42 +35,54 @@ type productClient interface {
 	IsReady() bool
 }
 
+type productCacheItem struct {
+	Name        string
+	ModDate     time.Time
+	SpecModDate time.Time
+}
+
 type productCache interface {
 	GetSpecWithName(name string) (*specCacheItem, error)
 	AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody)
+	AddProductToCache(name string, modDate time.Time, specModDate time.Time)
+	HasProductChanged(name string, modDate time.Time, specModDate time.Time) bool
+	GetProductWithName(name string) (*productCacheItem, error)
 }
 
-type IsPublishedFunc func(string) bool
+type isPublishedFunc func(string) bool
+type getAttributeFunc func(string, string) string
 
 // job that will poll for any new portals on APIGEE Edge
 type pollProductsJob struct {
 	jobs.Job
-	client          productClient
-	cache           productCache
-	firstRun        bool
-	specsReady      jobFirstRunDone
-	pubLock         sync.Mutex
-	isPublishedFunc IsPublishedFunc
-	publishFunc     agent.PublishAPIFunc
-	logger          log.FieldLogger
-	workers         int
-	running         bool
-	runningLock     sync.Mutex
-	shouldPushAPI   func(map[string]string) bool
+	client           productClient
+	cache            productCache
+	firstRun         bool
+	specsReady       jobFirstRunDone
+	pubLock          sync.Mutex
+	isPublishedFunc  isPublishedFunc
+	getAttributeFunc getAttributeFunc
+	publishFunc      agent.PublishAPIFunc
+	logger           log.FieldLogger
+	workers          int
+	running          bool
+	runningLock      sync.Mutex
+	shouldPushAPI    func(map[string]string) bool
 }
 
 func newPollProductsJob(client productClient, cache productCache, specsReady jobFirstRunDone, workers int, shouldPushAPI func(map[string]string) bool) *pollProductsJob {
 	job := &pollProductsJob{
-		client:          client,
-		cache:           cache,
-		firstRun:        true,
-		specsReady:      specsReady,
-		logger:          log.NewFieldLogger().WithComponent("pollProducts").WithPackage("apigee"),
-		isPublishedFunc: agent.IsAPIPublishedByID,
-		publishFunc:     agent.PublishAPI,
-		workers:         workers,
-		runningLock:     sync.Mutex{},
-		shouldPushAPI:   shouldPushAPI,
+		client:           client,
+		cache:            cache,
+		firstRun:         true,
+		specsReady:       specsReady,
+		logger:           log.NewFieldLogger().WithComponent("pollProducts").WithPackage("apigee"),
+		isPublishedFunc:  agent.IsAPIPublishedByID,
+		getAttributeFunc: agent.GetAttributeOnPublishedAPIByID,
+		publishFunc:      agent.PublishAPI,
+		workers:          workers,
+		runningLock:      sync.Mutex{},
+		shouldPushAPI:    shouldPushAPI,
 	}
 	return job
 }
@@ -160,11 +177,18 @@ func (j *pollProductsJob) handleProduct(productName string) {
 
 	// try to get spec by using the name of the product
 	specDetails, err := j.getSpecDetails(ctx)
+	ctx = context.WithValue(ctx, specDetailsField, specDetails)
 	if err != nil {
 		logger.Trace("could not find spec for product by name")
 		return
 	}
 	ctx = context.WithValue(ctx, specPathField, specDetails.ContentPath)
+
+	ctx, changed := j.hasProductChanged(ctx)
+	if !changed {
+		logger.Trace("no changes detected for product")
+		return
+	}
 
 	// create service
 	serviceBody, err := j.buildServiceBody(ctx)
@@ -195,7 +219,59 @@ func (j *pollProductsJob) handleProduct(productName string) {
 
 	if err == nil {
 		j.cache.AddPublishedServiceToCache(cacheKey, serviceBody)
+		j.cache.AddProductToCache(productName, ctx.Value(productModDateField).(time.Time), specDetails.ModDate)
 	}
+}
+
+func (j *pollProductsJob) hasProductChanged(ctx context.Context) (context.Context, bool) {
+	logger := getLoggerFromContext(ctx)
+
+	productDetails := ctx.Value(productDetailsField).(*models.ApiProduct)
+	specDetails := ctx.Value(specDetailsField).(*specCacheItem)
+	productName := getStringFromContext(ctx, productNameField)
+
+	productModDate := time.UnixMilli(int64(productDetails.LastModifiedAt)).UTC()
+	ctx = context.WithValue(ctx, productModDateField, productModDate)
+	ctx = context.WithValue(ctx, specModDateField, specDetails.ModDate)
+
+	if cachedProduct, _ := j.cache.GetProductWithName(productName); cachedProduct != nil {
+		// check if any changes have been made to the product or spec
+		if j.cache.HasProductChanged(productName, productModDate, specDetails.ModDate) {
+			logger.Trace("no changes detected for product based on cache")
+			return ctx, true
+		}
+
+		return ctx, false
+	}
+
+	logger.Debug("checking to see if the product has been published")
+
+	// check if the product exists
+	isPublished := j.isPublishedFunc(productName)
+	if isPublished {
+		logger.Debug("checking published products attributes")
+		// check if the mod dates have changed prior to continuing
+		curProdModStr := j.getAttributeFunc(productName, productModDateField.String())
+		curSpecModStr := j.getAttributeFunc(productName, specModDateField.String())
+
+		// did not retrieve attributes, mark as changed
+		if curProdModStr == "" && curSpecModStr == "" {
+			return ctx, true
+		}
+
+		curProdMod, _ := time.Parse(v1.APIServerTimeFormat, curProdModStr)
+		curSpecMod, _ := time.Parse(v1.APIServerTimeFormat, curSpecModStr)
+		if productModDate.After(curProdMod) || specDetails.ModDate.After(curSpecMod) {
+			logger.Debug("published product change detected")
+			return ctx, true
+		}
+
+		logger.Debug("published product no change detected")
+		return ctx, false
+	}
+
+	logger.Debug("no published product with name")
+	return ctx, true
 }
 
 func (j *pollProductsJob) shouldPublishProduct(ctx context.Context) bool {
@@ -229,6 +305,8 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context) (*apic.ServiceBo
 	logger := getLoggerFromContext(ctx)
 	product := ctx.Value(productDetailsField).(*models.ApiProduct)
 	specPath := getStringFromContext(ctx, specPathField)
+	productModDate := ctx.Value(productModDateField).(time.Time)
+	specModDate := ctx.Value(specModDateField).(time.Time)
 
 	// get the spec to build the service body
 	spec, err := j.client.GetSpecFile(specPath)
@@ -239,6 +317,12 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context) (*apic.ServiceBo
 
 	if len(spec) == 0 {
 		return nil, fmt.Errorf("spec had no content")
+	}
+
+	// create the agent details with the modification dates
+	serviceDetails := map[string]interface{}{
+		productModDateField.String(): productModDate.Format(v1.APIServerTimeFormat),
+		specModDateField.String():    specModDate.Format(v1.APIServerTimeFormat),
 	}
 
 	// create attributes to be added to service
@@ -258,6 +342,7 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context) (*apic.ServiceBo
 		SetAPISpec(spec).
 		SetTitle(product.DisplayName).
 		SetServiceAttribute(serviceAttributes).
+		SetServiceAgentDetails(serviceDetails).
 		Build()
 	return &sb, err
 }
