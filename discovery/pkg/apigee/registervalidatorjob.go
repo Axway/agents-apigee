@@ -6,11 +6,11 @@ import (
 
 type registerAPIValidatorJob struct {
 	jobs.Job
-	proxiesReady      JobFirstRunDone
+	proxiesReady      jobFirstRunDone
 	registerValidator func()
 }
 
-func newRegisterAPIValidatorJob(proxiesReady JobFirstRunDone, registerValidator func()) *registerAPIValidatorJob {
+func newRegisterAPIValidatorJob(proxiesReady jobFirstRunDone, registerValidator func()) *registerAPIValidatorJob {
 	job := &registerAPIValidatorJob{
 		proxiesReady:      proxiesReady,
 		registerValidator: registerValidator,

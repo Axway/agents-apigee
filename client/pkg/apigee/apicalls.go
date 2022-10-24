@@ -116,18 +116,21 @@ func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 }
 
 // GetProducts - get the list of products for the org
-func (a *ApigeeClient) GetProducts() Products {
+func (a *ApigeeClient) GetProducts() (Products, error) {
 	// Get the products
 	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/apiproducts", a.orgURL),
 		WithDefaultHeaders(),
 	).Execute()
+	if err != nil {
+		return nil, err
+	}
 
 	products := Products{}
 	if err == nil {
 		json.Unmarshal(response.Body, &products)
 	}
 
-	return products
+	return products, nil
 }
 
 // GetProduct - get details of the product

@@ -9,7 +9,7 @@ import (
 // GetSpecFile - downloads the specfile from apigee given the path of its location
 func (a *ApigeeClient) GetSpecFile(specPath string) ([]byte, error) {
 	// Get the spec file
-	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/%s", a.dataURL, specPath),
+	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s%s", a.dataURL, specPath),
 		WithDefaultHeaders(),
 	).Execute()
 

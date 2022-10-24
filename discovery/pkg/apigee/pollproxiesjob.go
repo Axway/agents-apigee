@@ -44,9 +44,9 @@ type proxyClient interface {
 }
 
 type proxyCache interface {
-	GetSpecWithPath(path string) (string, error)
+	GetSpecWithPath(path string) (*specCacheItem, error)
 	GetSpecPathWithEndpoint(endpoint string) (string, error)
-	AddPublishedProxyToCache(cacheKey string, serviceBody *apic.ServiceBody)
+	AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody)
 }
 
 // job that will poll for any new portals on APIGEE Edge
@@ -56,7 +56,7 @@ type pollProxiesJob struct {
 	cache       proxyCache
 	firstRun    bool
 	logger      log.FieldLogger
-	specsReady  JobFirstRunDone
+	specsReady  jobFirstRunDone
 	pubLock     sync.Mutex
 	publishFunc agent.PublishAPIFunc
 	workers     int
@@ -64,7 +64,7 @@ type pollProxiesJob struct {
 	runningLock sync.Mutex
 }
 
-func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady JobFirstRunDone, workers int) *pollProxiesJob {
+func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady jobFirstRunDone, workers int) *pollProxiesJob {
 	job := &pollProxiesJob{
 		client:      client,
 		cache:       cache,
@@ -127,8 +127,8 @@ func (j *pollProxiesJob) Execute() error {
 	limiter := make(chan string, j.workers)
 
 	wg := sync.WaitGroup{}
+	wg.Add(len(allProxies))
 	for _, proxyName := range allProxies {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			name := <-limiter
@@ -370,7 +370,7 @@ func (j *pollProxiesJob) publish(ctx context.Context) {
 	}
 
 	if err == nil {
-		j.cache.AddPublishedProxyToCache(cacheKey, serviceBody)
+		j.cache.AddPublishedServiceToCache(cacheKey, serviceBody)
 	}
 }
 
