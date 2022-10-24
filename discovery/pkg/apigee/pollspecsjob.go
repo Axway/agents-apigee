@@ -115,6 +115,7 @@ func (j *pollSpecsJob) handleSpec(spec apigee.SpecDetails) {
 	logger := j.logger.WithField("specName", spec.Name).WithField("specID", spec.ID)
 	logger.Trace("handling spec")
 	modDate, _ := time.Parse("2006-01-02T15:04:05.000000Z", spec.Modified)
+	modDate = modDate.Truncate(time.Millisecond) // truncate the nanoseconds
 
 	if !j.cache.HasSpecChanged(spec.ID, modDate) {
 		logger.Trace("spec has not been modified")

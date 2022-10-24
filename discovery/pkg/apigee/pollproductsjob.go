@@ -43,7 +43,6 @@ type productCacheItem struct {
 
 type productCache interface {
 	GetSpecWithName(name string) (*specCacheItem, error)
-	AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody)
 	AddProductToCache(name string, modDate time.Time, specModDate time.Time)
 	HasProductChanged(name string, modDate time.Time, specModDate time.Time) bool
 	GetProductWithName(name string) (*productCacheItem, error)
@@ -218,18 +217,17 @@ func (j *pollProductsJob) handleProduct(productName string) {
 	}
 
 	if err == nil {
-		j.cache.AddPublishedServiceToCache(cacheKey, serviceBody)
 		j.cache.AddProductToCache(productName, ctx.Value(productModDateField).(time.Time), specDetails.ModDate)
 	}
 }
 
 func (j *pollProductsJob) hasProductChanged(ctx context.Context) (context.Context, bool) {
 	logger := getLoggerFromContext(ctx)
+	logger.Trace("checking for product changes")
 
 	productDetails := ctx.Value(productDetailsField).(*models.ApiProduct)
 	specDetails := ctx.Value(specDetailsField).(*specCacheItem)
 	productName := getStringFromContext(ctx, productNameField)
-
 	productModDate := time.UnixMilli(int64(productDetails.LastModifiedAt)).UTC()
 	ctx = context.WithValue(ctx, productModDateField, productModDate)
 	ctx = context.WithValue(ctx, specModDateField, specDetails.ModDate)
@@ -244,12 +242,10 @@ func (j *pollProductsJob) hasProductChanged(ctx context.Context) (context.Contex
 		return ctx, false
 	}
 
-	logger.Debug("checking to see if the product has been published")
-
 	// check if the product exists
 	isPublished := j.isPublishedFunc(productName)
 	if isPublished {
-		logger.Debug("checking published products attributes")
+		logger.Debug("checking published products for changes to the modification date")
 		// check if the mod dates have changed prior to continuing
 		curProdModStr := j.getAttributeFunc(productName, productModDateField.String())
 		curSpecModStr := j.getAttributeFunc(productName, specModDateField.String())
@@ -261,16 +257,21 @@ func (j *pollProductsJob) hasProductChanged(ctx context.Context) (context.Contex
 
 		curProdMod, _ := time.Parse(v1.APIServerTimeFormat, curProdModStr)
 		curSpecMod, _ := time.Parse(v1.APIServerTimeFormat, curSpecModStr)
+		logger := logger.WithField("currentProductModDate", curProdMod).
+			WithField("productModDate", productModDate).
+			WithField("currentSpecModDate", curSpecMod).
+			WithField("specModDate", specDetails.ModDate)
+
 		if productModDate.After(curProdMod) || specDetails.ModDate.After(curSpecMod) {
-			logger.Debug("published product change detected")
+			logger.Trace("published product change detected")
 			return ctx, true
 		}
 
-		logger.Debug("published product no change detected")
+		logger.Trace("published product no change detected")
 		return ctx, false
 	}
 
-	logger.Debug("no published product with name")
+	logger.Trace("no published product with name")
 	return ctx, true
 }
 
