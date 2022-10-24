@@ -47,12 +47,12 @@ jobs:
           git branch --show-current > commit_id
           make build
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: apigee_traceability_agent
           path: traceability/bin/apigee_traceability_agent
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: apigee_traceability_agent.yml
           path: traceability/apigee_traceability_agent.yml

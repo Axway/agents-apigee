@@ -47,7 +47,7 @@ jobs:
           git branch --show-current > commit_id
           make build
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: apigee_discovery_agent
           path: discovery/bin/apigee_discovery_agent
