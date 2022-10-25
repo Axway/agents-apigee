@@ -21,9 +21,11 @@ const (
 )
 
 type provisioner struct {
-	client       client
-	credExpDays  int
-	cacheManager cacheManager
+	client        client
+	credExpDays   int
+	cacheManager  cacheManager
+	isProductMode bool
+	logger        log.FieldLogger
 }
 
 type cacheManager interface {
@@ -48,11 +50,13 @@ type client interface {
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
-func NewProvisioner(client client, credExpDays int, cacheMan cacheManager) prov.Provisioning {
+func NewProvisioner(client client, credExpDays int, cacheMan cacheManager, isProductMode bool) prov.Provisioning {
 	return &provisioner{
-		client:       client,
-		credExpDays:  credExpDays,
-		cacheManager: cacheMan,
+		client:        client,
+		credExpDays:   credExpDays,
+		cacheManager:  cacheMan,
+		isProductMode: isProductMode,
+		logger:        log.NewFieldLogger().WithComponent("provision").WithPackage("apigee"),
 	}
 }
 
@@ -60,10 +64,11 @@ func NewProvisioner(client client, credExpDays int, cacheMan cacheManager) prov.
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
+	logger := p.logger.WithField("handler", "AccessRequestDeprovision").WithField("apiID", apiID).WithField("application", req.GetApplicationName())
 
 	// remove link between api product and app
 
-	log.Infof("deprovisioning access request for api %s from app %s ", apiID, req.GetApplicationName())
+	logger.Info("deprovisioning access request")
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
 
@@ -96,7 +101,8 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	}
 
 	if cred == nil {
-		return failed(ps, fmt.Errorf("app %s does not contain credentials for api %s", appName, apiID))
+		logger.Info("nothing to do")
+		return ps.Success() // no credentials means no access granted
 	}
 
 	err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
@@ -104,7 +110,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 		return failed(ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
 
-	log.Infof("removed access for api %s from app %s", apiID, req.GetApplicationName())
+	logger.Info("removed access")
 
 	return ps.Success()
 }
@@ -114,8 +120,12 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
 	stage := util.ToString(instDetails[defs.AttrExternalAPIStage])
+	logger := p.logger.WithField("handler", "AccessRequestProvision").WithField("apiID", apiID).WithField("application", req.GetApplicationName())
+	if stage != "" {
+		logger = logger.WithField("stage", stage)
+	}
 
-	log.Infof("processing access request for api %s to app %s", apiID, req.GetApplicationName())
+	logger.Info("processing access request")
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
 
@@ -123,7 +133,8 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID)), nil
 	}
 
-	if stage == "" {
+	// stage is required for proxy mode
+	if stage == "" && !p.isProductMode {
 		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIStage)), nil
 	}
 
@@ -161,22 +172,18 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		apiProductName = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
 	}
 
-	product, err := p.client.GetProduct(apiProductName)
-	// only create a product if one is not found
-	if err != nil {
-		product = &models.ApiProduct{
-			ApiResources:  []string{},
-			ApprovalType:  "auto",
-			DisplayName:   apiProductName,
-			Environments:  []string{stage},
-			Name:          apiProductName,
-			Proxies:       []string{apiID},
-			Quota:         quota,
-			QuotaInterval: quotaInterval,
-			QuotaTimeUnit: quotaTimeUnit,
+	var product *models.ApiProduct
+	if p.isProductMode {
+		logger.Debug("handling for product mode")
+		var err error
+		product, err = p.productModeCreateProduct(logger, apiProductName, apiID, quota, quotaInterval, quotaTimeUnit)
+		if err != nil {
+			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
-		log.Infof("creating api product %s for api %s", product.Name, apiID)
-		product, err = p.client.CreateAPIProduct(product)
+	} else {
+		logger.Debug("handling for proxy mode")
+		var err error
+		product, err = p.proxyModeCreateProduct(logger, apiProductName, apiID, stage, quota, quotaInterval, quotaTimeUnit)
 		if err != nil {
 			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
@@ -218,6 +225,67 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	log.Infof("granted access for api %s to app %s", apiID, req.GetApplicationName())
 
 	return ps.AddProperty(prodNameRef, product.Name).Success(), nil
+}
+
+func (p provisioner) productModeCreateProduct(logger log.FieldLogger, targetProductName, currentProductName, quota, quotaInterval, quotaTimeUnit string) (*models.ApiProduct, error) {
+	// get the base product
+	curProduct, err := p.client.GetProduct(currentProductName)
+	if err != nil || targetProductName == currentProductName {
+		// no new product required use the base product
+		return curProduct, err
+	}
+
+	// check if the product/quota map already exists as a product
+	product, err := p.client.GetProduct(targetProductName)
+
+	// only create a product if one is not found
+	if err != nil {
+		product = &models.ApiProduct{
+			ApiResources:  curProduct.ApiResources,
+			ApprovalType:  curProduct.ApprovalType,
+			Attributes:    curProduct.Attributes,
+			Description:   curProduct.Description,
+			DisplayName:   targetProductName,
+			Environments:  curProduct.Environments,
+			Name:          targetProductName,
+			Proxies:       curProduct.Proxies,
+			Quota:         quota,
+			QuotaInterval: quotaInterval,
+			QuotaTimeUnit: quotaTimeUnit,
+			Scopes:        curProduct.Scopes,
+		}
+		logger.Infof("creating api product")
+		product, err = p.client.CreateAPIProduct(product)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return product, err
+}
+
+func (p provisioner) proxyModeCreateProduct(logger log.FieldLogger, apiProductName, proxy, stage, quota, quotaInterval, quotaTimeUnit string) (*models.ApiProduct, error) {
+	product, err := p.client.GetProduct(apiProductName)
+
+	// only create a product if one is not found
+	if err != nil {
+		product = &models.ApiProduct{
+			ApiResources:  []string{},
+			ApprovalType:  "auto",
+			DisplayName:   apiProductName,
+			Environments:  []string{stage},
+			Name:          apiProductName,
+			Proxies:       []string{proxy},
+			Quota:         quota,
+			QuotaInterval: quotaInterval,
+			QuotaTimeUnit: quotaTimeUnit,
+		}
+		logger.Infof("creating api product")
+		product, err = p.client.CreateAPIProduct(product)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return product, err
 }
 
 // ApplicationRequestDeprovision - removes an app from apigee

@@ -50,6 +50,7 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		newAgent.apigeeClient,
 		agentCfg.CentralCfg.GetCredentialConfig().GetExpirationDays(),
 		agent.GetCacheManager(),
+		agentCfg.ApigeeCfg.IsProductMode(),
 	)
 	agent.RegisterProvisioner(provisioner)
 

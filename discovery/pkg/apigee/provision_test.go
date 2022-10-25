@@ -66,10 +66,10 @@ func TestAccessRequestDeprovision(t *testing.T) {
 			status:  provisioning.Error,
 		},
 		{
-			name:        "should return an error when the apiID is not found",
+			name:        "should succeed if no credentials are found, nothing to do",
 			appName:     "app-one",
 			apiID:       "api-123",
-			status:      provisioning.Error,
+			status:      provisioning.Success,
 			missingCred: true,
 		},
 	}
@@ -87,7 +87,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 				appName:     tc.appName,
 				key:         app.Credentials[0].ConsumerKey,
 				productName: tc.apiID,
-			}, 30, &mockCache{t: t})
+			}, 30, &mockCache{t: t}, false)
 
 			if tc.missingCred {
 				app.Credentials = nil
@@ -200,7 +200,7 @@ func TestAccessRequestProvision(t *testing.T) {
 				getAppErr:   tc.getAppErr,
 				productName: tc.apiID,
 				t:           t,
-			}, 30, &mockCache{t: t})
+			}, 30, &mockCache{t: t}, false)
 
 			mar := mock.MockAccessRequest{
 				InstanceDetails: map[string]interface{}{
@@ -269,7 +269,7 @@ func TestApplicationRequestDeprovision(t *testing.T) {
 				productName: tc.apiID,
 				t:           t,
 				rmAppErr:    tc.rmAppErr,
-			}, 30, &mockCache{t: t})
+			}, 30, &mockCache{t: t}, false)
 
 			mar := mock.MockApplicationRequest{
 				AppName:  tc.appName,
@@ -317,7 +317,7 @@ func TestApplicationRequestProvision(t *testing.T) {
 				productName:  tc.apiID,
 				t:            t,
 				createAppErr: tc.createAppErr,
-			}, 30, &mockCache{t: t})
+			}, 30, &mockCache{t: t}, false)
 
 			mar := mock.MockApplicationRequest{
 				AppName:  tc.appName,
@@ -393,7 +393,7 @@ func TestCredentialDeprovision(t *testing.T) {
 				productName: tc.apiID,
 				t:           t,
 				getAppErr:   tc.getAppErr,
-			}, 30, &mockCache{t: t, appName: tc.appName})
+			}, 30, &mockCache{t: t, appName: tc.appName}, false)
 
 			thisHash, _ := util.ComputeHash(key)
 			mcr := mock.MockCredentialRequest{
@@ -462,7 +462,7 @@ func TestCredentialProvision(t *testing.T) {
 				productName: tc.apiID,
 				t:           t,
 				getAppErr:   tc.getAppErr,
-			}, 30, &mockCache{t: t, appName: tc.appName})
+			}, 30, &mockCache{t: t, appName: tc.appName}, false)
 
 			mcr := mock.MockCredentialRequest{
 				AppName:     tc.appName,
@@ -567,7 +567,7 @@ func TestCredentialUpdate(t *testing.T) {
 				t:           t,
 				getAppErr:   tc.getAppErr,
 				enable:      tc.action == provisioning.Enable,
-			}, 30, &mockCache{t: t, appName: tc.appName})
+			}, 30, &mockCache{t: t, appName: tc.appName}, false)
 
 			thisHash, _ := util.ComputeHash(key)
 			details := map[string]string{
