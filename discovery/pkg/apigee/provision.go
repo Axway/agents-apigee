@@ -74,7 +74,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 
 	appName := req.GetApplicationName()
 	if appName == "" {
-		return failed(ps, fmt.Errorf("application name not found"))
+		return failed(logger, ps, fmt.Errorf("application name not found"))
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
@@ -83,11 +83,11 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 			return ps.Success()
 		}
 
-		return failed(ps, fmt.Errorf("failed to retrieve app: %s", err))
+		return failed(logger, ps, fmt.Errorf("failed to retrieve app: %s", err))
 	}
 
 	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s not found", defs.AttrExternalAPIID))
+		return failed(logger, ps, fmt.Errorf("%s not found", defs.AttrExternalAPIID))
 	}
 
 	var cred *models.DeveloperAppCredentials
@@ -107,7 +107,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 
 	err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
+		return failed(logger, ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
 
 	logger.Info("removed access")
@@ -130,17 +130,17 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	devID := p.client.GetDeveloperID()
 
 	if apiID == "" {
-		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID)), nil
+		return failed(logger, ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIID)), nil
 	}
 
 	// stage is required for proxy mode
 	if stage == "" && !p.isProductMode {
-		return failed(ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIStage)), nil
+		return failed(logger, ps, fmt.Errorf("%s name not found", defs.AttrExternalAPIStage)), nil
 	}
 
 	appName := req.GetApplicationName()
 	if appName == "" {
-		return failed(ps, fmt.Errorf("application name not found")), nil
+		return failed(logger, ps, fmt.Errorf("application name not found")), nil
 	}
 
 	// get plan name from access request
@@ -166,7 +166,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 			quotaTimeUnit = "month"
 			quotaInterval = "12"
 		default:
-			return failed(ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
+			return failed(logger, ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
 		}
 
 		apiProductName = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
@@ -178,20 +178,20 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		var err error
 		product, err = p.productModeCreateProduct(logger, apiProductName, apiID, quota, quotaInterval, quotaTimeUnit)
 		if err != nil {
-			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
+			return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
 	} else {
 		logger.Debug("handling for proxy mode")
 		var err error
 		product, err = p.proxyModeCreateProduct(logger, apiProductName, apiID, stage, quota, quotaInterval, quotaTimeUnit)
 		if err != nil {
-			return failed(ps, fmt.Errorf("failed to create api product: %s", err)), nil
+			return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
+		return failed(logger, ps, fmt.Errorf("failed to retrieve app %s: %s", appName, err)), nil
 	}
 
 	if len(app.Credentials) == 0 {
@@ -217,12 +217,12 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 			_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
 			if err != nil {
-				return failed(ps, fmt.Errorf("failed to add api product %s to credential: %s", apiProductName, err)), nil
+				return failed(logger, ps, fmt.Errorf("failed to add api product %s to credential: %s", apiProductName, err)), nil
 			}
 		}
 	}
 
-	log.Infof("granted access for api %s to app %s", apiID, req.GetApplicationName())
+	logger.Info("granted access")
 
 	return ps.AddProperty(prodNameRef, product.Name).Success(), nil
 }
@@ -290,27 +290,31 @@ func (p provisioner) proxyModeCreateProduct(logger log.FieldLogger, apiProductNa
 
 // ApplicationRequestDeprovision - removes an app from apigee
 func (p provisioner) ApplicationRequestDeprovision(req prov.ApplicationRequest) prov.RequestStatus {
-	log.Infof("removing app %s", req.GetManagedApplicationName())
+	logger := p.logger.WithField("handler", "ApplicationRequestDeprovision").WithField("application", req.GetManagedApplicationName())
+
+	logger.Info("removing app")
 	ps := prov.NewRequestStatusBuilder()
 
 	appName := req.GetManagedApplicationName()
 	if appName == "" {
-		return failed(ps, fmt.Errorf("managed application %s not found", appName))
+		return failed(logger, ps, fmt.Errorf("managed application %s not found", appName))
 	}
 
 	err := p.client.RemoveDeveloperApp(appName, p.client.GetDeveloperID())
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to delete app: %s", err))
+		return failed(logger, ps, fmt.Errorf("failed to delete app: %s", err))
 	}
 
-	log.Infof("removed app %s", req.GetManagedApplicationName())
+	logger.Info("removed app")
 
 	return ps.Success()
 }
 
 // ApplicationRequestProvision - creates an apigee app
 func (p provisioner) ApplicationRequestProvision(req prov.ApplicationRequest) prov.RequestStatus {
-	log.Infof("provisioning app %s", req.GetManagedApplicationName())
+	logger := p.logger.WithField("handler", "ApplicationRequestProvision").WithField("application", req.GetManagedApplicationName())
+
+	logger.Info("provisioning app")
 	ps := prov.NewRequestStatusBuilder()
 	app := models.DeveloperApp{
 		Attributes: []models.Attribute{
@@ -322,37 +326,39 @@ func (p provisioner) ApplicationRequestProvision(req prov.ApplicationRequest) pr
 
 	newApp, err := p.client.CreateDeveloperApp(app)
 	if err != nil {
-		return failed(ps, fmt.Errorf("failed to create app: %s", err))
+		return failed(logger, ps, fmt.Errorf("failed to create app: %s", err))
 	}
 
 	// remove the credential created by default for the application, the credential request will create a new one
 	p.client.RemoveAppCredential(app.Name, p.client.GetDeveloperID(), newApp.Credentials[0].ConsumerKey)
 
-	log.Infof("provisioned app %s", req.GetManagedApplicationName())
+	logger.Info("provisioned app")
 
 	return ps.Success()
 }
 
 // CredentialDeprovision - Return success because there are no credentials to remove until the app is deleted
 func (p provisioner) CredentialDeprovision(req prov.CredentialRequest) prov.RequestStatus {
-	log.Infof("removing credentials for app %s", req.GetApplicationName())
+	logger := p.logger.WithField("handler", "CredentialDeprovision").WithField("application", req.GetApplicationName())
+
+	logger.Info("removing credential")
 	ps := prov.NewRequestStatusBuilder()
 
 	appName := req.GetCredentialDetailsValue(appRefName)
 	if appName == "" {
-		return failed(ps, fmt.Errorf("application name not found"))
+		return failed(logger, ps, fmt.Errorf("application name not found"))
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		log.Trace("application had previously been removed")
+		logger.Trace("application had previously been removed")
 		return ps.Success()
 	}
 
 	credKey := ""
 	curHash := req.GetCredentialDetailsValue(credRefKey)
 	if curHash == "" {
-		return failed(ps, fmt.Errorf("credential reference not found"))
+		return failed(logger, ps, fmt.Errorf("credential reference not found"))
 	}
 	for _, cred := range app.Credentials {
 		thisHash, _ := util.ComputeHash(cred.ConsumerKey)
@@ -369,24 +375,28 @@ func (p provisioner) CredentialDeprovision(req prov.CredentialRequest) prov.Requ
 	// remove the credential created by default for the application, the credential request will create a new one
 	err = p.client.RemoveAppCredential(app.Name, p.client.GetDeveloperID(), credKey)
 	if err != nil {
-		return failed(ps, fmt.Errorf("unexpected error removing the credential"))
+		return failed(logger, ps, fmt.Errorf("unexpected error removing the credential"))
 	}
+
+	logger.Info("removed credential")
 	return ps.Success()
 }
 
 // CredentialProvision - retrieves the app credentials for oauth or api key authentication
 func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.RequestStatus, prov.Credential) {
-	log.Infof("provisioning credentials for app %s", req.GetApplicationName())
+	logger := p.logger.WithField("handler", "CredentialDeprovision").WithField("application", req.GetApplicationName())
+
+	logger.Info("provisioning credential")
 	ps := prov.NewRequestStatusBuilder()
 
 	appName := req.GetApplicationName()
 	if appName == "" {
-		return failed(ps, fmt.Errorf("application name not found")), nil
+		return failed(logger, ps, fmt.Errorf("application name not found")), nil
 	}
 
 	curApp, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		return failed(ps, fmt.Errorf("error retrieving app: %s", err)), nil
+		return failed(logger, ps, fmt.Errorf("error retrieving app: %s", err)), nil
 	}
 
 	// associate all products
@@ -399,12 +409,12 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 		}
 	}
 	if len(products) == 0 {
-		return failed(ps, fmt.Errorf("at least one product access is required for a credential")), nil
+		return failed(logger, ps, fmt.Errorf("at least one product access is required for a credential")), nil
 	}
 
 	updateApp, err := p.client.CreateAppCredential(curApp.Name, p.client.GetDeveloperID(), products, p.credExpDays)
 	if err != nil {
-		return failed(ps, fmt.Errorf("error creating app credential: %s", err)), nil
+		return failed(logger, ps, fmt.Errorf("error creating app credential: %s", err)), nil
 	}
 
 	// find the new cred
@@ -435,7 +445,7 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 		cr = credBuilder.SetOAuthIDAndSecret(cred.ConsumerKey, cred.ConsumerSecret)
 	}
 
-	log.Infof("created credentials for app %s", req.GetApplicationName())
+	logger.Info("created credential")
 
 	hash, _ := util.ComputeHash(cred.ConsumerKey)
 	return ps.AddProperty(credRefKey, fmt.Sprintf("%v", hash)).AddProperty(appRefName, appName).Success(), cr
@@ -443,23 +453,25 @@ func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.Reque
 
 // CredentialUpdate -
 func (p provisioner) CredentialUpdate(req prov.CredentialRequest) (prov.RequestStatus, prov.Credential) {
-	log.Infof("updating credentials for app %s", req.GetApplicationName())
+	logger := p.logger.WithField("handler", "CredentialDeprovision").WithField("application", req.GetApplicationName())
+
+	logger.Info("updating credential")
 	ps := prov.NewRequestStatusBuilder()
 
 	appName := req.GetCredentialDetailsValue(appRefName)
 	if appName == "" {
-		return failed(ps, fmt.Errorf("application name not found")), nil
+		return failed(logger, ps, fmt.Errorf("application name not found")), nil
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
 	if err != nil {
-		return failed(ps, fmt.Errorf("error retrieving app: %s", err)), nil
+		return failed(logger, ps, fmt.Errorf("error retrieving app: %s", err)), nil
 	}
 
 	credKey := ""
 	curHash := req.GetCredentialDetailsValue(credRefKey)
 	if curHash == "" {
-		return failed(ps, fmt.Errorf("credential reference not found")), nil
+		return failed(logger, ps, fmt.Errorf("credential reference not found")), nil
 	}
 
 	for _, cred := range app.Credentials {
@@ -471,7 +483,7 @@ func (p provisioner) CredentialUpdate(req prov.CredentialRequest) (prov.RequestS
 	}
 
 	if credKey == "" {
-		return failed(ps, fmt.Errorf("error retrieving the requested credential")), nil
+		return failed(logger, ps, fmt.Errorf("error retrieving the requested credential")), nil
 	}
 
 	if req.GetCredentialAction() == prov.Suspend {
@@ -479,20 +491,20 @@ func (p provisioner) CredentialUpdate(req prov.CredentialRequest) (prov.RequestS
 	} else if req.GetCredentialAction() == prov.Enable {
 		err = p.client.UpdateAppCredential(app.Name, p.client.GetDeveloperID(), credKey, true)
 	} else {
-		return failed(ps, fmt.Errorf("cound not perform the requested action: %s", req.GetCredentialAction())), nil
+		return failed(logger, ps, fmt.Errorf("could not perform the requested action: %s", req.GetCredentialAction())), nil
 	}
 
 	if err != nil {
-		return failed(ps, fmt.Errorf("error updating the app credential: %s", err)), nil
+		return failed(logger, ps, fmt.Errorf("error updating the app credential: %s", err)), nil
 	}
 
-	log.Infof("updated credentials for app %s", req.GetApplicationName())
+	logger.Info("updated credential")
 
 	return ps.Success(), nil
 }
 
-func failed(ps prov.RequestStatusBuilder, err error) prov.RequestStatus {
+func failed(logger log.FieldLogger, ps prov.RequestStatusBuilder, err error) prov.RequestStatus {
 	ps.SetMessage(err.Error())
-	log.Error(fmt.Sprintf("subscription provisioning - %s", err))
+	logger.WithError(err).Error("provisioning event failed", err)
 	return ps.Failed()
 }
