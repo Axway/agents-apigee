@@ -9,6 +9,10 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
+const (
+	developerAppsURL = "%s/developers/%s/apps/%s"
+)
+
 // GetEnvironments - get the list of environments for the org
 func (a *ApigeeClient) GetEnvironments() []string {
 	// Get the developers
@@ -59,7 +63,7 @@ func (a *ApigeeClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.Deve
 		return nil, err
 	}
 
-	response, err := a.newRequest(http.MethodPut, fmt.Sprintf("%s/developers/%s/apps/%s", a.orgURL, app.DeveloperId, app.Name),
+	response, err := a.newRequest(http.MethodPut, fmt.Sprintf(developerAppsURL, a.orgURL, app.DeveloperId, app.Name),
 		WithDefaultHeaders(),
 		WithBody(data),
 	).Execute()
@@ -81,7 +85,7 @@ func (a *ApigeeClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.Deve
 
 // GetDeveloperApp gets an app by name
 func (a *ApigeeClient) GetDeveloperApp(name string) (*models.DeveloperApp, error) {
-	url := fmt.Sprintf("%s/developers/%s/apps/%s", a.orgURL, a.GetDeveloperID(), name)
+	url := fmt.Sprintf(developerAppsURL, a.orgURL, a.GetDeveloperID(), name)
 	response, err := a.newRequest(
 		http.MethodGet, url,
 		WithDefaultHeaders(),
@@ -101,7 +105,7 @@ func (a *ApigeeClient) GetDeveloperApp(name string) (*models.DeveloperApp, error
 // RemoveDeveloperApp - create an app for the developer
 func (a *ApigeeClient) RemoveDeveloperApp(appName, developerID string) error {
 	// create a new developer app
-	response, err := a.newRequest(http.MethodDelete, fmt.Sprintf("%s/developers/%s/apps/%s", a.orgURL, developerID, appName),
+	response, err := a.newRequest(http.MethodDelete, fmt.Sprintf(developerAppsURL, a.orgURL, developerID, appName),
 		WithDefaultHeaders(),
 	).Execute()
 
