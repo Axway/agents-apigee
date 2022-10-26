@@ -9,8 +9,12 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
+const (
+	developerAppsKeysURL = "%s/developers/%s/apps/%s/keys/%s"
+)
+
 func (a *ApigeeClient) GetAppCredential(appName, devID, key string) (*models.DeveloperAppCredentials, error) {
-	url := fmt.Sprintf("%s/developers/%s/apps/%s/keys/%s", a.orgURL, devID, appName, key)
+	url := fmt.Sprintf(developerAppsKeysURL, a.orgURL, devID, appName, key)
 	response, err := a.newRequest(
 		http.MethodGet, url, WithDefaultHeaders(),
 	).Execute()
@@ -32,7 +36,7 @@ func (a *ApigeeClient) GetAppCredential(appName, devID, key string) (*models.Dev
 }
 
 func (a *ApigeeClient) RemoveAppCredential(appName, devID, key string) error {
-	url := fmt.Sprintf("%s/developers/%s/apps/%s/keys/%s", a.orgURL, devID, appName, key)
+	url := fmt.Sprintf(developerAppsKeysURL, a.orgURL, devID, appName, key)
 	response, err := a.newRequest(
 		http.MethodDelete, url, WithDefaultHeaders(),
 	).Execute()
@@ -51,7 +55,7 @@ func (a *ApigeeClient) RemoveAppCredential(appName, devID, key string) error {
 }
 
 func (a *ApigeeClient) UpdateAppCredential(appName, devID, key string, enable bool) error {
-	url := fmt.Sprintf("%s/developers/%s/apps/%s/keys/%s", a.orgURL, devID, appName, key)
+	url := fmt.Sprintf(developerAppsKeysURL, a.orgURL, devID, appName, key)
 
 	action := "revoke"
 	if enable {
@@ -115,7 +119,7 @@ func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr Cred
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/developers/%s/apps/%s/keys/%s", a.orgURL, devID, appName, key)
+	url := fmt.Sprintf(developerAppsKeysURL, a.orgURL, devID, appName, key)
 
 	response, err := a.newRequest(
 		http.MethodPost, url, WithDefaultHeaders(),
