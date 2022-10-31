@@ -21,11 +21,12 @@ const (
 )
 
 type provisioner struct {
-	client        client
-	credExpDays   int
-	cacheManager  cacheManager
-	isProductMode bool
-	logger        log.FieldLogger
+	client                client
+	credExpDays           int
+	cacheManager          cacheManager
+	isProductMode         bool
+	shouldCloneAttributes bool
+	logger                log.FieldLogger
 }
 
 type cacheManager interface {
@@ -50,13 +51,14 @@ type client interface {
 }
 
 // NewProvisioner creates a type to implement the SDK Provisioning methods for handling subscriptions
-func NewProvisioner(client client, credExpDays int, cacheMan cacheManager, isProductMode bool) prov.Provisioning {
+func NewProvisioner(client client, credExpDays int, cacheMan cacheManager, isProductMode, cloneAttributes bool) prov.Provisioning {
 	return &provisioner{
-		client:        client,
-		credExpDays:   credExpDays,
-		cacheManager:  cacheMan,
-		isProductMode: isProductMode,
-		logger:        log.NewFieldLogger().WithComponent("provision").WithPackage("apigee"),
+		client:                client,
+		credExpDays:           credExpDays,
+		cacheManager:          cacheMan,
+		isProductMode:         isProductMode,
+		shouldCloneAttributes: cloneAttributes,
+		logger:                log.NewFieldLogger().WithComponent("provision").WithPackage("apigee"),
 	}
 }
 
@@ -240,10 +242,19 @@ func (p provisioner) productModeCreateProduct(logger log.FieldLogger, targetProd
 
 	// only create a product if one is not found
 	if err != nil {
+		attributes := []models.Attribute{}
+		if p.shouldCloneAttributes {
+			attributes = curProduct.Attributes
+		}
+		attributes = append(attributes, models.Attribute{
+			Name:  agentProductTagName,
+			Value: agentProductTagValue,
+		})
+
 		product = &models.ApiProduct{
 			ApiResources:  curProduct.ApiResources,
 			ApprovalType:  curProduct.ApprovalType,
-			Attributes:    curProduct.Attributes,
+			Attributes:    attributes,
 			Description:   curProduct.Description,
 			DisplayName:   targetProductName,
 			Environments:  curProduct.Environments,

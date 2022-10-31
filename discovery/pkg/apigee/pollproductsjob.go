@@ -144,6 +144,7 @@ func (j *pollProductsJob) Execute() error {
 	wg.Wait()
 	close(limiter)
 
+	j.firstRun = false
 	return nil
 }
 
@@ -286,7 +287,14 @@ func (j *pollProductsJob) shouldPublishProduct(ctx context.Context) bool {
 		}
 		attributes[att.Name] = att.Value
 	}
-	j.logger.WithField("attributes", attributes).Trace("checking against discovery filter")
+	logger := j.logger.WithField("attributes", attributes)
+
+	if val, ok := attributes[agentProductTagName]; ok && val == agentProductTagValue {
+		logger.Trace("product was created by agent, skipping")
+		return false
+	}
+
+	logger.WithField("attributes", attributes).Trace("checking against discovery filter")
 	return j.shouldPushAPI(attributes)
 }
 
