@@ -51,6 +51,7 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		agentCfg.CentralCfg.GetCredentialConfig().GetExpirationDays(),
 		agent.GetCacheManager(),
 		agentCfg.ApigeeCfg.IsProductMode(),
+		agentCfg.ApigeeCfg.ShouldCloneAttributes(),
 	)
 	agent.RegisterProvisioner(provisioner)
 

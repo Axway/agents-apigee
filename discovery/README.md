@@ -141,6 +141,7 @@ Here is a sample Quota policy that may be added to the desired Proxies.
 | APIGEE_DEVELOPERID         | The Apigee developer, email, that will own all apps                                  |                                   |
 | APIGEE_DISCOVERYMODE       | The mode in which the agent operates, discover proxies (proxy) or products (product) | proxy                             |
 | APIGEE_FILTER              | The tag filter to use against an Apigee product's attributes, only in product mode   |                                   |
+| APIGEE_CLONEATTRIBUTES     | Set this to true if the tags on a product should also be cloned on provisioning      | false                             |
 | APIGEE_INTERVAL_PROXY      | The polling interval checking for API Proxy changes, only in proxy mode              | 30s (30 seconds)                  |
 | APIGEE_INTERVAL_PRODUCT    | The polling interval checking for Product changes, only in product mode              | 30s (30 seconds)                  |
 | APIGEE_INTERVAL_SPEC       | The polling interval for checking for new Specs                                      | 30m (30 minute)                   |

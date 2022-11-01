@@ -18,5 +18,7 @@ const (
 )
 
 const (
-	cacheKeyAttribute = "cacheKey"
+	cacheKeyAttribute    = "cacheKey"
+	agentProductTagName  = "AgentCreated"
+	agentProductTagValue = "true"
 )
