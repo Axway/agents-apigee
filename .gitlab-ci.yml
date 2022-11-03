@@ -124,55 +124,26 @@ whitesource:on-schedule:
 # CSR - overridden from csrjobs.yml to effectively not see these jobs ever
 ####################
 fetch-iriusrisk:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
+  extends: .only-never
 
 fetch-iriusrisk:on-schedule:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
+  extends: .only-never
 
 twistlock:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
+  extends: .only-never
 
 twistlock:on-schedule:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
+  extends: .only-never
 
 twistlock-master:
-  only:
-    refs:
-      - xxxxx
-  except:
-    refs:
-      - yyyyy
+  extends: .only-never
 
 
 ###################
 # These overridden from jobs.xml to never run      
 ###################
 test:
-  only:
-    refs:
-      - never
+  extends: .only-never
 
 error-check:
-  only:
-    refs:
-      - never
+  extends: .only-never
