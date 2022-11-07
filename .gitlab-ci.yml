@@ -121,23 +121,48 @@ whitesource:on-schedule:
     - git checkout ${GIT_TAG_PREFIX}${LATEST_TAG}
 
 ####################
-# CSR - overridden from csrjobs.yml to effectively not see these jobs ever
+# CSR - overridden from csrjobs.yml to effectively not see these jobs ever. For some reason, probably multi-level
+# extends and overrides, using only-never for these csr jobs doesn't work. Had to do it like this.
 ####################
 fetch-iriusrisk:
-  extends: .only-never
+  only:
+    refs:
+      - never
+  except:
+    refs:
+      - neverever
 
 fetch-iriusrisk:on-schedule:
-  extends: .only-never
+  only:
+    refs:
+      - never
+  except:
+    refs:
+      - neverever
 
 twistlock:
-  extends: .only-never
+  only:
+    refs:
+      - never
+  except:
+    refs:
+      - neverever
 
 twistlock:on-schedule:
-  extends: .only-never
+  only:
+    refs:
+      - never
+  except:
+    refs:
+      - neverever
 
 twistlock-master:
-  extends: .only-never
-
+  only:
+    refs:
+      - never
+  except:
+    refs:
+      - neverever
 
 ###################
 # These overridden from jobs.xml to never run      
