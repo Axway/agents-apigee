@@ -169,6 +169,3 @@ twistlock-master:
 ###################
 test:
   extends: .only-never
-
-error-check:
-  extends: .only-never
