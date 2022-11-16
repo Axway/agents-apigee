@@ -4,7 +4,7 @@ go 1.18
 
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
-require github.com/Axway/agent-sdk v1.1.41
+require github.com/Axway/agent-sdk v1.1.42-0.20221116173536-c0fb12bd646f
 
 require (
 	github.com/armon/go-radix v1.0.0 // indirect
