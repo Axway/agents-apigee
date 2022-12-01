@@ -126,6 +126,9 @@ func (j *pollProxiesJob) Execute() error {
 
 	limiter := make(chan string, j.workers)
 
+	agent.PublishingLock()
+	defer agent.PublishingUnlock()
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(allProxies))
 	for _, proxyName := range allProxies {
