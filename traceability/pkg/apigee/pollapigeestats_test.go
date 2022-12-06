@@ -19,26 +19,37 @@ const testdata = "testdata/"
 type mockCollector struct {
 	metric.Collector
 	apiCounts map[string][]int
-	total     *int
-	successes *int
-	errors    *int
+	total     int
+	successes int
+	errors    int
 	mutex     *sync.Mutex
 }
 
-func (m mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string, duration, bytes int64, appName string) {
+func newMockCollector() *mockCollector {
+	return &mockCollector{
+		apiCounts: make(map[string][]int),
+		mutex:     &sync.Mutex{},
+	}
+}
+
+func (m *mockCollector) AddMetricDetail(metricDetail metric.Detail) {
+	m.AddMetric(metricDetail.APIDetails, metricDetail.StatusCode, metricDetail.Duration, metricDetail.Bytes, metricDetail.AppDetails.Name)
+}
+
+func (m *mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string, duration, bytes int64, appName string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	apiCount := make([]int, 3)
 	if c, ok := m.apiCounts[apiDetails.Name]; ok {
 		apiCount = c
 	}
-	*m.total++
+	m.total++
 	apiCount[0]++
 	if code, _ := strconv.Atoi(statusCode); code < 400 {
-		*m.successes++
+		m.successes++
 		apiCount[1]++
 	} else {
-		*m.errors++
+		m.errors++
 		apiCount[2]++
 	}
 	m.apiCounts[apiDetails.Name] = apiCount
@@ -155,13 +166,7 @@ func TestProcessMetric(t *testing.T) {
 			job := newPollStatsJob(opts...)
 			job.clonedProduct["Test-planname"] = "Test"
 
-			mCollector := mockCollector{
-				apiCounts: make(map[string][]int),
-				total:     new(int),
-				successes: new(int),
-				errors:    new(int),
-				mutex:     &sync.Mutex{},
-			}
+			mCollector := newMockCollector()
 			job.collector = mCollector
 
 			// send all metrics through the processor
@@ -170,9 +175,9 @@ func TestProcessMetric(t *testing.T) {
 			}
 
 			// check the totals
-			assert.Equal(t, test.total, *mCollector.total)
-			assert.Equal(t, test.successes, *mCollector.successes)
-			assert.Equal(t, test.errors, *mCollector.errors)
+			assert.Equal(t, test.total, mCollector.total)
+			assert.Equal(t, test.successes, mCollector.successes)
+			assert.Equal(t, test.errors, mCollector.errors)
 
 			// check the counts for each api
 			for proxy, expectedCounts := range test.apiCalls {
