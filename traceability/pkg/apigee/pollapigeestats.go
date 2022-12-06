@@ -8,9 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
+	"github.com/Axway/agent-sdk/pkg/transaction/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 )
 
@@ -22,8 +25,17 @@ const (
 	avgResponseMetric = "avg(total_response_time)"
 )
 
+type statsClient interface {
+	GetEnvironments() []string
+	GetStats(env, dimension, metricSelect string, start, end time.Time) (*models.Metrics, error)
+	GetProduct(productName string) (*models.ApiProduct, error)
+}
+
+type isReady func() bool
+
 type metricData struct {
 	environment    string
+	baseName       string
 	name           string
 	timestamp      int64
 	count          string
@@ -34,25 +46,33 @@ type metricData struct {
 
 type pollApigeeStats struct {
 	jobs.Job
-	id             string
-	agent          *Agent
 	endTime        time.Time
 	startTime      time.Time
 	lastTime       time.Time
 	increment      time.Duration // increment the end and start times by this amount
 	cacheKeys      []string
+	envs           []string
 	cacheKeysMutex *sync.Mutex
 	cacheClean     bool
 	collector      metric.Collector
+	ready          isReady
+	client         statsClient
+	statCache      cache.Cache
+	cachePath      string
+	clonedProduct  map[string]string
+	dimension      string
+	isProduct      bool
 }
 
-func newPollStatsJob(agent *Agent, options ...func(*pollApigeeStats)) *pollApigeeStats {
+func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 	job := &pollApigeeStats{
-		agent:          agent,
 		collector:      metric.GetMetricCollector(),
 		cacheKeys:      make([]string, 0),
 		cacheKeysMutex: &sync.Mutex{},
+		clonedProduct:  make(map[string]string),
+		dimension:      "apiproxy",
 	}
+
 	for _, o := range options {
 		o(job)
 	}
@@ -83,41 +103,39 @@ func withCacheClean() func(p *pollApigeeStats) {
 	}
 }
 
-func registerPollStatsJob(agent *Agent) (string, error) {
-	// create the job that runs every minute
-	job := newPollStatsJob(agent,
-		withCacheClean(),
-	)
-	lastStatTimeIface, err := agent.statCache.Get(lastStartTimeKey)
-	if err == nil {
-		//"2022-01-21T11:31:32.079962632-07:00"
-		// there was a last time in the cache
-		lastStatTime, _ := time.Parse(time.RFC3339Nano, lastStatTimeIface.(string))
-		if time.Now().Add(time.Hour*-1).Sub(lastStatTime) > 0 {
-			// last start time not within an hour
-			catchUpJob := newPollStatsJob(agent,
-				withStartTime(lastStatTime),
-				withEndTime(lastStatTime),
-				withIncrement(time.Hour),
-			) // create the job that catches up and stops
-			jobID, _ := jobs.RegisterIntervalJobWithName(catchUpJob, time.Second*10, "Apigee Stats Catch Up")
-			catchUpJob.setJobID(jobID) // add the job id
-		}
-	} else {
-		agent.CatchUpDone()
+func withStatsClient(client statsClient) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.client = client
 	}
-
-	jobID, _ := jobs.RegisterIntervalJobWithName(job, time.Minute, "Apigee Stats")
-	job.setJobID(jobID)
-	return "", nil
 }
 
-func (j *pollApigeeStats) setJobID(id string) {
-	j.id = id
+func withStatsCache(cache cache.Cache) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.statCache = cache
+	}
+}
+
+func withCachePath(path string) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.cachePath = path
+	}
+}
+
+func withIsReady(ready isReady) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.ready = ready
+	}
+}
+
+func withProductMode() func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.dimension = "api_product"
+		p.isProduct = true
+	}
 }
 
 func (j *pollApigeeStats) Ready() bool {
-	return j.agent.ready && j.agent.apigeeClient.IsReady()
+	return j.ready()
 }
 
 func (j *pollApigeeStats) Status() error {
@@ -125,7 +143,7 @@ func (j *pollApigeeStats) Status() error {
 }
 
 func (j *pollApigeeStats) Execute() error {
-	j.agent.getApigeeEnvironments()
+	j.envs = j.client.GetEnvironments()
 	lastTime := j.lastTime
 	startTime := j.startTime
 	if j.increment == 0 {
@@ -135,11 +153,11 @@ func (j *pollApigeeStats) Execute() error {
 
 	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
-	for _, envName := range j.agent.envs {
+	for _, envName := range j.envs {
 		wg.Add(1)
 		go func(envName string) {
 			defer wg.Done()
-			metrics, err := j.agent.apigeeClient.GetStats(envName, metricSelect, startTime, lastTime)
+			metrics, err := j.client.GetStats(envName, j.dimension, metricSelect, startTime, lastTime)
 			if err != nil {
 				return
 			}
@@ -148,6 +166,7 @@ func (j *pollApigeeStats) Execute() error {
 		}(envName)
 	}
 	wg.Wait()
+
 	if j.cacheClean {
 		j.cleanCache()
 	}
@@ -156,16 +175,11 @@ func (j *pollApigeeStats) Execute() error {
 		// update the start and lastTime times
 		j.startTime = j.startTime.Add(j.increment)
 		j.lastTime = j.lastTime.Add(j.increment)
-		j.agent.statCache.Set(lastStartTimeKey, startTime.String())
-		if j.startTime.Sub(j.endTime) > 0 {
-			// all caught up
-			j.agent.CatchUpDone()
-			go jobs.UnregisterJob(j.id)
-		}
-	} else if j.agent.catchUpDone {
-		j.agent.statCache.Set(lastStartTimeKey, startTime.String())
+		j.statCache.Set(lastStartTimeKey, startTime.String())
 	}
-	j.agent.statCache.Save(j.agent.cacheFilePath)
+
+	j.statCache.Set(lastStartTimeKey, startTime.String())
+	j.statCache.Save(j.cachePath)
 
 	return nil
 }
@@ -209,26 +223,51 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 		for i := range d.Metrics[0].MetricValues {
 			metData := &metricData{
 				environment:    metrics.Environments[0].Name,
-				name:           d.Name,
+				name:           j.getBaseProduct(d.Name),
+				baseName:       d.Name,
 				timestamp:      d.Metrics[metricsIndex[countMetric]].MetricValues[i].Timestamp,
 				count:          d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value,
 				policyErrCount: d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
 				serverErrCount: d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
 				responseTime:   d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
 			}
+			j.processMetric(metData)
 			// get the error count metric
-			wg.Add(1)
-			go func(metData *metricData) {
-				defer wg.Done()
-				j.processMetric(metData)
-			}(metData)
+			// wg.Add(1)
+			// go func(metData *metricData) {
+			// 	defer wg.Done()
+			// 	j.processMetric(metData)
+			// }(metData)
 		}
 	}
 	wg.Wait()
 }
 
+func (j *pollApigeeStats) getBaseProduct(name string) string {
+	if !j.isProduct {
+		// the dimension being queried is not api_product, return the name back
+		return name
+	}
+
+	if p, found := j.clonedProduct[name]; found {
+		return p
+	}
+
+	prod, err := j.client.GetProduct(name)
+	if err != nil || prod == nil {
+		return name
+	}
+	for _, att := range prod.Attributes {
+		if att.Name == apigee.ClonedProdAttribute {
+			j.clonedProduct[name] = att.Value
+			return att.Value
+		}
+	}
+	return name
+}
+
 func (j *pollApigeeStats) processMetric(metData *metricData) {
-	metricCacheKey := fmt.Sprintf("%s-%s-%d", metData.environment, metData.name, metData.timestamp)
+	metricCacheKey := fmt.Sprintf("%s-%s-%d", metData.environment, metData.baseName, metData.timestamp)
 	j.cacheKeysMutex.Lock()
 	j.cacheKeys = append(j.cacheKeys, metricCacheKey)
 	j.cacheKeysMutex.Unlock()
@@ -238,7 +277,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 		ProxyName: metData.name,
 		Timestamp: metData.timestamp,
 	}
-	if data, err := j.agent.statCache.Get(metricCacheKey); err == nil {
+	if data, err := j.statCache.Get(metricCacheKey); err == nil {
 		stringData := data.(string)
 		err := json.Unmarshal([]byte(stringData), &newMetricData)
 		if err != nil {
@@ -281,16 +320,29 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	// calculate the number of successes
 	newMetricData.Success = newMetricData.Total - newMetricData.PolicyError - newMetricData.ServerError
 
-	// create teh api details structure for the metric collector
-	details := metric.APIDetails{
-		ID:       fmt.Sprintf("%s-%s", metData.name, metData.environment),
-		Name:     fmt.Sprintf("%s (%s)", metData.name, metData.environment),
+	// create the api details structure for the metric collector
+	apiName := fmt.Sprintf("%s (%s)", metData.name, metData.environment)
+	apiID := util.FormatProxyID(fmt.Sprintf("%s-%s", metData.name, metData.environment))
+	if j.isProduct {
+		apiName = metData.name
+		apiID = util.FormatProxyID(metData.name)
+	}
+
+	apiDetail := metric.APIDetails{
+		ID:       apiID,
+		Name:     apiName,
 		Revision: 1,
 	}
 	if newMetricData.ReportedPolicyError < newMetricData.PolicyError {
 		count := newMetricData.PolicyError - newMetricData.ReportedPolicyError
 		for count > 0 {
-			j.collector.AddMetric(details, "400", newMetricData.ResponseTime, 0, "")
+			j.collector.AddMetricDetail(metric.Detail{
+				APIDetails: apiDetail,
+				StatusCode: "400",
+				Duration:   newMetricData.ResponseTime,
+				Bytes:      0,
+				AppDetails: metric.AppDetails{},
+			})
 			count--
 			newMetricData.ReportedPolicyError++
 		}
@@ -298,7 +350,13 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	if newMetricData.ReportedServerError < newMetricData.ServerError {
 		count := newMetricData.ServerError - newMetricData.ReportedServerError
 		for count > 0 {
-			j.collector.AddMetric(details, "500", newMetricData.ResponseTime, 0, "")
+			j.collector.AddMetricDetail(metric.Detail{
+				APIDetails: apiDetail,
+				StatusCode: "500",
+				Duration:   newMetricData.ResponseTime,
+				Bytes:      0,
+				AppDetails: metric.AppDetails{},
+			})
 			count--
 			newMetricData.ReportedServerError++
 		}
@@ -306,7 +364,13 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	if newMetricData.ReportedSuccess < newMetricData.Success {
 		count := newMetricData.Success - newMetricData.ReportedSuccess
 		for count > 0 {
-			j.collector.AddMetric(details, "200", newMetricData.ResponseTime, 0, "")
+			j.collector.AddMetricDetail(metric.Detail{
+				APIDetails: apiDetail,
+				StatusCode: "200",
+				Duration:   newMetricData.ResponseTime,
+				Bytes:      0,
+				AppDetails: metric.AppDetails{},
+			})
 			count--
 			newMetricData.ReportedSuccess++
 		}
@@ -316,7 +380,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	if err != nil {
 		return
 	}
-	err = j.agent.statCache.Set(metricCacheKey, string(data))
+	err = j.statCache.Set(metricCacheKey, string(data))
 	if err != nil {
 		log.Error(err)
 	}
@@ -324,7 +388,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 
 func (j *pollApigeeStats) cleanCache() {
 	// get cache keys from cache
-	knownKeys := j.agent.statCache.GetKeys()
+	knownKeys := j.statCache.GetKeys()
 
 	// find the keys that can be cleaned
 	cleanKeys := make([]string, 0)
@@ -349,6 +413,9 @@ func (j *pollApigeeStats) cleanCache() {
 
 	// clean the cache items with keys from cleanKeys
 	for _, key := range cleanKeys {
-		j.agent.statCache.Delete(key)
+		j.statCache.Delete(key)
 	}
+
+	a := 1
+	_ = a
 }

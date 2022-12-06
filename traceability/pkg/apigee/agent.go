@@ -1,10 +1,14 @@
 package apigee
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/Axway/agent-sdk/pkg/cache"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
+	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/traceability"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
@@ -34,8 +38,6 @@ type Agent struct {
 	apigeeClient  *apigee.ApigeeClient
 	statCache     cache.Cache
 	cacheFilePath string
-	envs          []string
-	catchUpDone   bool
 	ready         bool
 }
 
@@ -50,31 +52,72 @@ func NewAgent(agentCfg *AgentConfig) (*Agent, error) {
 		apigeeClient: apigeeClient,
 		cfg:          agentCfg,
 		statCache:    cache.New(),
-		catchUpDone:  false,
 	}
 
 	return thisAgent, nil
 }
 
-//CatchUpDone - signal when the catch up job is complete
-func (a *Agent) CatchUpDone() {
-	a.catchUpDone = true
-}
-
-//BeatsReady - signal that the beats are ready
+// BeatsReady - signal that the beats are ready
 func (a *Agent) BeatsReady() {
 	a.setupCache()
-	registerPollStatsJob(a)
+	a.registerPollStatsJob()
 	a.ready = true
 }
 
-//getApigeeEnvironments -
-func (a *Agent) getApigeeEnvironments() {
-	a.envs = a.apigeeClient.GetEnvironments()
+func (a *Agent) IsReady() bool {
+	return a.ready && a.apigeeClient.IsReady()
 }
 
-//setupCache -
+// setupCache -
 func (a *Agent) setupCache() {
 	a.cacheFilePath = filepath.Join(traceability.GetDataDirPath(), "cache", apiStatCacheFile)
 	a.statCache.Load(a.cacheFilePath)
+}
+
+func (a *Agent) registerPollStatsJob() (string, error) {
+	var client statsClient = a.apigeeClient
+
+	val := os.Getenv("QA_SIMULATE_APIGEE_STATS")
+	if strings.ToLower(val) == "true" {
+		products, _ := a.apigeeClient.GetProducts()
+		client = &simulate{
+			client:   a.apigeeClient,
+			products: products,
+		}
+	}
+
+	// create the job that runs every minute
+	baseOpts := []func(*pollApigeeStats){
+		withStatsClient(client),
+		withIsReady(a.IsReady),
+		withStatsCache(a.statCache),
+		withCachePath(a.cacheFilePath),
+	}
+	if a.apigeeClient.GetConfig().IsProductMode() {
+		baseOpts = append(baseOpts, withProductMode())
+	}
+
+	job := newPollStatsJob(append(baseOpts, withCacheClean())...)
+	lastStatTimeIface, err := a.statCache.Get(lastStartTimeKey)
+	if err == nil {
+		//"2022-01-21T11:31:32.079962632-07:00"
+		// there was a last time in the cache
+		lastStatTime, _ := time.Parse(time.RFC3339Nano, lastStatTimeIface.(string))
+		if time.Now().Add(time.Hour*-1).Sub(lastStatTime) > 0 {
+			// last start time not within an hour
+			catchUpJob := newPollStatsJob(
+				append(baseOpts,
+					[]func(*pollApigeeStats){
+						withStartTime(lastStatTime),
+						withEndTime(lastStatTime),
+						withIncrement(time.Hour),
+					}...,
+				)...,
+			) // create the job that catches up and stops
+			catchUpJob.Execute()
+		}
+	}
+
+	jobs.RegisterIntervalJobWithName(job, time.Minute, "Apigee Stats")
+	return "", nil
 }

@@ -1,6 +1,8 @@
 apigee_traceability_agent:
   apigee:
     organization: ${APIGEE_ORGANIZATION}
+    discoveryMode: ${APIGEE_DISCOVERYMODE}
+    developerID: ${APIGEE_DEVELOPERID}
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}

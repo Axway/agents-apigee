@@ -44,14 +44,37 @@ func (m mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string
 	m.apiCounts[apiDetails.Name] = apiCount
 }
 
+type mockClient struct {
+	envs          []string
+	responseCount int
+	statResponses []string
+}
+
+func (m *mockClient) GetEnvironments() []string {
+	return m.envs
+}
+
+func (m *mockClient) GetStats(env, dimension, metricSelect string, start, end time.Time) (*models.Metrics, error) {
+	content, _ := ioutil.ReadFile(testdata + m.statResponses[m.responseCount])
+	metrics := &models.Metrics{}
+	json.Unmarshal(content, metrics)
+	m.responseCount++
+	return metrics, nil
+}
+
+func (m *mockClient) GetProduct(productName string) (*models.ApiProduct, error) {
+	return nil, nil
+}
+
 func TestProcessMetric(t *testing.T) {
 	testCases := []struct {
-		name      string
-		responses []string
-		total     int
-		successes int
-		errors    int
-		apiCalls  map[string][]int
+		name          string
+		responses     []string
+		total         int
+		successes     int
+		errors        int
+		apiCalls      map[string][]int
+		isProductMode bool
 	}{
 		{
 			name:      "Only Success",
@@ -104,14 +127,34 @@ func TestProcessMetric(t *testing.T) {
 				"Swagger-Petstore (prod)": {1788, 894, 894},
 			},
 		},
+		{
+			name:      "Real Data - Product Mode",
+			responses: []string{"real_data_2.json"},
+			total:     47,
+			successes: 47,
+			errors:    0,
+			apiCalls: map[string][]int{
+				"Test": {24, 24, 0},
+			},
+			isProductMode: true,
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			agent := &Agent{
-				statCache: cache.New(),
+			opts := []func(*pollApigeeStats){
+				withStatsCache(cache.New()),
+				withStatsClient(&mockClient{
+					statResponses: test.responses,
+					envs:          []string{"test"},
+				}),
 			}
-			job := newPollStatsJob(agent)
+			if test.isProductMode {
+				opts = append(opts, withProductMode())
+			}
+			job := newPollStatsJob(opts...)
+			job.clonedProduct["Test-planname"] = "Test"
+
 			mCollector := mockCollector{
 				apiCounts: make(map[string][]int),
 				total:     new(int),
@@ -122,11 +165,8 @@ func TestProcessMetric(t *testing.T) {
 			job.collector = mCollector
 
 			// send all metrics through the processor
-			for _, file := range test.responses {
-				content, _ := ioutil.ReadFile(testdata + file)
-				metrics := &models.Metrics{}
-				json.Unmarshal(content, metrics)
-				job.processMetricResponse(metrics)
+			for range test.responses {
+				job.Execute()
 			}
 
 			// check the totals
@@ -181,16 +221,15 @@ func TestCleanCache(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			agent := &Agent{
-				statCache: cache.New(),
-			}
-			job := newPollStatsJob(agent)
+			job := newPollStatsJob(
+				withStatsCache(cache.New()),
+			)
 
 			expected := test.inputs[len(test.inputs)-1 : len(test.inputs)][0]
 			// load the cache with keys from all inputs and send inputs to cleanCache
 			for _, in := range test.inputs {
 				for _, key := range in {
-					agent.statCache.Set(key, nil)
+					job.statCache.Set(key, nil)
 				}
 				job.cacheKeys = in
 				job.cleanCache()
@@ -198,13 +237,13 @@ func TestCleanCache(t *testing.T) {
 
 			// check that all expected keys still in cache
 			for _, key := range expected {
-				_, err := agent.statCache.Get(key)
+				_, err := job.statCache.Get(key)
 				assert.Nil(t, err)
 			}
 
 			// check that all cleaned keys not in cache
 			for _, key := range test.cleanedKeys {
-				_, err := agent.statCache.Get(key)
+				_, err := job.statCache.Get(key)
 				assert.NotNil(t, err)
 			}
 		})
@@ -213,27 +252,36 @@ func TestCleanCache(t *testing.T) {
 
 func TestNewPollStatsJob(t *testing.T) {
 	testCases := []struct {
-		name       string
-		startTime  time.Time
-		endTime    time.Time
-		increment  time.Duration
-		cacheClean bool
+		name          string
+		startTime     time.Time
+		endTime       time.Time
+		increment     time.Duration
+		cacheClean    bool
+		productMode   bool
+		isReady       bool
+		cachePath     string
+		withStatCache bool
 	}{
 		{
 			name: "No Options",
 		},
 		{
-			name:       "All Options",
-			startTime:  time.Now().Add(time.Hour * -1),
-			endTime:    time.Now(),
-			increment:  time.Hour,
-			cacheClean: true,
+			name:          "All Options",
+			startTime:     time.Now().Add(time.Hour * -1),
+			endTime:       time.Now(),
+			increment:     time.Hour,
+			cacheClean:    true,
+			productMode:   true,
+			isReady:       true,
+			cachePath:     "/path/to/cache",
+			withStatCache: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			opts := make([]func(*pollApigeeStats), 0)
+			opts = append(opts, withStatsCache(cache.New()))
 
 			if !test.startTime.IsZero() {
 				opts = append(opts, withStartTime(test.startTime))
@@ -247,22 +295,42 @@ func TestNewPollStatsJob(t *testing.T) {
 			if test.cacheClean {
 				opts = append(opts, withCacheClean())
 			}
-
-			agent := &Agent{
-				statCache: cache.New(),
+			if test.productMode {
+				opts = append(opts, withProductMode())
 			}
-			job := newPollStatsJob(agent, opts...)
+			if test.isReady {
+				opts = append(opts, withIsReady(func() bool { return true }))
+			}
+			if test.cachePath != "" {
+				opts = append(opts, withCachePath(test.cachePath))
+			}
+			if test.withStatCache {
+				opts = append(opts, withStatsCache(cache.New()))
+			}
+
+			job := newPollStatsJob(opts...)
 
 			assert.NotNil(t, job)
 			assert.Equal(t, test.startTime, job.startTime)
 			assert.Equal(t, test.endTime, job.endTime)
 			assert.Equal(t, test.increment, job.increment)
+			assert.Equal(t, test.cachePath, job.cachePath)
 			assert.Equal(t, []string{}, job.cacheKeys)
 			assert.NotNil(t, job.cacheKeysMutex)
 			if test.cacheClean {
 				assert.True(t, job.cacheClean)
 			} else {
 				assert.False(t, job.cacheClean)
+			}
+			if test.productMode {
+				assert.True(t, job.isProduct)
+			} else {
+				assert.False(t, job.isProduct)
+			}
+			if test.isReady {
+				assert.NotNil(t, job.ready)
+			} else {
+				assert.Nil(t, job.ready)
 			}
 		})
 	}
