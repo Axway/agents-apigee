@@ -246,10 +246,16 @@ func (p provisioner) productModeCreateProduct(logger log.FieldLogger, targetProd
 		if p.shouldCloneAttributes {
 			attributes = curProduct.Attributes
 		}
-		attributes = append(attributes, models.Attribute{
-			Name:  agentProductTagName,
-			Value: agentProductTagValue,
-		})
+		attributes = append(attributes, []models.Attribute{
+			{
+				Name:  agentProductTagName,
+				Value: agentProductTagValue,
+			},
+			{
+				Name:  apigee.ClonedProdAttribute,
+				Value: curProduct.Name,
+			},
+		}...)
 
 		product = &models.ApiProduct{
 			ApiResources:  curProduct.ApiResources,

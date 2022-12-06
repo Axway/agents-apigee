@@ -12,6 +12,10 @@ const (
 	refresh
 )
 
+const (
+	ClonedProdAttribute = "ClonedProduct"
+)
+
 var ApigeeAgentAttribute = models.Attribute{
 	Name:  "createdBy",
 	Value: "apigee-agent",
