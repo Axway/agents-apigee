@@ -1,4 +1,4 @@
-package apigee
+package statsmock
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/traceability/pkg/apigee/definitions"
 )
 
 const maxNumAPIs = 5
@@ -16,6 +17,13 @@ const maxNumTxns = 5
 type simulate struct {
 	client   *apigee.ApigeeClient
 	products apigee.Products
+}
+
+func NewStatsMock(client *apigee.ApigeeClient, products apigee.Products) definitions.StatsClient {
+	return &simulate{
+		client:   client,
+		products: products,
+	}
 }
 
 func (s *simulate) GetEnvironments() []string {

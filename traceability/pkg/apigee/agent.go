@@ -13,6 +13,8 @@ import (
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/config"
+	"github.com/Axway/agents-apigee/traceability/pkg/apigee/definitions"
+	"github.com/Axway/agents-apigee/traceability/pkg/apigee/statsmock"
 )
 
 const (
@@ -75,15 +77,12 @@ func (a *Agent) setupCache() {
 }
 
 func (a *Agent) registerPollStatsJob() (string, error) {
-	var client statsClient = a.apigeeClient
+	var client definitions.StatsClient = a.apigeeClient
 
 	val := os.Getenv("QA_SIMULATE_APIGEE_STATS")
 	if strings.ToLower(val) == "true" {
 		products, _ := a.apigeeClient.GetProducts()
-		client = &simulate{
-			client:   a.apigeeClient,
-			products: products,
-		}
+		client = statsmock.NewStatsMock(a.apigeeClient, products)
 	}
 
 	// create the job that runs every minute

@@ -15,6 +15,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/traceability/pkg/apigee/definitions"
 )
 
 const (
@@ -24,12 +25,6 @@ const (
 	serverErrMetric   = "sum(target_error)"
 	avgResponseMetric = "avg(total_response_time)"
 )
-
-type statsClient interface {
-	GetEnvironments() []string
-	GetStats(env, dimension, metricSelect string, start, end time.Time) (*models.Metrics, error)
-	GetProduct(productName string) (*models.ApiProduct, error)
-}
 
 type isReady func() bool
 
@@ -56,7 +51,7 @@ type pollApigeeStats struct {
 	cacheClean     bool
 	collector      metric.Collector
 	ready          isReady
-	client         statsClient
+	client         definitions.StatsClient
 	statCache      cache.Cache
 	cachePath      string
 	clonedProduct  map[string]string
@@ -103,7 +98,7 @@ func withCacheClean() func(p *pollApigeeStats) {
 	}
 }
 
-func withStatsClient(client statsClient) func(p *pollApigeeStats) {
+func withStatsClient(client definitions.StatsClient) func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
 		p.client = client
 	}
@@ -195,7 +190,6 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 		return
 	}
 
-	wg := &sync.WaitGroup{}
 	// get the index of each metric
 	var metricsIndex = map[string]int{
 		countMetric:       -1,
@@ -221,7 +215,7 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 
 	for _, d := range metrics.Environments[0].Dimensions { // api_proxies
 		for i := range d.Metrics[0].MetricValues {
-			metData := &metricData{
+			j.processMetric(&metricData{
 				environment:    metrics.Environments[0].Name,
 				name:           j.getBaseProduct(d.Name),
 				baseName:       d.Name,
@@ -230,17 +224,9 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 				policyErrCount: d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
 				serverErrCount: d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
 				responseTime:   d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
-			}
-			j.processMetric(metData)
-			// get the error count metric
-			// wg.Add(1)
-			// go func(metData *metricData) {
-			// 	defer wg.Done()
-			// 	j.processMetric(metData)
-			// }(metData)
+			})
 		}
 	}
-	wg.Wait()
 }
 
 func (j *pollApigeeStats) getBaseProduct(name string) string {

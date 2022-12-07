@@ -10,6 +10,7 @@ import (
 
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
+	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -59,6 +60,7 @@ type mockClient struct {
 	envs          []string
 	responseCount int
 	statResponses []string
+	productsMap   map[string]string
 }
 
 func (m *mockClient) GetEnvironments() []string {
@@ -74,6 +76,26 @@ func (m *mockClient) GetStats(env, dimension, metricSelect string, start, end ti
 }
 
 func (m *mockClient) GetProduct(productName string) (*models.ApiProduct, error) {
+	if m.productsMap == nil {
+		// so empty
+	} else if p, ok := m.productsMap[productName]; ok {
+		return &models.ApiProduct{
+			Attributes: []models.Attribute{
+				{
+					Name:  "Attribute1",
+					Value: "Value1",
+				},
+				{
+					Name:  "Attribute2",
+					Value: "Value2",
+				},
+				{
+					Name:  apigee.ClonedProdAttribute,
+					Value: p,
+				},
+			},
+		}, nil
+	}
 	return nil, nil
 }
 
@@ -86,6 +108,7 @@ func TestProcessMetric(t *testing.T) {
 		errors        int
 		apiCalls      map[string][]int
 		isProductMode bool
+		productsMap   map[string]string
 	}{
 		{
 			name:      "Only Success",
@@ -148,6 +171,9 @@ func TestProcessMetric(t *testing.T) {
 				"Test": {24, 24, 0},
 			},
 			isProductMode: true,
+			productsMap: map[string]string{
+				"Test-planname": "Test",
+			},
 		},
 	}
 
@@ -158,13 +184,13 @@ func TestProcessMetric(t *testing.T) {
 				withStatsClient(&mockClient{
 					statResponses: test.responses,
 					envs:          []string{"test"},
+					productsMap:   test.productsMap,
 				}),
 			}
 			if test.isProductMode {
 				opts = append(opts, withProductMode())
 			}
 			job := newPollStatsJob(opts...)
-			job.clonedProduct["Test-planname"] = "Test"
 
 			mCollector := newMockCollector()
 			job.collector = mCollector
