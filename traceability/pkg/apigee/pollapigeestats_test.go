@@ -285,7 +285,6 @@ func TestNewPollStatsJob(t *testing.T) {
 	testCases := []struct {
 		name          string
 		startTime     time.Time
-		endTime       time.Time
 		increment     time.Duration
 		cacheClean    bool
 		productMode   bool
@@ -299,7 +298,6 @@ func TestNewPollStatsJob(t *testing.T) {
 		{
 			name:          "All Options",
 			startTime:     time.Now().Add(time.Hour * -1),
-			endTime:       time.Now(),
 			increment:     time.Hour,
 			cacheClean:    true,
 			productMode:   true,
@@ -316,9 +314,6 @@ func TestNewPollStatsJob(t *testing.T) {
 
 			if !test.startTime.IsZero() {
 				opts = append(opts, withStartTime(test.startTime))
-			}
-			if !test.endTime.IsZero() {
-				opts = append(opts, withEndTime(test.endTime))
 			}
 			if test.increment > 0 {
 				opts = append(opts, withIncrement(test.increment))
@@ -343,7 +338,6 @@ func TestNewPollStatsJob(t *testing.T) {
 
 			assert.NotNil(t, job)
 			assert.Equal(t, test.startTime, job.startTime)
-			assert.Equal(t, test.endTime, job.endTime)
 			assert.Equal(t, test.increment, job.increment)
 			assert.Equal(t, test.cachePath, job.cachePath)
 			assert.Equal(t, []string{}, job.cacheKeys)

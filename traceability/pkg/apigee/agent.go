@@ -108,7 +108,6 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 				append(baseOpts,
 					[]func(*pollApigeeStats){
 						withStartTime(lastStatTime),
-						withEndTime(lastStatTime),
 						withIncrement(time.Hour),
 					}...,
 				)...,

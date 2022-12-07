@@ -16,6 +16,7 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 	"github.com/Axway/agents-apigee/traceability/pkg/apigee/definitions"
+	"github.com/gofrs/uuid"
 )
 
 const (
@@ -41,7 +42,6 @@ type metricData struct {
 
 type pollApigeeStats struct {
 	jobs.Job
-	endTime        time.Time
 	startTime      time.Time
 	lastTime       time.Time
 	increment      time.Duration // increment the end and start times by this amount
@@ -57,6 +57,8 @@ type pollApigeeStats struct {
 	clonedProduct  map[string]string
 	dimension      string
 	isProduct      bool
+	logger         log.FieldLogger
+	metricChan     chan metric.Detail
 }
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
@@ -66,6 +68,7 @@ func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 		cacheKeysMutex: &sync.Mutex{},
 		clonedProduct:  make(map[string]string),
 		dimension:      "apiproxy",
+		logger:         log.NewFieldLogger().WithComponent("pollStatsJob").WithPackage("apigee"),
 	}
 
 	for _, o := range options {
@@ -77,12 +80,6 @@ func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 func withStartTime(startTime time.Time) func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
 		p.startTime = startTime
-	}
-}
-
-func withEndTime(endTime time.Time) func(p *pollApigeeStats) {
-	return func(p *pollApigeeStats) {
-		p.endTime = endTime
 	}
 }
 
@@ -138,6 +135,14 @@ func (j *pollApigeeStats) Status() error {
 }
 
 func (j *pollApigeeStats) Execute() error {
+	id, _ := uuid.NewV4()
+	logger := j.logger.WithField("executionID", id)
+
+	//start the metric channel
+	j.metricChan = make(chan metric.Detail, 1000)
+	go j.handleMetricEvents(logger)
+
+	logger.Trace("starting execution")
 	j.envs = j.client.GetEnvironments()
 	j.cacheKeys = make([]string, 0)
 	lastTime := j.lastTime
@@ -151,18 +156,20 @@ func (j *pollApigeeStats) Execute() error {
 	wg := &sync.WaitGroup{}
 	for _, e := range j.envs {
 		wg.Add(1)
-		go func(envName string) {
+		go func(logger log.FieldLogger, envName string) {
 			defer wg.Done()
+			logger = logger.WithField("env", envName)
 			metrics, err := j.client.GetStats(envName, j.dimension, metricSelect, startTime, lastTime)
 			if err != nil {
 				return
 			}
 
-			j.processMetricResponse(metrics)
-		}(e)
+			j.processMetricResponse(logger, metrics)
+		}(logger, e)
 	}
 	wg.Wait()
 
+	logger.Trace("finished execution")
 	if j.cacheClean {
 		j.cleanCache()
 	}
@@ -171,23 +178,27 @@ func (j *pollApigeeStats) Execute() error {
 		// update the start and lastTime times
 		j.startTime = j.startTime.Add(j.increment)
 		j.lastTime = j.lastTime.Add(j.increment)
-		j.statCache.Set(lastStartTimeKey, startTime.String())
 	}
 
-	j.statCache.Set(lastStartTimeKey, startTime.String())
-	j.statCache.Save(j.cachePath)
+	// only update the lastStartTime when it is not zero
+	if !startTime.IsZero() {
+		j.statCache.Set(lastStartTimeKey, startTime.String())
+		j.statCache.Save(j.cachePath)
+	}
 
+	close(j.metricChan)
 	return nil
 }
 
-func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
+func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics *models.Metrics) {
+	logger.Trace("start processing env")
 	if len(metrics.Environments) != 1 {
-		log.Error("exactly 1 environment should be returned")
+		logger.Error("exactly 1 environment should be returned")
 		return
 	}
 
 	if len(metrics.Environments[0].Dimensions) == 0 {
-		log.Trace("At least one proxy is needed to process response data")
+		logger.Trace("At least one proxy is needed to process response data")
 		return
 	}
 
@@ -201,7 +212,7 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 
 	for i, m := range metrics.Environments[0].Dimensions[0].Metrics { // api_proxies or api_product
 		if _, found := metricsIndex[m.Name]; !found {
-			log.Warnf("skipping metric, %s, in return data", m.Name)
+			logger.Warnf("skipping metric, %s, in return data", m.Name)
 		}
 		metricsIndex[m.Name] = i
 	}
@@ -209,14 +220,27 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 	// check for -1 index in metricsIndex
 	for key, index := range metricsIndex {
 		if index < 0 {
-			log.Errorf("did not find the %s metric in the returned data", key)
+			logger.Errorf("did not find the %s metric in the returned data", key)
 			return
 		}
 	}
 
+	dimensions := []string{}
 	for _, d := range metrics.Environments[0].Dimensions { // api_proxies
+		dimensions = append(dimensions, d.Name)
+	}
+
+	logger.WithField("value", dimensions).Trace("dimensions")
+	wg := sync.WaitGroup{}
+	for _, d := range metrics.Environments[0].Dimensions { // api_proxies
+		logger := logger.WithField("dimension", d.Name)
+		logger.Trace("processing metric for dimension")
 		for i := range d.Metrics[0].MetricValues {
-			j.processMetric(&metricData{
+			if d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value == "0.0" {
+				continue
+			}
+
+			data := &metricData{
 				environment:    metrics.Environments[0].Name,
 				name:           j.getBaseProduct(d.Name),
 				baseName:       d.Name,
@@ -225,9 +249,17 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 				policyErrCount: d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
 				serverErrCount: d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
 				responseTime:   d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
-			})
+			}
+			wg.Add(1)
+
+			go func(md *metricData) {
+				j.processMetric(logger, md)
+				wg.Done()
+			}(data)
 		}
 	}
+	wg.Wait()
+	logger.Trace("finished processing env")
 }
 
 func (j *pollApigeeStats) getBaseProduct(name string) string {
@@ -253,8 +285,19 @@ func (j *pollApigeeStats) getBaseProduct(name string) string {
 	return name
 }
 
-func (j *pollApigeeStats) processMetric(metData *metricData) {
+func (j *pollApigeeStats) handleMetricEvents(logger log.FieldLogger) {
+	for msg := range j.metricChan {
+		logger.Trace("adding metric")
+		j.collector.AddMetricDetail(msg)
+		logger.Trace("metric added")
+	}
+}
+
+func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricData) {
 	metricCacheKey := fmt.Sprintf("%s-%s-%d", metData.environment, metData.baseName, metData.timestamp)
+	logger = logger.WithField("metricKey", metricCacheKey)
+	logger.Trace("begin processing metric")
+
 	j.cacheKeysMutex.Lock()
 	j.cacheKeys = append(j.cacheKeys, metricCacheKey)
 	j.cacheKeysMutex.Unlock()
@@ -275,7 +318,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	// get the average response time
 	s, err := strconv.ParseFloat(metData.responseTime, 64)
 	if err != nil {
-		log.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
+		logger.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
 		return
 	}
 	newMetricData.ResponseTime = int64(s)
@@ -283,7 +326,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	// get the total messages
 	s, err = strconv.ParseFloat(metData.count, 64)
 	if err != nil {
-		log.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
+		logger.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
 		return
 	}
 	newMetricData.Total = int(s)
@@ -291,7 +334,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	// get the policy errors
 	s, err = strconv.ParseFloat(metData.policyErrCount, 64)
 	if err != nil {
-		log.Errorf("could not read policy error metric value %s, at timestamp %d, as it was not a number", metData.policyErrCount, metData.timestamp)
+		logger.Errorf("could not read policy error metric value %s, at timestamp %d, as it was not a number", metData.policyErrCount, metData.timestamp)
 		return
 	}
 	newMetricData.PolicyError = int(s)
@@ -299,7 +342,7 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	// get the server errors
 	s, err = strconv.ParseFloat(metData.serverErrCount, 64)
 	if err != nil {
-		log.Errorf("could not read server error metric value %s, at timestamp %d, as it was not a number", metData.serverErrCount, metData.timestamp)
+		logger.Errorf("could not read server error metric value %s, at timestamp %d, as it was not a number", metData.serverErrCount, metData.timestamp)
 		return
 	}
 	newMetricData.ServerError = int(s)
@@ -320,48 +363,31 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 		Name:     apiName,
 		Revision: 1,
 	}
-	if newMetricData.ReportedPolicyError < newMetricData.PolicyError {
-		count := newMetricData.PolicyError - newMetricData.ReportedPolicyError
-		for count > 0 {
-			j.collector.AddMetricDetail(metric.Detail{
-				APIDetails: apiDetail,
-				StatusCode: "400",
-				Duration:   newMetricData.ResponseTime,
-				Bytes:      0,
-				AppDetails: metric.AppDetails{},
-			})
-			count--
-			newMetricData.ReportedPolicyError++
-		}
+	logger = logger.WithField("success", newMetricData.Success).WithField("policyErr", newMetricData.PolicyError).WithField("serverErr", newMetricData.ServerError)
+	logger.Debug("reporting metrics")
+
+	thisMetric := metric.Detail{
+		APIDetails: apiDetail,
+		Duration:   newMetricData.ResponseTime,
+		Bytes:      0,
+		AppDetails: metric.AppDetails{},
 	}
-	if newMetricData.ReportedServerError < newMetricData.ServerError {
-		count := newMetricData.ServerError - newMetricData.ReportedServerError
-		for count > 0 {
-			j.collector.AddMetricDetail(metric.Detail{
-				APIDetails: apiDetail,
-				StatusCode: "500",
-				Duration:   newMetricData.ResponseTime,
-				Bytes:      0,
-				AppDetails: metric.AppDetails{},
-			})
-			count--
-			newMetricData.ReportedServerError++
-		}
+	thisMetric.StatusCode = "400"
+	for i := newMetricData.PolicyError - newMetricData.ReportedPolicyError; i > 0; i-- {
+		j.metricChan <- thisMetric
+		newMetricData.ReportedPolicyError++
 	}
-	if newMetricData.ReportedSuccess < newMetricData.Success {
-		count := newMetricData.Success - newMetricData.ReportedSuccess
-		for count > 0 {
-			j.collector.AddMetricDetail(metric.Detail{
-				APIDetails: apiDetail,
-				StatusCode: "200",
-				Duration:   newMetricData.ResponseTime,
-				Bytes:      0,
-				AppDetails: metric.AppDetails{},
-			})
-			count--
-			newMetricData.ReportedSuccess++
-		}
+	thisMetric.StatusCode = "500"
+	for i := newMetricData.ServerError - newMetricData.ReportedServerError; i > 0; i-- {
+		j.metricChan <- thisMetric
+		newMetricData.ReportedServerError++
 	}
+	thisMetric.StatusCode = "200"
+	for i := newMetricData.Success - newMetricData.ReportedSuccess; i > 0; i-- {
+		j.metricChan <- thisMetric
+		newMetricData.ReportedSuccess++
+	}
+
 	// convert the metric data to a json string
 	data, err := json.Marshal(newMetricData)
 	if err != nil {
@@ -369,8 +395,9 @@ func (j *pollApigeeStats) processMetric(metData *metricData) {
 	}
 	err = j.statCache.Set(metricCacheKey, string(data))
 	if err != nil {
-		log.Error(err)
+		logger.Error(err)
 	}
+	logger.Trace("finished processing metric")
 }
 
 func (j *pollApigeeStats) cleanCache() {
