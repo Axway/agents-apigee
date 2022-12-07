@@ -201,6 +201,8 @@ func TestProcessMetric(t *testing.T) {
 			}
 
 			// check the totals
+			mCollector.mutex.Lock()
+			defer mCollector.mutex.Unlock()
 			assert.Equal(t, test.total, mCollector.total)
 			assert.Equal(t, test.successes, mCollector.successes)
 			assert.Equal(t, test.errors, mCollector.errors)
