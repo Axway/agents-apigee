@@ -2,7 +2,7 @@ package apigee
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -68,7 +68,7 @@ func (m *mockClient) GetEnvironments() []string {
 }
 
 func (m *mockClient) GetStats(env, dimension, metricSelect string, start, end time.Time) (*models.Metrics, error) {
-	content, _ := ioutil.ReadFile(testdata + m.statResponses[m.responseCount])
+	content, _ := os.ReadFile(testdata + m.statResponses[m.responseCount])
 	metrics := &models.Metrics{}
 	json.Unmarshal(content, metrics)
 	m.responseCount++

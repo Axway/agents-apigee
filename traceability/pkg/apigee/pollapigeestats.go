@@ -139,6 +139,7 @@ func (j *pollApigeeStats) Status() error {
 
 func (j *pollApigeeStats) Execute() error {
 	j.envs = j.client.GetEnvironments()
+	j.cacheKeys = make([]string, 0)
 	lastTime := j.lastTime
 	startTime := j.startTime
 	if j.increment == 0 {
@@ -148,7 +149,7 @@ func (j *pollApigeeStats) Execute() error {
 
 	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
-	for _, envName := range j.envs {
+	for _, e := range j.envs {
 		wg.Add(1)
 		go func(envName string) {
 			defer wg.Done()
@@ -158,7 +159,7 @@ func (j *pollApigeeStats) Execute() error {
 			}
 
 			j.processMetricResponse(metrics)
-		}(envName)
+		}(e)
 	}
 	wg.Wait()
 
@@ -198,7 +199,7 @@ func (j *pollApigeeStats) processMetricResponse(metrics *models.Metrics) {
 		avgResponseMetric: -1,
 	}
 
-	for i, m := range metrics.Environments[0].Dimensions[0].Metrics { // api_proxies
+	for i, m := range metrics.Environments[0].Dimensions[0].Metrics { // api_proxies or api_product
 		if _, found := metricsIndex[m.Name]; !found {
 			log.Warnf("skipping metric, %s, in return data", m.Name)
 		}
@@ -401,7 +402,4 @@ func (j *pollApigeeStats) cleanCache() {
 	for _, key := range cleanKeys {
 		j.statCache.Delete(key)
 	}
-
-	a := 1
-	_ = a
 }
