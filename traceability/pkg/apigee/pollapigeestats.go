@@ -42,33 +42,33 @@ type metricData struct {
 
 type pollApigeeStats struct {
 	jobs.Job
-	startTime      time.Time
-	lastTime       time.Time
-	increment      time.Duration // increment the end and start times by this amount
-	cacheKeys      []string
-	envs           []string
-	cacheKeysMutex *sync.Mutex
-	cacheClean     bool
-	collector      metric.Collector
-	ready          isReady
-	client         definitions.StatsClient
-	statCache      cache.Cache
-	cachePath      string
-	clonedProduct  map[string]string
-	dimension      string
-	isProduct      bool
-	logger         log.FieldLogger
-	metricChan     chan metric.Detail
+	startTime     time.Time
+	lastTime      time.Time
+	increment     time.Duration // increment the end and start times by this amount
+	cacheKeys     []string
+	envs          []string
+	mutex         *sync.Mutex
+	cacheClean    bool
+	collector     metric.Collector
+	ready         isReady
+	client        definitions.StatsClient
+	statCache     cache.Cache
+	cachePath     string
+	clonedProduct map[string]string
+	dimension     string
+	isProduct     bool
+	logger        log.FieldLogger
+	metrics       []metric.Detail
 }
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 	job := &pollApigeeStats{
-		collector:      metric.GetMetricCollector(),
-		cacheKeys:      make([]string, 0),
-		cacheKeysMutex: &sync.Mutex{},
-		clonedProduct:  make(map[string]string),
-		dimension:      "apiproxy",
-		logger:         log.NewFieldLogger().WithComponent("pollStatsJob").WithPackage("apigee"),
+		collector:     metric.GetMetricCollector(),
+		cacheKeys:     make([]string, 0),
+		mutex:         &sync.Mutex{},
+		clonedProduct: make(map[string]string),
+		dimension:     "apiproxy",
+		logger:        log.NewFieldLogger().WithComponent("pollStatsJob").WithPackage("apigee"),
 	}
 
 	for _, o := range options {
@@ -139,8 +139,7 @@ func (j *pollApigeeStats) Execute() error {
 	logger := j.logger.WithField("executionID", id)
 
 	//start the metric channel
-	j.metricChan = make(chan metric.Detail, 1000)
-	go j.handleMetricEvents(logger)
+	j.metrics = []metric.Detail{}
 
 	logger.Trace("starting execution")
 	j.envs = j.client.GetEnvironments()
@@ -186,7 +185,7 @@ func (j *pollApigeeStats) Execute() error {
 		j.statCache.Save(j.cachePath)
 	}
 
-	close(j.metricChan)
+	j.sendMetrics(logger)
 	return nil
 }
 
@@ -285,11 +284,10 @@ func (j *pollApigeeStats) getBaseProduct(name string) string {
 	return name
 }
 
-func (j *pollApigeeStats) handleMetricEvents(logger log.FieldLogger) {
-	for msg := range j.metricChan {
-		logger.Trace("adding metric")
+func (j *pollApigeeStats) sendMetrics(logger log.FieldLogger) {
+	logger.Trace("sending all metrics")
+	for _, msg := range j.metrics {
 		j.collector.AddMetricDetail(msg)
-		logger.Trace("metric added")
 	}
 }
 
@@ -298,9 +296,9 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 	logger = logger.WithField("metricKey", metricCacheKey)
 	logger.Trace("begin processing metric")
 
-	j.cacheKeysMutex.Lock()
+	j.mutex.Lock()
 	j.cacheKeys = append(j.cacheKeys, metricCacheKey)
-	j.cacheKeysMutex.Unlock()
+	j.mutex.Unlock()
 
 	// get the cached values
 	newMetricData := &metricCache{
@@ -372,19 +370,26 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 		Bytes:      0,
 		AppDetails: metric.AppDetails{},
 	}
+
+	appendFunc := func(m metric.Detail) {
+		j.mutex.Lock()
+		defer j.mutex.Unlock()
+		j.metrics = append(j.metrics, m)
+	}
+
 	thisMetric.StatusCode = "400"
 	for i := newMetricData.PolicyError - newMetricData.ReportedPolicyError; i > 0; i-- {
-		j.metricChan <- thisMetric
+		appendFunc(thisMetric)
 		newMetricData.ReportedPolicyError++
 	}
 	thisMetric.StatusCode = "500"
 	for i := newMetricData.ServerError - newMetricData.ReportedServerError; i > 0; i-- {
-		j.metricChan <- thisMetric
+		appendFunc(thisMetric)
 		newMetricData.ReportedServerError++
 	}
 	thisMetric.StatusCode = "200"
 	for i := newMetricData.Success - newMetricData.ReportedSuccess; i > 0; i-- {
-		j.metricChan <- thisMetric
+		appendFunc(thisMetric)
 		newMetricData.ReportedSuccess++
 	}
 
@@ -409,11 +414,11 @@ func (j *pollApigeeStats) cleanCache() {
 	keysMap := make(map[string]struct{})
 
 	// add keys that should be kept
-	j.cacheKeysMutex.Lock()
+	j.mutex.Lock()
 	for _, key := range j.cacheKeys {
 		keysMap[key] = struct{}{}
 	}
-	j.cacheKeysMutex.Unlock()
+	j.mutex.Unlock()
 
 	// find keys not in the keysMap, these should be cleaned
 	for _, key := range knownKeys {

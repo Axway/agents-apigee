@@ -343,7 +343,7 @@ func TestNewPollStatsJob(t *testing.T) {
 			assert.Equal(t, test.increment, job.increment)
 			assert.Equal(t, test.cachePath, job.cachePath)
 			assert.Equal(t, []string{}, job.cacheKeys)
-			assert.NotNil(t, job.cacheKeysMutex)
+			assert.NotNil(t, job.mutex)
 			if test.cacheClean {
 				assert.True(t, job.cacheClean)
 			} else {
