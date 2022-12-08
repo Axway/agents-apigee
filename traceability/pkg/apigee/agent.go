@@ -116,6 +116,6 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 		}
 	}
 
-	jobs.RegisterIntervalJobWithName(job, time.Minute, "Apigee Stats")
+	jobs.RegisterIntervalJobWithName(job, a.cfg.ApigeeCfg.Intervals.Stats, "Apigee Stats")
 	return "", nil
 }

@@ -30,6 +30,7 @@ type ApigeeIntervals struct {
 	Proxy   time.Duration `config:"proxy"`
 	Spec    time.Duration `config:"spec"`
 	Product time.Duration `config:"product"`
+	Stats   time.Duration `config:"stats"`
 }
 
 // ApigeeWorkers - number of workers for the apigee agent to use
@@ -84,6 +85,7 @@ const (
 	pathSpecInterval       = "apigee.interval.spec"
 	pathProxyInterval      = "apigee.interval.proxy"
 	pathProductInterval    = "apigee.interval.product"
+	pathStatsInterval      = "apigee.interval.stats"
 	pathDeveloper          = "apigee.developerID"
 	pathSpecWorkers        = "apigee.workers.spec"
 	pathProxyWorkers       = "apigee.workers.proxy"
@@ -104,9 +106,10 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddBoolProperty(pathCloneAttributes, false, "Set to true to copy the tags when provisioning a Product in product mode.")
 	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
-	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs")
-	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies")
-	rootProps.AddDurationProperty(pathProductInterval, 30*time.Second, "The time interval between checking for updated products")
+	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs", properties.WithLowerLimit(1*time.Minute))
+	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies", properties.WithLowerLimit(30*time.Second), properties.WithUpperLimit(5*time.Minute))
+	rootProps.AddDurationProperty(pathProductInterval, 30*time.Second, "The time interval between checking for updated products", properties.WithLowerLimit(30*time.Second), properties.WithUpperLimit(5*time.Minute))
+	rootProps.AddDurationProperty(pathStatsInterval, 5*time.Minute, "The time interval between checking for updated stats", properties.WithLowerLimit(1*time.Minute), properties.WithUpperLimit(15*time.Minute))
 	rootProps.AddStringProperty(pathDeveloper, "", "Developer ID used to create applications")
 	rootProps.AddIntProperty(pathProxyWorkers, 10, "Max number of workers discovering proxies")
 	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
@@ -125,6 +128,7 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 		Filter:          rootProps.StringPropertyValue(pathFilter),
 		CloneAttributes: rootProps.BoolPropertyValue(pathCloneAttributes),
 		Intervals: &ApigeeIntervals{
+			Stats:   rootProps.DurationPropertyValue(pathStatsInterval),
 			Proxy:   rootProps.DurationPropertyValue(pathProxyInterval),
 			Spec:    rootProps.DurationPropertyValue(pathSpecInterval),
 			Product: rootProps.DurationPropertyValue(pathProductInterval),
