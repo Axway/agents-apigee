@@ -172,9 +172,8 @@ func (a *ApigeeClient) GetRevisionSpec(apiName, revisionNumber, specFile string)
 }
 
 // GetStats - get the api stats for a specific environment
-func (a *ApigeeClient) GetStats(env, metricSelect string, start, end time.Time) (*models.Metrics, error) {
+func (a *ApigeeClient) GetStats(env, dimension, metricSelect string, start, end time.Time) (*models.Metrics, error) {
 	// Get the spec content file
-	const dimension = "apiproxy" // https://docs.apigee.com/api-platform/analytics/analytics-reference#dimensions
 	const format = "01/02/2006 15:04"
 
 	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/environments/%v/stats/%s", a.orgURL, env, dimension),
