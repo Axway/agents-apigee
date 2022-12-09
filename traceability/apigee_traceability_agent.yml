@@ -3,6 +3,8 @@ apigee_traceability_agent:
     organization: ${APIGEE_ORGANIZATION}
     discoveryMode: ${APIGEE_DISCOVERYMODE}
     developerID: ${APIGEE_DEVELOPERID}
+    intervals:
+      stats: ${APIGEE_INTERVAL_STATS}
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}
