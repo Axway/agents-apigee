@@ -10,6 +10,7 @@ require (
 	github.com/Axway/agent-sdk v1.1.42-0.20221130140758-7a91f6b6daef
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/elastic/beats/v7 v7.17.5
+	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/stretchr/testify v1.8.0
 )
 
@@ -57,7 +58,6 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.2+incompatible // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/gofrs/flock v0.7.2-0.20190320160742-5135e617513b // indirect
-	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
