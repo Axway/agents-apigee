@@ -26,6 +26,7 @@ jobs:
         working-directory: discovery
         run: |
           git rev-parse --short HEAD > commit_id
+          echo "${{ github.ref }}" > version"
           make build
 
       - name: Upload release
@@ -58,6 +59,7 @@ jobs:
         working-directory: traceability
         run: |
           git rev-parse --short HEAD > commit_id
+          echo "${{ github.ref }}" > version"
           make build
 
       - name: Upload release

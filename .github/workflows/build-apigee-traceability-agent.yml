@@ -45,6 +45,7 @@ jobs:
         working-directory: traceability
         run: |
           git branch --show-current > commit_id
+          git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1 > version
           make build
 
       - uses: actions/upload-artifact@v3

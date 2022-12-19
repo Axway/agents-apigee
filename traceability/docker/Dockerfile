@@ -21,8 +21,8 @@ COPY . .
 WORKDIR ${AGENT}
 
 RUN export time=`date +%Y%m%d%H%M%S` && \
-  export version=`cat version` && \
   export commit_id=`git rev-parse --short HEAD` && \
+  export version=`git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -l` && \
   export sdk_version=`go list -m github.com/Axway/agent-sdk | awk '{print $2}' | awk -F'-' '{print substr($1, 2)}'` && \
   export GOOS=linux && \
   export CGO_ENABLED=0 && \
