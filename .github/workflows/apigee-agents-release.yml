@@ -84,12 +84,10 @@ jobs:
   #         body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
 
   notifyTeamsChannel:
-    # defaults:
-    #   run:
-    #     working-directory: ${{ env.GOPATH }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Notify Teams channel
-        run: ./release.sh ${{ github.ref }}
+        run: ./release.sh 0.1.4
+        # run: ./release.sh ${{ github.ref }}
