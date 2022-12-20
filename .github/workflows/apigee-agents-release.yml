@@ -26,7 +26,7 @@ jobs:
         working-directory: discovery
         run: |
           git rev-parse --short HEAD > commit_id
-          echo "${{ github.ref }}" > version"
+          echo "${{ github.ref }}" > version
           make build
 
       - name: Upload release
@@ -59,7 +59,7 @@ jobs:
         working-directory: traceability
         run: |
           git rev-parse --short HEAD > commit_id
-          echo "${{ github.ref }}" > version"
+          echo "${{ github.ref }}" > version
           make build
 
       - name: Upload release
@@ -81,3 +81,14 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
+
+  notifyTeamsChannel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Notify Teams channel
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG: ${{ github.ref }}
+        run: ./release.sh
