@@ -64,8 +64,6 @@ post_to_teams() {
 }
 
 main() {
-    echo "${TEAMS_WEBHOOK_URL}"
-    echo "${TAG}"
     # validate required variables
     get_sdk_version
     check_required_variables
