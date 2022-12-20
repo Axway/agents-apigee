@@ -79,7 +79,7 @@ main() {
     releaseStats+="- Apigee agents version: ${TAG}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
-    # post_to_teams "${releaseStats}"
+    post_to_teams "${releaseStats}"
     exit 0
 }
 

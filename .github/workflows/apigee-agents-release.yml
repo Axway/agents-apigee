@@ -91,5 +91,6 @@ jobs:
       - name: Notify Teams channel
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-          TAG: ${{ github.ref }}
+          # TAG: ${{ github.ref }}
+          TAG: 0.1.4
         run: ./release.sh
