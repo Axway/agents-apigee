@@ -2,9 +2,8 @@ name: Release Apigee Agents
 
 on:
   push:
-    # tags:
-    #   - "*"
-    branches: [ '**' ]
+    tags:
+      - "*"
 
 jobs:
   buildDiscoveryAgent:
@@ -18,27 +17,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # - name: Set up Go
-      #   uses: actions/setup-go@v3
-      #   with:
-      #     go-version: 1.19
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
 
-      # - name: Build discovery agent
-      #   working-directory: discovery
-      #   run: |
-      #     git rev-parse --short HEAD > commit_id
-      #     echo "${{ github.ref }}" > version
-      #     make build
+      - name: Build discovery agent
+        working-directory: discovery
+        run: |
+          git rev-parse --short HEAD > commit_id
+          echo "${{ github.ref }}" > version
+          make build
 
-      # - name: Upload release
-      #   uses: svenstaro/upload-release-action@v2
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: discovery/bin/apigee_discovery_agent
-      #     asset_name: apigee_discovery_agent
-      #     tag: ${{ github.ref }}
-      #     overwrite: true
-      #     body: "Apigee Discovery Agent - ${{ github.ref }}"
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: discovery/bin/apigee_discovery_agent
+          asset_name: apigee_discovery_agent
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Apigee Discovery Agent - ${{ github.ref }}"
 
   buildTraceabilityAgent:
     env:
@@ -51,37 +50,37 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # - name: Set up Go
-      #   uses: actions/setup-go@v3
-      #   with:
-      #     go-version: 1.19
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
 
-      # - name: Build traceability agent
-      #   working-directory: traceability
-      #   run: |
-      #     git rev-parse --short HEAD > commit_id
-      #     echo "${{ github.ref }}" > version
-      #     make build
+      - name: Build traceability agent
+        working-directory: traceability
+        run: |
+          git rev-parse --short HEAD > commit_id
+          echo "${{ github.ref }}" > version
+          make build
 
-      # - name: Upload release
-      #   uses: svenstaro/upload-release-action@v2
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: traceability/bin/apigee_traceability_agent
-      #     asset_name: apigee_traceability_agent
-      #     tag: ${{ github.ref }}
-      #     overwrite: true
-      #     body: "Apigee Traceability Agent - ${{ github.ref }}"
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: traceability/bin/apigee_traceability_agent
+          asset_name: apigee_traceability_agent
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Apigee Traceability Agent - ${{ github.ref }}"
 
-      # - name: Upload release yaml
-      #   uses: svenstaro/upload-release-action@v2
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: traceability/apigee_traceability_agent.yml
-      #     asset_name: apigee_traceability_agent.yml
-      #     tag: ${{ github.ref }}
-      #     overwrite: true
-      #     body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
+      - name: Upload release yaml
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: traceability/apigee_traceability_agent.yml
+          asset_name: apigee_traceability_agent.yml
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
 
   notifyTeamsChannel:
     runs-on: ubuntu-latest
@@ -91,6 +90,5 @@ jobs:
       - name: Notify Teams channel
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-          # TAG: ${{ github.ref }}
-          TAG: 0.1.4
+          TAG: ${{ github.ref }}
         run: ./release.sh

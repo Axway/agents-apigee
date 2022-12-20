@@ -2,8 +2,9 @@
 shopt -s nocasematch
 
 # you can add variables like this to test locally. Just run ./release.sh. Note that to run on MAC, you must install bash 5.x. 
-# Then, to run the script you must do: /usr/local/bin/bash ./release.sh 1.2.3
+# Then, to run the script you must do: /usr/local/bin/bash ./release.sh
 # TEAMS_WEBHOOK_URL="foo.bar"
+# TAG="1.2.3"
 
 # Would like to use this, but can't get it to work in curl command
 #export COMMON_CURL_HEADER=`printf -- '-H "PRIVATE-TOKEN:${GIT_API_TOKEN}" -H "Accept:application/json" -H "Content-Type:application/json"'`
