@@ -90,4 +90,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Teams channel
-        run ./release.sh ${{ github.ref }}
+        runs:
+          ./release.sh ${{ github.ref }}
