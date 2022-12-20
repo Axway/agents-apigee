@@ -2,19 +2,14 @@
 shopt -s nocasematch
 
 # you can add variables like this to test locally. Just run ./release.sh. Note that to run on MAC, you must install bash 5.x. 
-# Then, to run the script you must do: /usr/local/bin/bash ./release.sh
+# Then, to run the script you must do: /usr/local/bin/bash ./release.sh 1.2.3
 # TEAMS_WEBHOOK_URL="foo.bar"
-
-# These variable are required input.
-# SDK=1.0.17    (format n.n.n)
 
 # Would like to use this, but can't get it to work in curl command
 #export COMMON_CURL_HEADER=`printf -- '-H "PRIVATE-TOKEN:${GIT_API_TOKEN}" -H "Accept:application/json" -H "Content-Type:application/json"'`
 export H_ACCEPT="Accept:application/json"
 export H_CONTENT="Content-Type:application/json"
 export H_TOKEN="PRIVATE-TOKEN:${GIT_API_TOKEN}"
-
-export TEAMS_WEBHOOK_URL="https://axwaysoftware.webhook.office.com/webhookb2/e859058b-5110-40a3-871e-7641a739e06a@300f59df-78e6-436f-9b27-b64973e34f7d/IncomingWebhook/cb060241bae943b2bfb6dab32d61a99d/d1ae36f4-0132-4a9c-943d-3541201d7aa3"
 
 # validate all of the required variables
 check_required_variables() {
