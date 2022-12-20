@@ -31,7 +31,7 @@ check_required_variables() {
 get_sdk_version()
 {
     # pull out the SDK version from go.mod
-    ver=$(grep 'github.com/Axway/agent-sdk v' ./discovery/go.moed)
+    ver=$(grep 'github.com/Axway/agent-sdk v' ./discovery/go.mod)
 
     # Set space as the delimiter
     IFS=' '
