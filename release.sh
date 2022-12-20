@@ -17,6 +17,7 @@ check_required_variables() {
 
     [ -z "${TEAMS_WEBHOOK_URL}" ] && echo "TEAMS_WEBHOOK_URL variable not set" && exit 1
     [ -z "${TAG}" ] && echo "TAG variable not set" && exit 1
+    [ -z "${SDK}" ] && echo "SDK variable not set" && exit 1
 
     pat='[0-9]+\.[0-9]+\.[0-9]'
     if [[ ! ${TAG} =~ $pat ]]; then
@@ -25,6 +26,19 @@ check_required_variables() {
     fi
 
     return 0
+}
+
+get_sdk_version()
+{
+    # pull out the SDK version from go.mod
+    ver=$(grep 'github.com/Axway/agent-sdk v' ./discovery/go.moed)
+
+    # Set space as the delimiter
+    IFS=' '
+
+    # Read the split words into an array
+    read -a strarr <<< $ver
+    export SDK=${strarr[1]}
 }
 
 post_to_teams() {
@@ -51,6 +65,7 @@ post_to_teams() {
 main() {
     # validate required variables
     export TAG=$1
+    get_sdk_version
     check_required_variables
 
     if [ $? -eq 1 ]; then
@@ -59,7 +74,8 @@ main() {
     fi
 
     # gather stats
-    releaseStats="- Apigee version: ${TAG}\n"
+    releaseStats="- SDK version: ${SDK}\n"
+    releaseStats+="- Apigee agents version: ${TAG}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
     post_to_teams "${releaseStats}"
