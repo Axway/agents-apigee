@@ -1,13 +1,19 @@
 apigee_traceability_agent:
   apigee:
+    url: ${APIGEE_URL}
+    apiVersion: ${APIGEE_APIVERSION}
+    dataURL: ${APIGEE_DATAURL}
     organization: ${APIGEE_ORGANIZATION}
-    discoveryMode: ${APIGEE_DISCOVERYMODE}
     developerID: ${APIGEE_DEVELOPERID}
+    discoveryMode: ${APIGEE_DISCOVERYMODE}
     intervals:
       stats: ${APIGEE_INTERVAL_STATS}
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}
+      url: ${APIGEE_AUTH_URL}
+      serverUsername: ${APIGEE_AUTH_SERVERUSERNAME}
+      serverPassword: ${APIGEE_AUTH_SERVERPASSWORD}
   # Settings for connecting to Amplify Central
   central:
     url: ${CENTRAL_URL:https://apicentral.axway.com}
