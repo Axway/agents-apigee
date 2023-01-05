@@ -20,7 +20,7 @@ jobs:
         working-directory: traceability
         run: |
           git branch --show-current > commit_id
-          echo "${{ github.ref }}" > version
+          echo "${{ github.ref_name }}" > version
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2

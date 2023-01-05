@@ -26,7 +26,7 @@ jobs:
         working-directory: discovery
         run: |
           git rev-parse --short HEAD > commit_id
-          echo "${{ github.ref }}" > version
+          echo "${{ github.ref_name }}" > version
           make build
 
       - name: Upload release
@@ -59,7 +59,7 @@ jobs:
         working-directory: traceability
         run: |
           git rev-parse --short HEAD > commit_id
-          echo "${{ github.ref }}" > version
+          echo "${{ github.ref_name }}" > version
           make build
 
       - name: Upload release
@@ -90,5 +90,5 @@ jobs:
       - name: Notify Teams channel
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-          TAG: ${{ github.ref }}
+          TAG: ${{ github.ref_name }}
         run: ./release.sh
