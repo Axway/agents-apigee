@@ -14,6 +14,7 @@ whitesource.config @dfeldick
 Makefile @dfeldick @jcollins @vchauhan
 sonar.sh @dfeldick @jcollins @vchauhan
 build/scripts/ @dfeldick @jcollins @vchauhan
+.github/** @dfeldick @jcollins @vchauhan
 
 [EXPERT]
 /client/** @jcollins @vchauhan
