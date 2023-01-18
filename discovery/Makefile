@@ -48,6 +48,8 @@ test-sonar: dep
 
 ${WORKSPACE}/discovery_agent: dep
 	@echo ${WORKSPACE}
+	@cat commit_id
+	@cat version
 	@export time=`date +%Y%m%d%H%M%S` && \
 	export version=`cat version` && \
 	echo "makefile version ${version}" && \
