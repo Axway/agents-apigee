@@ -147,6 +147,7 @@ twistlock:
   except:
     refs:
       - neverever
+  dependencies:
 
 twistlock:on-schedule:
   only:
