@@ -24,6 +24,8 @@ jobs:
           echo "${{ github.ref }}"
           echo "${{ github.ref_name }}"
           echo "${{ github.ref_name }}" > version
+          echo "cat"
+          cat version
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2
