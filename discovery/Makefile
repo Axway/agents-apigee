@@ -50,8 +50,8 @@ ${WORKSPACE}/discovery_agent: dep
 	@echo ${WORKSPACE}
 	@export time=`date +%Y%m%d%H%M%S` && \
 	export version=`cat version` && \
-	@echo "makefile version"
-	@cat version
+	echo "makefile version" && \
+	cat version && \
 	export commit_id=`cat commit_id` && \
 	export sdk_version=`go list -m github.com/Axway/agent-sdk | awk '{print $$2}' | awk -F'-' '{print substr($$1, 2)}'` && \
 	export GOOS=linux && \
