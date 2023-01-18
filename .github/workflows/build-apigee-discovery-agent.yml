@@ -45,17 +45,8 @@ jobs:
         working-directory: discovery
         run: |
           git fetch --all --tags 
-          git branch --show-current
           git branch --show-current > commit_id
           git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1 > version
-          echo "build DA version"
-          git tag -l --sort='version:refname'
-          git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1
-          echo "commit_id"
-          cat commit_id
-          echo "version"
-          cat version
-          echo "calling make"
           make build
 
       - uses: actions/upload-artifact@v3
