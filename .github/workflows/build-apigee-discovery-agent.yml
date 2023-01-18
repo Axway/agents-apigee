@@ -44,6 +44,7 @@ jobs:
       - name: Build discovery agent
         working-directory: discovery
         run: |
+          git branch --show-current
           git branch --show-current > commit_id
           git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1 > version
           echo "build DA version"
