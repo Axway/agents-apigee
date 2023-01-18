@@ -52,6 +52,7 @@ ${WORKSPACE}/discovery_agent: dep
 	export version=`cat version` && \
 	echo "makefile version ${version}" && \
 	export commit_id=`cat commit_id` && \
+	echo "makefile commit_id ${commit_id}" && \
 	export sdk_version=`go list -m github.com/Axway/agent-sdk | awk '{print $$2}' | awk -F'-' '{print substr($$1, 2)}'` && \
 	export GOOS=linux && \
 	export CGO_ENABLED=0 && \
