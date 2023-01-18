@@ -20,6 +20,9 @@ jobs:
         working-directory: discovery
         run: |
           git branch --show-current > commit_id
+          echo "In dockerfile, REF and REF)_NAME"
+          echo "${{ github.ref }}"
+          echo "${{ github.ref_name }}"
           echo "${{ github.ref_name }}" > version
 
       - name: Log in to the Container registry
