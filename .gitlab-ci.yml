@@ -105,7 +105,21 @@ twistlock-traceability:on-schedule:
     refs:
       - schedules
 
+# overridden from csrjobs.yml because mirror repos like this one don't get merge events
+fetch-fortify:
+  only:
+    refs:
+      - /^APIGOV-.*$/
+
+run-csr:
+  only:
+    refs:
+      - /^APIGOV-.*$/
+
 whitesource:
+  only:
+    refs:
+      - /^APIGOV-.*$/
   before_script:
     - export GOWORK=off
 
