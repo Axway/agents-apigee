@@ -83,6 +83,7 @@ jobs:
           body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
 
   notifyTeamsChannel:
+    needs: [buildDiscoveryAgent, buildTraceabilityAgent]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
