@@ -31,6 +31,7 @@ apigee_traceability_agent:
       publish: ${CENTRAL_USAGEREPORTING_PUBLISH}
       publishMetric: ${CENTRAL_USAGEREPORTING_PUBLISHMETRIC}
       interval: ${CENTRAL_USAGEREPORTING_INTERVAL}
+      usageSchedule: ${CENTRAL_USAGEREPORTING_USAGESCHEDULE}
       offline: ${CENTRAL_USAGEREPORTING_OFFLINE}
       offlineSchedule: ${CENTRAL_USAGEREPORTING_OFFLINESCHEDULE}
     auth:
