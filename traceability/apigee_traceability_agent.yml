@@ -27,7 +27,6 @@ apigee_traceability_agent:
     reportActivityFrequency: ${CENTRAL_REPORTACTIVITYFREQUENCY:5m}
     versionChecker: ${CENTRAL_VERSIONCHECKER:true}
     usageReporting:
-      url: ${CENTRAL_USAGEREPORTING_URL}
       publish: ${CENTRAL_USAGEREPORTING_PUBLISH}
       publishMetric: ${CENTRAL_USAGEREPORTING_PUBLISHMETRIC}
       interval: ${CENTRAL_USAGEREPORTING_INTERVAL}
