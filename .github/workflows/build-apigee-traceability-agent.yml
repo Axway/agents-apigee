@@ -2,7 +2,7 @@ name: Build Apigee Traceability Agent
 
 on:
   push:
-    branches: [main, "APIGOV-*"]
+    branches: [main, "*"]
 
 jobs:
   testTraceabilityAgent:

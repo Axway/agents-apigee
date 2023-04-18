@@ -11,7 +11,6 @@ variables:
   # Whitesource
   WS_PROJECT_ID: "agents-apigee"
   WS_CONFIG_FILE: "whitesource.config"
-  WS_BRANCH: main
 
   GIT_TAG_PREFIX: v
 

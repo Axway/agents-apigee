@@ -1,6 +1,6 @@
 # Build image
-# golang:1.19.2
-FROM docker.io/golang@sha256:46752c2ee3bd8388608e41362964c84f7a6dffe99d86faeddc82d917740c5968 as builder
+# golang:1.19.6-alpine3.17 linux/amd64
+FROM docker.io/golang@sha256:f2e0acaf7c628cd819b73541d7c1ea8f888d51edb0a58935a3c46a084fa953fa as builder
 
 ENV GOFLAGS "-mod=mod"
 ENV GOWORK "off"
@@ -49,7 +49,7 @@ COPY --from=builder /go/src/github.com/Axway/agents-apigee/discovery/bin/apigee_
 
 RUN mkdir /keys && \
   chown -R axway /keys && \
-  apk --no-cache add openssl libssl1.1 libcrypto1.1 musl musl-utils libc6-compat busybox curl && \
+  apk --no-cache add openssl libssl libcrypto musl musl-utils libc6-compat busybox curl && \
   touch /apigee_discovery_agent.yml && \
   find / -perm /6000 -type f -exec chmod a-s {} \; || true
 
