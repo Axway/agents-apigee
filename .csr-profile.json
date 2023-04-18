@@ -9,7 +9,7 @@
       "npm-audit": false,
       "pentest": false,
       "retirejs": false,
-      "twistlock": false,
+      "twistlock": true,
       "zap": false,
       "yarn": false,
       "gosec": false,
