@@ -40,8 +40,8 @@ RUN addgroup -g 2500 axway && adduser -u 2500 -D -G axway axway
 RUN chown -R axway:axway /go/src/github.com/Axway/agents-apigee/traceability/bin/apigee_traceability_agent
 USER axway
 
-# alpine 3.17.0
-FROM docker.io/alpine@sha256:c0d488a800e4127c334ad20d61d7bc21b4097540327217dfab52262adc02380c
+# alpine 3.17.3
+FROM docker.io/alpine@sha256:b6ca290b6b4cdcca5b3db3ffa338ee0285c11744b4a6abaa9627746ee3291d8d
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd
