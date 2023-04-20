@@ -41,7 +41,7 @@ RUN chown -R axway:axway /go/src/github.com/Axway/agents-apigee/discovery/bin/ap
 USER axway
 
 # alpine 3.17.3
-FROM docker.io/alpine@sha256:c0d488a800e4127c334b6ca290b6b4cdcca5b3db3ffa338ee0285c11744b4a6abaa9627746ee3291d8dad20d61d7bc21b4097540327217dfab52262adc02380c
+FROM docker.io/alpine@sha256:b6ca290b6b4cdcca5b3db3ffa338ee0285c11744b4a6abaa9627746ee3291d8d
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd
