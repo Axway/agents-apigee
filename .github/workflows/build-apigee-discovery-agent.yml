@@ -2,7 +2,7 @@ name: Build Apigee Discovery Agent
 
 on:
   push:
-    branches: [main, "APIGOV-*"]
+    branches: [main, "*"]
 
 jobs:
   testDiscoveryAgent:
