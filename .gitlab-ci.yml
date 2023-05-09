@@ -70,7 +70,7 @@ twistlock-traceability:
     - cd ..
 
 twistlock-discovery:on-schedule:
-  extends: .twistlock
+  extends: twistlock:on-schedule:
   dependencies: []
   before_script:
     - apk --no-cache update && apk add git
@@ -79,7 +79,7 @@ twistlock-discovery:on-schedule:
     - docker pull ${IMAGE_NAME}
 
 twistlock-traceability:on-schedule:
-  extends: .twistlock
+  extends: twistlock:on-schedule
   dependencies: []
   before_script:
     - apk --no-cache update && apk add git
