@@ -70,7 +70,7 @@ twistlock-traceability:
     - cd ..
 
 twistlock-discovery:on-schedule:
-  extends: twistlock:on-schedule:
+  extends: twistlock:on-schedule
   dependencies: []
   before_script:
     - apk --no-cache update && apk add git
