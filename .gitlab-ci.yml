@@ -95,7 +95,7 @@ twistlock-traceability:on-schedule:
     - export IMAGE_NAME=ghcr.io/axway/apigee_traceability_agent:${GIT_TAG_PREFIX}${LATEST_TAG}
     - docker pull ${IMAGE_NAME}
 
-# overridden from csrjobs.yml because mirror repos like this one don't get merge events
+# overridden from csrjobs.yml because mirror repos like this one don't get merge events 
 fetch-fortify:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
