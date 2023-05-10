@@ -97,17 +97,13 @@ twistlock-traceability:on-schedule:
 
 # overridden from csrjobs.yml because mirror repos like this one don't get merge events
 fetch-fortify:
-  extends:
-    - .fetch-fortify
-    # - .mirror-branch-csr-rules
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - echo "Hello $CI_PIPELINE_SOURCE"
     - echo "Hello $CI_COMMIT_BRANCH"
     - echo "Hello $CI_DEFAULT_BRANCH"
-  only:
-    refs:
-      - /^APIGOV-.*$/
-
+    
 
 whitesource:
   extends:
