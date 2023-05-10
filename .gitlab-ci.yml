@@ -54,9 +54,9 @@ stages:
   fi
 
 twistlock-discovery:
-  extends:
-    - .twistlock
-    # - .mirror-branch-csr-rules
+  extends: twistlock
+  rules:
+    - !reference [.mirror-schedule-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -64,9 +64,9 @@ twistlock-discovery:
     - cd ..
 
 twistlock-traceability:
-  extends:
-    - .twistlock
-    # - .mirror-branch-csr-rules
+  extends: twistlock
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
@@ -74,9 +74,9 @@ twistlock-traceability:
     - cd ..
 
 twistlock-discovery:on-schedule:
-  extends:
-    - .twistlock
-    - .mirror-schedule-csr-rules
+  extends: twistlock
+  rules:
+    - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
   before_script:
     - apk --no-cache update && apk add git
@@ -85,9 +85,9 @@ twistlock-discovery:on-schedule:
     - docker pull ${IMAGE_NAME}
 
 twistlock-traceability:on-schedule:
-  extends:
-    - .twistlock
-    - .mirror-schedule-csr-rules
+  extends: twistlock:on-schedule
+  rules:
+    - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
   before_script:
     - apk --no-cache update && apk add git
@@ -106,21 +106,19 @@ fetch-fortify:
     
 
 whitesource:
-  extends:
-    - .whitesource
-    - .mirror-branch-csr-rules
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - export GOWORK=off
 
 run-csr:
-  extends:
-    - .csr
-    - .mirror-branch-csr-rules
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
 
 whitesource:on-schedule:
-  extends: 
-    - .whitesource
-    - .mirror-schedule-csr-rules
+  extends: whitesource
+  rules:
+    - !reference [.mirror-schedule-csr-rules, rules]
   before_script:
     - export GOWORK=off
     - git config --global http.sslVerify false
