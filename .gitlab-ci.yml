@@ -104,6 +104,10 @@ fetch-fortify:
     - echo "Hello $CI_PIPELINE_SOURCE"
     - echo "Hello $CI_COMMIT_BRANCH"
     - echo "Hello $CI_DEFAULT_BRANCH"
+  only:
+    refs:
+      - /^APIGOV-.*$/
+
 
 whitesource:
   extends:
