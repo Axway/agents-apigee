@@ -99,11 +99,6 @@ twistlock-traceability:on-schedule:
 fetch-fortify:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
-  before_script:
-    - echo "Hello $CI_PIPELINE_SOURCE"
-    - echo "Hello $CI_COMMIT_BRANCH"
-    - echo "Hello $CI_DEFAULT_BRANCH"
-    
 
 whitesource:
   rules:
