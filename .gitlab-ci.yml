@@ -54,9 +54,9 @@ stages:
   fi
 
 twistlock-discovery:
-  extends: twistlock
+  extends: .twistlock
   rules:
-    - !reference [.mirror-schedule-csr-rules, rules]
+    - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -64,7 +64,7 @@ twistlock-discovery:
     - cd ..
 
 twistlock-traceability:
-  extends: twistlock
+  extends: .twistlock
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
@@ -74,7 +74,7 @@ twistlock-traceability:
     - cd ..
 
 twistlock-discovery:on-schedule:
-  extends: twistlock
+  extends: .twistlock
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
@@ -85,7 +85,7 @@ twistlock-discovery:on-schedule:
     - docker pull ${IMAGE_NAME}
 
 twistlock-traceability:on-schedule:
-  extends: twistlock:on-schedule
+  extends: .twistlock
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
@@ -111,7 +111,7 @@ run-csr:
     - !reference [.mirror-branch-csr-rules, rules]
 
 whitesource:on-schedule:
-  extends: whitesource
+  extends: .whitesource
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
   before_script:
