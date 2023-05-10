@@ -128,17 +128,21 @@ whitesource:on-schedule:
 # extends and overrides, using only-never for these csr jobs doesn't work. Had to do it like this.
 ####################
 fetch-iriusrisk:
-  extends: .only-never-rule
+  rules:
+    - !reference [.only-never-rule, rules]
 
 fetch-iriusrisk:on-schedule:
-  extends: .only-never-rule
+  rules:
+    - !reference [.only-never-rule, rules]
 
 twistlock:
-  extends: .only-never-rule
+  rules:
+    - !reference [.only-never-rule, rules]
   dependencies:
 
 twistlock:on-schedule:
-  extends: .only-never-rule
+  rules:
+    - !reference [.only-never-rule, rules]
 
 ###################
 # These overridden from jobs.xml to never run      
