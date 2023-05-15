@@ -48,7 +48,7 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /go/src/github.com/Axway/agents-apigee/traceability/apigee_traceability_agent.yml /apigee_traceability_agent.yml
 COPY --from=builder /go/src/github.com/Axway/agents-apigee/traceability/bin/apigee_traceability_agent /apigee_traceability_agent
 
-RUN apk --no-cache add openssl libssl1.1 libcrypto1.1 musl musl-utils libc6-compat busybox curl && \
+RUN apk --no-cache add openssl libssl3 libcrypto3 musl musl-utils libc6-compat busybox curl && \
   mkdir /keys /data && \
   chown -R axway /keys /data /apigee_traceability_agent.yml && \
   chmod go-w /apigee_traceability_agent.yml
