@@ -68,7 +68,7 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
 	logger := p.logger.WithField("handler", "AccessRequestDeprovision").WithField("apiID", apiID).WithField("application", req.GetApplicationName())
 
-	if p.isProductMode {
+	if p.isProductMode && req.GetQuota() != nil && req.GetQuota().GetPlanName() != "" {
 		// append the plan name to the apiID
 		apiID = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
 	}
