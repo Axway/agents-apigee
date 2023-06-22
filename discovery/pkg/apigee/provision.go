@@ -68,8 +68,12 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
 	logger := p.logger.WithField("handler", "AccessRequestDeprovision").WithField("apiID", apiID).WithField("application", req.GetApplicationName())
 
-	// remove link between api product and app
+	if p.isProductMode {
+		// append the plan name to the apiID
+		apiID = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
+	}
 
+	// remove link between api product and app
 	logger.Info("deprovisioning access request")
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
@@ -95,21 +99,16 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	var cred *models.DeveloperAppCredentials
 	// find the credential that the api is linked to
 	for _, c := range app.Credentials {
-		for _, p := range c.ApiProducts {
-			if p.Apiproduct == apiID {
+		for _, prod := range c.ApiProducts {
+			if prod.Apiproduct == apiID {
 				cred = &c
+
+				err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
+				if err != nil {
+					return failed(logger, ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
+				}
 			}
 		}
-	}
-
-	if cred == nil {
-		logger.Info("nothing to do")
-		return ps.Success() // no credentials means no access granted
-	}
-
-	err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
-	if err != nil {
-		return failed(logger, ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
 
 	logger.Info("removed access")
