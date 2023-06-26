@@ -42,8 +42,9 @@ type client interface {
 	GetAppCredential(appName, devID, key string) (*models.DeveloperAppCredentials, error)
 	CreateAppCredential(appName, devID string, products []string, expDays int) (*models.DeveloperApp, error)
 	RemoveAppCredential(appName, devID, key string) error
-	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
-	RemoveProductCredential(appName, devID, key, productName string) error
+	AddCredentialProduct(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
+	RemoveCredentialProduct(appName, devID, key, productName string) error
+	UpdateCredentialProduct(appName, devID, key, productName string, enable bool) error
 	UpdateAppCredential(appName, devID, key string, enable bool) error
 	CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error)
 	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
@@ -103,9 +104,12 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 			if prod.Apiproduct == apiID {
 				cred = &c
 
-				err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
+				err := p.client.UpdateCredentialProduct(appName, devID, cred.ConsumerKey, apiID, false)
 				if err != nil {
-					return failed(logger, ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
+					return failed(logger, ps, fmt.Errorf("failed to revoke api product %s from credential: %s", prod.Apiproduct, err))
+				}
+				if err != nil {
+					return failed(logger, ps, fmt.Errorf("failed to revoke api %s from app: %s", "api-product-name", err))
 				}
 			}
 		}
@@ -151,7 +155,6 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	quotaInterval := "1"
 	quotaTimeUnit := ""
 
-	apiProductName := apiID
 	if q := req.GetQuota(); q != nil {
 		quota = fmt.Sprintf("%d", q.GetLimit())
 
@@ -170,21 +173,21 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 			return failed(logger, ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
 		}
 
-		apiProductName = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
+		apiID = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
 	}
 
 	var product *models.ApiProduct
 	if p.isProductMode {
 		logger.Debug("handling for product mode")
 		var err error
-		product, err = p.productModeCreateProduct(logger, apiProductName, apiID, quota, quotaInterval, quotaTimeUnit)
+		product, err = p.productModeCreateProduct(logger, apiID, apiID, quota, quotaInterval, quotaTimeUnit)
 		if err != nil {
 			return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
 	} else {
 		logger.Debug("handling for proxy mode")
 		var err error
-		product, err = p.proxyModeCreateProduct(logger, apiProductName, apiID, stage, quota, quotaInterval, quotaTimeUnit)
+		product, err = p.proxyModeCreateProduct(logger, apiID, apiID, stage, quota, quotaInterval, quotaTimeUnit)
 		if err != nil {
 			return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
 		}
@@ -203,22 +206,35 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	// add api to credentials that are not associated with it
 	for _, cred := range app.Credentials {
 		addProd := true
+		enableProd := false
 		for _, p := range cred.ApiProducts {
 			if p.Apiproduct == apiID {
 				addProd = false
-				break // already has the
+				// already has the product, make sure its enabled
+				if p.Status == "revoked" {
+					enableProd = true
+				}
+				break
 			}
 		}
 
 		// add the product to this credential
 		if addProd {
 			cpr := apigee.CredentialProvisionRequest{
-				ApiProducts: []string{apiProductName},
+				ApiProducts: []string{apiID},
 			}
 
-			_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
+			_, err = p.client.AddCredentialProduct(appName, devID, cred.ConsumerKey, cpr)
 			if err != nil {
-				return failed(logger, ps, fmt.Errorf("failed to add api product %s to credential: %s", apiProductName, err)), nil
+				return failed(logger, ps, fmt.Errorf("failed to add api product %s to credential: %s", apiID, err)), nil
+			}
+		}
+
+		// enable the product for this credential
+		if enableProd {
+			err = p.client.UpdateCredentialProduct(appName, devID, cred.ConsumerKey, apiID, true)
+			if err != nil {
+				return failed(logger, ps, fmt.Errorf("failed to add enable api product %s on credential: %s", apiID, err)), nil
 			}
 		}
 	}

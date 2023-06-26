@@ -662,19 +662,28 @@ func (m mockClient) CreateAppCredential(appName, devID string, products []string
 	}, nil
 }
 
-func (m mockClient) AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
+func (m mockClient) AddCredentialProduct(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
 	assert.Equal(m.t, m.appName, appName)
 	assert.Equal(m.t, m.devID, devID)
 	assert.Equal(m.t, m.key, key)
 	return nil, m.addCredErr
 }
 
-func (m mockClient) RemoveProductCredential(appName, devID, key, productName string) error {
+func (m mockClient) RemoveCredentialProduct(appName, devID, key, productName string) error {
 	assert.Equal(m.t, m.appName, appName)
 	assert.Equal(m.t, m.devID, devID)
 	assert.Equal(m.t, m.key, key)
 	assert.Equal(m.t, m.productName, productName)
 	return m.rmCredErr
+}
+
+func (m mockClient) UpdateCredentialProduct(appName, devID, key, productName string, enable bool) error {
+	assert.Equal(m.t, m.appName, appName)
+	assert.Equal(m.t, m.devID, devID)
+	assert.Equal(m.t, m.key, key)
+	assert.Equal(m.t, m.productName, productName)
+	assert.Equal(m.t, m.enable, enable)
+	return nil
 }
 
 func (m mockClient) UpdateAppCredential(appName, devID, key string, enable bool) error {

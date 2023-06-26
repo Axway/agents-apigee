@@ -113,7 +113,7 @@ func (a *ApigeeClient) CreateAppCredential(appName, devID string, products []str
 	return appData, err
 }
 
-func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
+func (a *ApigeeClient) AddCredentialProduct(appName, devID, key string, cpr CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
 	data, err := json.Marshal(cpr)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr Cred
 
 	if response.Code != http.StatusOK {
 		return nil, fmt.Errorf(
-			"received an unexpected response code %d from Apigee while updating app credentials: %s", response.Code, response.Body,
+			"received an unexpected response code %d from Apigee while adding a product to an app credentials: %s", response.Code, response.Body,
 		)
 	}
 
@@ -141,7 +141,7 @@ func (a *ApigeeClient) AddProductCredential(appName, devID, key string, cpr Cred
 	return cred, err
 }
 
-func (a *ApigeeClient) RemoveProductCredential(appName, devID, key, productName string) error {
+func (a *ApigeeClient) RemoveCredentialProduct(appName, devID, key, productName string) error {
 	url := fmt.Sprintf("%s/developers/%s/apps/%s/keys/%s/apiproducts/%s", a.orgURL, devID, appName, key, productName)
 
 	response, err := a.newRequest(
@@ -153,7 +153,32 @@ func (a *ApigeeClient) RemoveProductCredential(appName, devID, key, productName 
 
 	if response.Code != http.StatusOK {
 		return fmt.Errorf(
-			"received an unexpected response code %d from Apigee while updating removing product from app credentials", response.Code,
+			"received an unexpected response code %d from Apigee while removing product from an app credentials", response.Code,
+		)
+	}
+
+	return err
+}
+
+func (a *ApigeeClient) UpdateCredentialProduct(appName, devID, key, productName string, enable bool) error {
+	url := fmt.Sprintf("%s/developers/%s/apps/%s/keys/%s/apiproducts/%s", a.orgURL, devID, appName, key, productName)
+
+	action := "revoke"
+	if enable {
+		action = "approve"
+	}
+
+	response, err := a.newRequest(
+		http.MethodPost, url,
+		WithDefaultHeaders(), WithQueryParam("action", action),
+	).Execute()
+	if err != nil {
+		return err
+	}
+
+	if response.Code != http.StatusOK {
+		return fmt.Errorf(
+			"received an unexpected response code %d from Apigee while updating a product on an app credentials", response.Code,
 		)
 	}
 
