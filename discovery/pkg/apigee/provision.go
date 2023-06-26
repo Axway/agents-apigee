@@ -416,7 +416,7 @@ func (p provisioner) CredentialDeprovision(req prov.CredentialRequest) prov.Requ
 
 // CredentialProvision - retrieves the app credentials for oauth or api key authentication
 func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.RequestStatus, prov.Credential) {
-	logger := p.logger.WithField("handler", "CredentialDeprovision").WithField("application", req.GetApplicationName())
+	logger := p.logger.WithField("handler", "CredentialProvision").WithField("application", req.GetApplicationName())
 
 	logger.Info("provisioning credential")
 	ps := prov.NewRequestStatusBuilder()

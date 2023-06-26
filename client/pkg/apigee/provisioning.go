@@ -176,7 +176,7 @@ func (a *ApigeeClient) UpdateCredentialProduct(appName, devID, key, productName 
 		return err
 	}
 
-	if response.Code != http.StatusOK {
+	if response.Code != http.StatusNoContent {
 		return fmt.Errorf(
 			"received an unexpected response code %d from Apigee while updating a product on an app credentials", response.Code,
 		)
