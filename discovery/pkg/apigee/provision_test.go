@@ -23,7 +23,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 		appName     string
 		apiID       string
 		getAppErr   error
-		rmCredErr   error
+		upCredErr   error
 		missingCred bool
 	}{
 		{
@@ -47,11 +47,11 @@ func TestAccessRequestDeprovision(t *testing.T) {
 			status:    provisioning.Error,
 		},
 		{
-			name:      "should fail to deprovision an access request when removing the credential",
+			name:      "should fail to deprovision an access request when revoking the credential",
 			appName:   "app-one",
 			apiID:     "abc-123",
 			status:    provisioning.Error,
-			rmCredErr: fmt.Errorf("error"),
+			upCredErr: fmt.Errorf("error"),
 		},
 		{
 			name:    "should return an error when the appName is not found",
@@ -82,7 +82,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 				t:           t,
 				devID:       "dev-id-123",
 				getAppErr:   tc.getAppErr,
-				rmCredErr:   tc.rmCredErr,
+				upCredErr:   tc.upCredErr,
 				app:         app,
 				appName:     tc.appName,
 				key:         app.Credentials[0].ConsumerKey,
@@ -118,6 +118,7 @@ func TestAccessRequestProvision(t *testing.T) {
 		getAppErr    error
 		addCredErr   error
 		addProdErr   error
+		upCredErr    error
 		existingProd bool
 		noCreds      bool
 		isApiLinked  bool
@@ -143,6 +144,15 @@ func TestAccessRequestProvision(t *testing.T) {
 			apiID:       "abc-123",
 			apiStage:    "prod",
 			status:      provisioning.Success,
+			isApiLinked: true,
+		},
+		{
+			name:        "should fail to deprovision an access request when the api is already linked but could not be enabled",
+			appName:     "app-one",
+			apiID:       "abc-123",
+			apiStage:    "prod",
+			status:      provisioning.Success,
+			upCredErr:   fmt.Errorf("error"),
 			isApiLinked: true,
 		},
 		{
@@ -198,6 +208,7 @@ func TestAccessRequestProvision(t *testing.T) {
 				devID:       "dev-id-123",
 				key:         key,
 				getAppErr:   tc.getAppErr,
+				upCredErr:   tc.upCredErr,
 				productName: tc.apiID,
 				t:           t,
 			}, 30, &mockCache{t: t}, false, false)
@@ -605,6 +616,7 @@ type mockClient struct {
 	productName  string
 	rmAppErr     error
 	rmCredErr    error
+	upCredErr    error
 	enable       bool
 	existingProd bool
 	t            *testing.T
@@ -662,19 +674,28 @@ func (m mockClient) CreateAppCredential(appName, devID string, products []string
 	}, nil
 }
 
-func (m mockClient) AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
+func (m mockClient) AddCredentialProduct(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error) {
 	assert.Equal(m.t, m.appName, appName)
 	assert.Equal(m.t, m.devID, devID)
 	assert.Equal(m.t, m.key, key)
 	return nil, m.addCredErr
 }
 
-func (m mockClient) RemoveProductCredential(appName, devID, key, productName string) error {
+func (m mockClient) RemoveCredentialProduct(appName, devID, key, productName string) error {
 	assert.Equal(m.t, m.appName, appName)
 	assert.Equal(m.t, m.devID, devID)
 	assert.Equal(m.t, m.key, key)
 	assert.Equal(m.t, m.productName, productName)
 	return m.rmCredErr
+}
+
+func (m mockClient) UpdateCredentialProduct(appName, devID, key, productName string, enable bool) error {
+	assert.Equal(m.t, m.appName, appName)
+	assert.Equal(m.t, m.devID, devID)
+	assert.Equal(m.t, m.key, key)
+	assert.Equal(m.t, m.productName, productName)
+	assert.Equal(m.t, m.enable, enable)
+	return m.upCredErr
 }
 
 func (m mockClient) UpdateAppCredential(appName, devID, key string, enable bool) error {

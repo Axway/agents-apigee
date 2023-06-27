@@ -42,8 +42,9 @@ type client interface {
 	GetAppCredential(appName, devID, key string) (*models.DeveloperAppCredentials, error)
 	CreateAppCredential(appName, devID string, products []string, expDays int) (*models.DeveloperApp, error)
 	RemoveAppCredential(appName, devID, key string) error
-	AddProductCredential(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
-	RemoveProductCredential(appName, devID, key, productName string) error
+	AddCredentialProduct(appName, devID, key string, cpr apigee.CredentialProvisionRequest) (*models.DeveloperAppCredentials, error)
+	RemoveCredentialProduct(appName, devID, key, productName string) error
+	UpdateCredentialProduct(appName, devID, key, productName string, enable bool) error
 	UpdateAppCredential(appName, devID, key string, enable bool) error
 	CreateAPIProduct(product *models.ApiProduct) (*models.ApiProduct, error)
 	UpdateDeveloperApp(app models.DeveloperApp) (*models.DeveloperApp, error)
@@ -68,8 +69,12 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
 	logger := p.logger.WithField("handler", "AccessRequestDeprovision").WithField("apiID", apiID).WithField("application", req.GetApplicationName())
 
-	// remove link between api product and app
+	if p.isProductMode && req.GetQuota() != nil && req.GetQuota().GetPlanName() != "" {
+		// append the plan name to the apiID
+		apiID = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
+	}
 
+	// remove link between api product and app
 	logger.Info("deprovisioning access request")
 	ps := prov.NewRequestStatusBuilder()
 	devID := p.client.GetDeveloperID()
@@ -95,21 +100,19 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	var cred *models.DeveloperAppCredentials
 	// find the credential that the api is linked to
 	for _, c := range app.Credentials {
-		for _, p := range c.ApiProducts {
-			if p.Apiproduct == apiID {
+		for _, prod := range c.ApiProducts {
+			if prod.Apiproduct == apiID {
 				cred = &c
+
+				err := p.client.UpdateCredentialProduct(appName, devID, cred.ConsumerKey, apiID, false)
+				if err != nil {
+					return failed(logger, ps, fmt.Errorf("failed to revoke api product %s from credential: %s", prod.Apiproduct, err))
+				}
+				if err != nil {
+					return failed(logger, ps, fmt.Errorf("failed to revoke api %s from app: %s", "api-product-name", err))
+				}
 			}
 		}
-	}
-
-	if cred == nil {
-		logger.Info("nothing to do")
-		return ps.Success() // no credentials means no access granted
-	}
-
-	err = p.client.RemoveProductCredential(appName, devID, cred.ConsumerKey, apiID)
-	if err != nil {
-		return failed(logger, ps, fmt.Errorf("failed to remove api %s from app: %s", "api-product-name", err))
 	}
 
 	logger.Info("removed access")
@@ -147,12 +150,11 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	// get plan name from access request
 	// get api product, or create new one
-
+	apiProductName := apiID
 	quota := ""
 	quotaInterval := "1"
 	quotaTimeUnit := ""
 
-	apiProductName := apiID
 	if q := req.GetQuota(); q != nil {
 		quota = fmt.Sprintf("%d", q.GetLimit())
 
@@ -204,10 +206,15 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 	// add api to credentials that are not associated with it
 	for _, cred := range app.Credentials {
 		addProd := true
+		enableProd := false
 		for _, p := range cred.ApiProducts {
-			if p.Apiproduct == apiID {
+			if p.Apiproduct == apiProductName {
 				addProd = false
-				break // already has the
+				// already has the product, make sure its enabled
+				if p.Status == "revoked" {
+					enableProd = true
+				}
+				break
 			}
 		}
 
@@ -217,9 +224,17 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 				ApiProducts: []string{apiProductName},
 			}
 
-			_, err = p.client.AddProductCredential(appName, devID, cred.ConsumerKey, cpr)
+			_, err = p.client.AddCredentialProduct(appName, devID, cred.ConsumerKey, cpr)
 			if err != nil {
 				return failed(logger, ps, fmt.Errorf("failed to add api product %s to credential: %s", apiProductName, err)), nil
+			}
+		}
+
+		// enable the product for this credential
+		if enableProd {
+			err = p.client.UpdateCredentialProduct(appName, devID, cred.ConsumerKey, apiProductName, true)
+			if err != nil {
+				return failed(logger, ps, fmt.Errorf("failed to add enable api product %s on credential: %s", apiProductName, err)), nil
 			}
 		}
 	}
@@ -401,7 +416,7 @@ func (p provisioner) CredentialDeprovision(req prov.CredentialRequest) prov.Requ
 
 // CredentialProvision - retrieves the app credentials for oauth or api key authentication
 func (p provisioner) CredentialProvision(req prov.CredentialRequest) (prov.RequestStatus, prov.Credential) {
-	logger := p.logger.WithField("handler", "CredentialDeprovision").WithField("application", req.GetApplicationName())
+	logger := p.logger.WithField("handler", "CredentialProvision").WithField("application", req.GetApplicationName())
 
 	logger.Info("provisioning credential")
 	ps := prov.NewRequestStatusBuilder()
