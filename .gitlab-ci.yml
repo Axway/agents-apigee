@@ -96,6 +96,10 @@ twistlock-traceability:on-schedule:
     - docker pull ${IMAGE_NAME}
 
 # overridden from csrjobs.yml because mirror repos like this one don't get merge events 
+fortify:
+  rules:
+    - !reference [.mirror-default-branch-csr-rules, rules]
+
 fetch-fortify:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
