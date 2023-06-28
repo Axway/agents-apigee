@@ -57,6 +57,6 @@ USER axway
 
 VOLUME ["/keys"]
 
-HEALTHCHECK --retries=1 CMD curl --fail http://localhost:${STATUS_PORT:-8989}/status || exit 1
+HEALTHCHECK --retries=1 CMD /apigee_discovery_agent --status || exit 1
 
 ENTRYPOINT ["/apigee_discovery_agent"]
