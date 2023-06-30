@@ -5,7 +5,7 @@ go 1.18
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.56-0.20230628144902-eb9cb1e24647
+	github.com/Axway/agent-sdk v1.1.56
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.4
 )
@@ -62,7 +62,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowzach/rotatefilehook v0.0.0-20220211133110-53752135082d // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -84,7 +84,7 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20220714211235-042d03aeabc9 // indirect
