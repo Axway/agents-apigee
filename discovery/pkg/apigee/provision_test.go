@@ -114,6 +114,7 @@ func TestAccessRequestProvision(t *testing.T) {
 		status       provisioning.Status
 		appName      string
 		apiID        string
+		newAPIID     string
 		apiStage     string
 		getAppErr    error
 		addCredErr   error
@@ -127,6 +128,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:     "should provision an access request",
 			appName:  "app-one",
 			apiID:    "abc-123",
+			newAPIID: "abc-123-no-quota",
 			apiStage: "prod",
 			status:   provisioning.Success,
 		},
@@ -134,6 +136,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:     "should provision an access request when there are no credentials on the app",
 			appName:  "app-one",
 			apiID:    "abc-123",
+			newAPIID: "abc-123-no-quota",
 			apiStage: "prod",
 			status:   provisioning.Success,
 			noCreds:  true,
@@ -142,6 +145,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:        "should provision an access request when the api is already linked to a credential",
 			appName:     "app-one",
 			apiID:       "abc-123",
+			newAPIID:    "abc-123-no-quota",
 			apiStage:    "prod",
 			status:      provisioning.Success,
 			isApiLinked: true,
@@ -150,6 +154,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:        "should fail to deprovision an access request when the api is already linked but could not be enabled",
 			appName:     "app-one",
 			apiID:       "abc-123",
+			newAPIID:    "abc-123-no-quota",
 			apiStage:    "prod",
 			status:      provisioning.Success,
 			upCredErr:   fmt.Errorf("error"),
@@ -159,6 +164,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:       "should fail to deprovision an access request",
 			appName:    "app-one",
 			apiID:      "abc-123",
+			newAPIID:   "abc-123-no-quota",
 			apiStage:   "prod",
 			status:     provisioning.Error,
 			addCredErr: fmt.Errorf("error"),
@@ -167,6 +173,7 @@ func TestAccessRequestProvision(t *testing.T) {
 			name:      "should fail to deprovision when unable to retrieve the app",
 			appName:   "app-one",
 			apiID:     "abc-123",
+			newAPIID:  "abc-123-no-quota",
 			apiStage:  "prod",
 			status:    provisioning.Error,
 			getAppErr: fmt.Errorf("error"),
@@ -209,7 +216,7 @@ func TestAccessRequestProvision(t *testing.T) {
 				key:         key,
 				getAppErr:   tc.getAppErr,
 				upCredErr:   tc.upCredErr,
-				productName: tc.apiID,
+				productName: tc.newAPIID,
 				t:           t,
 			}, 30, &mockCache{t: t}, false, false)
 
