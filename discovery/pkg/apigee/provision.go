@@ -150,7 +150,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	// get plan name from access request
 	// get api product, or create new one
-	apiProductName := apiID
+	apiProductName := fmt.Sprintf("%s-%s", apiID, "no-quota")
 	quota := ""
 	quotaInterval := "1"
 	quotaTimeUnit := ""
@@ -273,18 +273,20 @@ func (p provisioner) productModeCreateProduct(logger log.FieldLogger, targetProd
 		}...)
 
 		product = &models.ApiProduct{
-			ApiResources:  curProduct.ApiResources,
-			ApprovalType:  curProduct.ApprovalType,
-			Attributes:    attributes,
-			Description:   curProduct.Description,
-			DisplayName:   targetProductName,
-			Environments:  curProduct.Environments,
-			Name:          targetProductName,
-			Proxies:       curProduct.Proxies,
-			Quota:         quota,
-			QuotaInterval: quotaInterval,
-			QuotaTimeUnit: quotaTimeUnit,
-			Scopes:        curProduct.Scopes,
+			ApiResources: curProduct.ApiResources,
+			ApprovalType: curProduct.ApprovalType,
+			Attributes:   attributes,
+			Description:  curProduct.Description,
+			DisplayName:  targetProductName,
+			Environments: curProduct.Environments,
+			Name:         targetProductName,
+			Proxies:      curProduct.Proxies,
+			Scopes:       curProduct.Scopes,
+		}
+		if quota != "" {
+			product.Quota = quota
+			product.QuotaInterval = quotaInterval
+			product.QuotaTimeUnit = quotaTimeUnit
 		}
 		logger.Infof("creating api product")
 		product, err = p.client.CreateAPIProduct(product)
@@ -301,15 +303,17 @@ func (p provisioner) proxyModeCreateProduct(logger log.FieldLogger, apiProductNa
 	// only create a product if one is not found
 	if err != nil {
 		product = &models.ApiProduct{
-			ApiResources:  []string{},
-			ApprovalType:  "auto",
-			DisplayName:   apiProductName,
-			Environments:  []string{stage},
-			Name:          apiProductName,
-			Proxies:       []string{proxy},
-			Quota:         quota,
-			QuotaInterval: quotaInterval,
-			QuotaTimeUnit: quotaTimeUnit,
+			ApiResources: []string{},
+			ApprovalType: "auto",
+			DisplayName:  apiProductName,
+			Environments: []string{stage},
+			Name:         apiProductName,
+			Proxies:      []string{proxy},
+		}
+		if quota != "" {
+			product.Quota = quota
+			product.QuotaInterval = quotaInterval
+			product.QuotaTimeUnit = quotaTimeUnit
 		}
 		logger.Infof("creating api product")
 		product, err = p.client.CreateAPIProduct(product)
