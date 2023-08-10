@@ -11,6 +11,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
+	metricModels "github.com/Axway/agent-sdk/pkg/transaction/models"
 	"github.com/Axway/agent-sdk/pkg/transaction/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
@@ -356,7 +357,7 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 		apiID = util.FormatProxyID(metData.name)
 	}
 
-	apiDetail := metric.APIDetails{
+	apiDetail := metricModels.APIDetails{
 		ID:       apiID,
 		Name:     apiName,
 		Revision: 1,
@@ -368,7 +369,7 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 		APIDetails: apiDetail,
 		Duration:   newMetricData.ResponseTime,
 		Bytes:      0,
-		AppDetails: metric.AppDetails{},
+		AppDetails: metricModels.AppDetails{},
 	}
 
 	appendFunc := func(m metric.Detail) {

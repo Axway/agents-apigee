@@ -10,6 +10,7 @@ import (
 
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
+	metricModels "github.com/Axway/agent-sdk/pkg/transaction/models"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +38,7 @@ func (m *mockCollector) AddMetricDetail(metricDetail metric.Detail) {
 	m.AddMetric(metricDetail.APIDetails, metricDetail.StatusCode, metricDetail.Duration, metricDetail.Bytes, metricDetail.AppDetails.Name)
 }
 
-func (m *mockCollector) AddMetric(apiDetails metric.APIDetails, statusCode string, duration, bytes int64, appName string) {
+func (m *mockCollector) AddMetric(apiDetails metricModels.APIDetails, statusCode string, duration, bytes int64, appName string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	apiCount := make([]int, 3)
