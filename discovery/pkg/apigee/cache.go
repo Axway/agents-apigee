@@ -3,6 +3,7 @@ package apigee
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/apic"
@@ -12,6 +13,7 @@ import (
 type agentCache struct {
 	cache              cache.Cache
 	specEndpointToKeys map[string][]specCacheItem
+	mutex              *sync.Mutex
 }
 
 type specCacheItem struct {
@@ -25,6 +27,7 @@ func newAgentCache() *agentCache {
 	return &agentCache{
 		cache:              cache.New(),
 		specEndpointToKeys: make(map[string][]specCacheItem),
+		mutex:              &sync.Mutex{},
 	}
 }
 
@@ -43,6 +46,8 @@ func (a *agentCache) AddSpecToCache(id, path, name string, modDate time.Time, en
 	a.cache.SetWithSecondaryKey(specPrimaryKey(name), path, item)
 	a.cache.SetSecondaryKey(specPrimaryKey(name), strings.ToLower(name))
 	a.cache.SetSecondaryKey(specPrimaryKey(name), id)
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
 	for _, ep := range endpoints {
 		if _, found := a.specEndpointToKeys[ep]; !found {
 			a.specEndpointToKeys[ep] = []specCacheItem{}
@@ -90,6 +95,8 @@ func (a *agentCache) GetSpecWithName(name string) (*specCacheItem, error) {
 
 // GetSpecPathWithEndpoint - returns the lat modified spec found with this endpoint
 func (a *agentCache) GetSpecPathWithEndpoint(endpoint string) (string, error) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
 	items, found := a.specEndpointToKeys[endpoint]
 	if !found {
 		return "", fmt.Errorf("no spec found for endpoint: %s", endpoint)
