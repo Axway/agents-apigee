@@ -396,7 +396,7 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	}
 
 	if len(spec) == 0 {
-		logger.Debug("creating without a spec")
+		return nil, fmt.Errorf("skipping proxy creation without a spec")
 	}
 	logger.Debug("creating service body")
 
