@@ -76,7 +76,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			app := newApp(tc.apiID, tc.appName)
+			app := newApp(fmt.Sprintf("%s-no-quota", tc.apiID), tc.appName)
 
 			p := NewProvisioner(&mockClient{
 				t:           t,
@@ -86,7 +86,7 @@ func TestAccessRequestDeprovision(t *testing.T) {
 				app:         app,
 				appName:     tc.appName,
 				key:         app.Credentials[0].ConsumerKey,
-				productName: tc.apiID,
+				productName: fmt.Sprintf("%s-no-quota", tc.apiID),
 			}, 30, &mockCache{t: t}, false, false)
 
 			if tc.missingCred {
@@ -735,7 +735,7 @@ func (m mockClient) UpdateDeveloperApp(app models.DeveloperApp) (*models.Develop
 	return nil, nil
 }
 
-func newApp(apiID string, appName string) *models.DeveloperApp {
+func newApp(productName string, appName string) *models.DeveloperApp {
 	cred := &models.DeveloperApp{
 		Credentials: []models.DeveloperAppCredentials{
 			{
@@ -747,10 +747,10 @@ func newApp(apiID string, appName string) *models.DeveloperApp {
 		Name: appName,
 	}
 
-	if apiID != "" {
+	if productName != "" {
 		cred.Credentials[0].ApiProducts = []models.ApiProductRef{
 			{
-				Apiproduct: apiID,
+				Apiproduct: productName,
 			},
 		}
 	}
