@@ -57,11 +57,10 @@ func Test_pollProxiesJob(t *testing.T) {
 			hasOauth: true,
 		},
 		{
-			name:      "should create proxy when no spec found but has api key policy",
-			hasAPIKey: true,
+			name: "should create proxy when no spec found",
 		},
 		{
-			name: "should create proxy when no spec found",
+			name: "should stop when no spec found but has api key policy",
 		},
 		{
 			name:           "should stop when getting proxy revision fails",
@@ -204,6 +203,10 @@ func (m mockProxyClient) GetRevision(apiName, revision string) (rev *models.ApiP
 		err = fmt.Errorf("error")
 	}
 	return
+}
+
+func (m mockProxyClient) GetRevisionConnectionType(proxyName, revision string) (*apigee.HTTPProxyConnection, error) {
+	return nil, nil
 }
 
 func (m mockProxyClient) GetRevisionResourceFile(apiName, revision, resourceType, resourceName string) ([]byte, error) {

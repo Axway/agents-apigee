@@ -63,17 +63,21 @@ func NewProvisioner(client client, credExpDays int, cacheMan cacheManager, isPro
 	}
 }
 
+func getAPIProductName(apiID string, quota prov.Quota) string {
+	name := fmt.Sprintf("%s-no-quota", apiID)
+	if quota != nil {
+		name = fmt.Sprintf("%s-%s", apiID, quota.GetPlanName())
+	}
+	return name
+}
+
 // AccessRequestDeprovision - removes an api from an application
 func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.RequestStatus {
 	instDetails := req.GetInstanceDetails()
 	apiID := util.ToString(instDetails[defs.AttrExternalAPIID])
 	logger := p.logger.WithField("handler", "AccessRequestDeprovision").WithField("apiID", apiID).WithField("application", req.GetApplicationName())
 
-	if p.isProductMode && req.GetQuota() != nil && req.GetQuota().GetPlanName() != "" {
-		// append the plan name to the apiID
-		apiID = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
-	}
-
+	apiProductName := getAPIProductName(apiID, req.GetQuota())
 	// remove link between api product and app
 	logger.Info("deprovisioning access request")
 	ps := prov.NewRequestStatusBuilder()
@@ -101,10 +105,10 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 	// find the credential that the api is linked to
 	for _, c := range app.Credentials {
 		for _, prod := range c.ApiProducts {
-			if prod.Apiproduct == apiID {
+			if prod.Apiproduct == apiProductName {
 				cred = &c
 
-				err := p.client.UpdateCredentialProduct(appName, devID, cred.ConsumerKey, apiID, false)
+				err := p.client.UpdateCredentialProduct(appName, devID, cred.ConsumerKey, apiProductName, false)
 				if err != nil {
 					return failed(logger, ps, fmt.Errorf("failed to revoke api product %s from credential: %s", prod.Apiproduct, err))
 				}
@@ -150,7 +154,7 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 
 	// get plan name from access request
 	// get api product, or create new one
-	apiProductName := fmt.Sprintf("%s-%s", apiID, "no-quota")
+	apiProductName := getAPIProductName(apiID, req.GetQuota())
 	quota := ""
 	quotaInterval := "1"
 	quotaTimeUnit := ""
@@ -172,25 +176,19 @@ func (p provisioner) AccessRequestProvision(req prov.AccessRequest) (prov.Reques
 		default:
 			return failed(logger, ps, fmt.Errorf("invalid quota time unit: received %s", q.GetIntervalString())), nil
 		}
-
-		apiProductName = fmt.Sprintf("%s-%s", apiID, req.GetQuota().GetPlanName())
 	}
 
 	var product *models.ApiProduct
+	var err error
 	if p.isProductMode {
 		logger.Debug("handling for product mode")
-		var err error
 		product, err = p.productModeCreateProduct(logger, apiProductName, apiID, quota, quotaInterval, quotaTimeUnit)
-		if err != nil {
-			return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
-		}
 	} else {
 		logger.Debug("handling for proxy mode")
-		var err error
 		product, err = p.proxyModeCreateProduct(logger, apiProductName, apiID, stage, quota, quotaInterval, quotaTimeUnit)
-		if err != nil {
-			return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
-		}
+	}
+	if err != nil {
+		return failed(logger, ps, fmt.Errorf("failed to create api product: %s", err)), nil
 	}
 
 	app, err := p.client.GetDeveloperApp(appName)
