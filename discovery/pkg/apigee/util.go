@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/util/log"
@@ -20,7 +19,7 @@ func isFullURL(urlString string) bool {
 	return false
 }
 
-func urlsFromVirtualHost(virtualHost *models.VirtualHost, proxyName string) []string {
+func urlsFromVirtualHost(virtualHost *models.VirtualHost) []string {
 	urls := []string{}
 
 	scheme := "http"
@@ -43,7 +42,6 @@ func urlsFromVirtualHost(virtualHost *models.VirtualHost, proxyName string) []st
 		if virtualHost.BaseUrl != "/" {
 			thisURL += virtualHost.BaseUrl
 		}
-		thisURL += "/" + strings.ToLower(proxyName)
 		urls = append(urls, thisURL)
 	}
 

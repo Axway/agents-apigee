@@ -35,6 +35,7 @@ type proxyClient interface {
 	GetAllProxies() (apigee.Proxies, error)
 	GetRevision(proxyName, revision string) (*models.ApiProxyRevision, error)
 	GetRevisionResourceFile(proxyName, revision, resourceType, resourceName string) ([]byte, error)
+	GetRevisionConnectionType(proxyName, revision string) (*apigee.HTTPProxyConnection, error)
 	GetDeployments(apiName string) (*models.DeploymentDetails, error)
 	GetVirtualHost(envName, virtualHostName string) (*models.VirtualHost, error)
 	GetSpecFile(specPath string) ([]byte, error)
@@ -52,28 +53,32 @@ type proxyCache interface {
 // job that will poll for any new portals on APIGEE Edge
 type pollProxiesJob struct {
 	jobs.Job
-	client      proxyClient
-	cache       proxyCache
-	firstRun    bool
-	logger      log.FieldLogger
-	specsReady  jobFirstRunDone
-	pubLock     sync.Mutex
-	publishFunc agent.PublishAPIFunc
-	workers     int
-	running     bool
-	runningLock sync.Mutex
+	client          proxyClient
+	cache           proxyCache
+	firstRun        bool
+	logger          log.FieldLogger
+	specsReady      jobFirstRunDone
+	pubLock         sync.Mutex
+	publishFunc     agent.PublishAPIFunc
+	workers         int
+	running         bool
+	runningLock     sync.Mutex
+	virtualHostURLs map[string]map[string][]string
+	lastTime        int
+	runTime         int
 }
 
 func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady jobFirstRunDone, workers int) *pollProxiesJob {
 	job := &pollProxiesJob{
-		client:      client,
-		cache:       cache,
-		firstRun:    true,
-		specsReady:  specsReady,
-		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
-		publishFunc: agent.PublishAPI,
-		workers:     workers,
-		runningLock: sync.Mutex{},
+		client:          client,
+		cache:           cache,
+		firstRun:        true,
+		specsReady:      specsReady,
+		logger:          log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
+		publishFunc:     agent.PublishAPI,
+		workers:         workers,
+		runningLock:     sync.Mutex{},
+		virtualHostURLs: make(map[string]map[string][]string),
 	}
 	return job
 }
@@ -131,6 +136,7 @@ func (j *pollProxiesJob) Execute() error {
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(allProxies))
+	j.runTime = j.lastTime
 	for _, proxyName := range allProxies {
 		go func() {
 			defer wg.Done()
@@ -200,6 +206,13 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
 		return
+	}
+
+	if revision.LastModifiedAt <= j.runTime {
+		return
+	}
+	if j.lastTime < revision.LastModifiedAt {
+		j.lastTime = revision.LastModifiedAt
 	}
 
 	ctx = context.WithValue(ctx, revNameField, revision)
@@ -275,18 +288,29 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	envName := getStringFromContext(ctx, envNameField)
 	proxyName := getStringFromContext(ctx, proxyNameField)
-
-	// attempt to get the spec from the endpoints the revision is hosted on
 	allURLs := []string{}
-	for _, virtualHostName := range revision.Proxies {
-		logger := logger.WithField("virtualHostName", virtualHostName)
-		virtualHost, err := j.client.GetVirtualHost(envName, virtualHostName)
+
+	connection, err := j.client.GetRevisionConnectionType(proxyName, revision.Revision)
+	if err != nil {
+		logger.WithError(err).Error("could not get the revision connection type")
+		return context.WithValue(ctx, endpointsField, allURLs)
+	}
+
+	if _, ok := j.virtualHostURLs[envName]; !ok {
+		j.virtualHostURLs[envName] = make(map[string][]string)
+	}
+
+	if _, ok := j.virtualHostURLs[envName][connection.VirtualHost]; !ok {
+		virtualHost, err := j.client.GetVirtualHost(envName, connection.VirtualHost)
 		if err != nil {
-			logger.WithError(err).Debug("could not get virtual host details")
-			continue
+			logger.WithError(err).Error("could not get the virtual host info")
+			return context.WithValue(ctx, endpointsField, allURLs)
 		}
-		urls := urlsFromVirtualHost(virtualHost, proxyName)
-		allURLs = append(allURLs, urls...)
+		j.virtualHostURLs[envName][connection.VirtualHost] = urlsFromVirtualHost(virtualHost)
+	}
+
+	for _, url := range j.virtualHostURLs[envName][connection.VirtualHost] {
+		allURLs = append(allURLs, fmt.Sprintf("%s%s", url, connection.BasePath))
 	}
 
 	return context.WithValue(ctx, endpointsField, allURLs)

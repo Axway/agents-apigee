@@ -205,6 +205,10 @@ func (m mockProxyClient) GetRevision(apiName, revision string) (rev *models.ApiP
 	return
 }
 
+func (m mockProxyClient) GetRevisionConnectionType(proxyName, revision string) (*apigee.HTTPProxyConnection, error) {
+	return nil, nil
+}
+
 func (m mockProxyClient) GetRevisionResourceFile(apiName, revision, resourceType, resourceName string) ([]byte, error) {
 	assert.Contains(m.t, proxyName, apiName)
 	assert.Contains(m.t, revName, revision)
