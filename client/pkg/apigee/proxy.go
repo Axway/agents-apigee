@@ -82,7 +82,7 @@ func (a *ApigeeClient) GetRevision(proxyName, revision string) (*models.ApiProxy
 	return proxyRevision, nil
 }
 
-// GetRevisionBundle - get a revision bundle of a proxy with a name
+// GetRevisionConnectionType - get a revision bundle and open the proxy config file
 func (a *ApigeeClient) GetRevisionConnectionType(proxyName, revision string) (*HTTPProxyConnection, error) {
 	response, err := a.newRequest(http.MethodGet, fmt.Sprintf("%s/apis/%s/revisions/%s", a.orgURL, proxyName, revision),
 		WithDefaultHeaders(),
@@ -92,7 +92,7 @@ func (a *ApigeeClient) GetRevisionConnectionType(proxyName, revision string) (*H
 		return nil, err
 	}
 
-	// response is a zip file, lets
+	// response is a zip file, lets open it and find the proxy config file
 	zipReader, err := zip.NewReader(bytes.NewReader(response.Body), int64(len(response.Body)))
 	if err != nil {
 		return nil, err
@@ -109,6 +109,10 @@ func (a *ApigeeClient) GetRevisionConnectionType(proxyName, revision string) (*H
 			return nil, err
 		}
 		break
+	}
+
+	if len(fileBytes) == 0 {
+		return nil, fmt.Errorf("could not find the proxy configuration file in the api revision bundle")
 	}
 
 	data := &proxyXML{}
