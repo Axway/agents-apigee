@@ -91,31 +91,41 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 		withIsReady(a.IsReady),
 		withStatsCache(a.statCache),
 		withCachePath(a.cacheFilePath),
+		withAllTraffic(a.cfg.ApigeeCfg.ShouldReportAllTraffic()),
 	}
-	if a.apigeeClient.GetConfig().IsProductMode() {
+	if a.cfg.ApigeeCfg.IsProductMode() {
 		baseOpts = append(baseOpts, withProductMode())
 	}
 
-	job := newPollStatsJob(append(baseOpts, withCacheClean())...)
 	lastStatTimeIface, err := a.statCache.Get(lastStartTimeKey)
+	var lastStartTime time.Time
 	if err == nil {
-		//"2022-01-21T11:31:32.079962632-07:00"
 		// there was a last time in the cache
-		lastStatTime, _ := time.Parse(time.RFC3339Nano, lastStatTimeIface.(string))
-		if time.Now().Add(time.Hour*-1).Sub(lastStatTime) > 0 {
-			// last start time not within an hour
-			catchUpJob := newPollStatsJob(
-				append(baseOpts,
-					[]func(*pollApigeeStats){
-						withStartTime(lastStatTime),
-						withIncrement(time.Hour),
-					}...,
-				)...,
-			) // create the job that catches up and stops
-			catchUpJob.Execute()
-		}
+		lastStartTime, _ = time.Parse(time.RFC3339Nano, lastStatTimeIface.(string))
 	}
 
-	jobs.RegisterIntervalJobWithName(job, a.cfg.ApigeeCfg.Intervals.Stats, "Apigee Stats")
+	if !lastStartTime.IsZero() {
+		// last start time not zero
+
+		// create the job that executes once to get all the stats that were missed
+		catchUpJob := newPollStatsJob(
+			append(baseOpts,
+				withStartTime(lastStartTime),
+			)...,
+		)
+		catchUpJob.Execute()
+
+		// register the regular running job after one interval has passed
+		go func() {
+			time.Sleep(a.cfg.ApigeeCfg.Intervals.Stats)
+			job := newPollStatsJob(append(baseOpts, withCacheClean(), withStartTime(catchUpJob.startTime))...)
+			jobs.RegisterIntervalJobWithName(job, a.cfg.ApigeeCfg.Intervals.Stats, "Apigee Stats")
+		}()
+	} else {
+		// register a regular running job, only grabbing hte last hour of stats
+		job := newPollStatsJob(append(baseOpts, withCacheClean(), withStartTime(time.Now().Add(time.Hour*-1).Truncate(time.Minute)))...)
+		jobs.RegisterIntervalJobWithName(job, a.cfg.ApigeeCfg.Intervals.Stats, "Apigee Stats")
+	}
+
 	return "", nil
 }
