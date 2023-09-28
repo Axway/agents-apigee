@@ -1,13 +1,13 @@
 package apigee
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
@@ -26,46 +26,47 @@ const (
 	policyErrMetric   = "sum(policy_error)"
 	serverErrMetric   = "sum(target_error)"
 	avgResponseMetric = "avg(total_response_time)"
+	maxResponseMetric = "max(total_response_time)"
+	minResponseMetric = "min(total_response_time)"
 )
 
 type isReady func() bool
 
 type metricData struct {
-	environment    string
-	baseName       string
-	name           string
-	timestamp      int64
-	count          string
-	policyErrCount string
-	serverErrCount string
-	responseTime   string
+	environment     string
+	baseName        string
+	name            string
+	timestamp       int64
+	count           string
+	policyErrCount  string
+	serverErrCount  string
+	avgResponseTime string
+	minResponseTime string
+	maxResponseTime string
 }
 
 type pollApigeeStats struct {
 	jobs.Job
-	startTime     time.Time
-	lastTime      time.Time
-	increment     time.Duration // increment the end and start times by this amount
-	cacheKeys     []string
-	envs          []string
-	mutex         *sync.Mutex
-	cacheClean    bool
-	collector     metric.Collector
-	ready         isReady
-	client        definitions.StatsClient
-	statCache     cache.Cache
-	cachePath     string
-	clonedProduct map[string]string
-	dimension     string
-	isProduct     bool
-	logger        log.FieldLogger
-	metrics       []metric.Detail
+	startTime        time.Time
+	endTime          time.Time
+	envs             []string
+	mutex            *sync.Mutex
+	cacheClean       bool
+	reportAllTraffic bool
+	collector        metric.Collector
+	ready            isReady
+	client           definitions.StatsClient
+	statCache        cache.Cache
+	cachePath        string
+	clonedProduct    map[string]string
+	dimension        string
+	isProduct        bool
+	logger           log.FieldLogger
 }
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 	job := &pollApigeeStats{
 		collector:     metric.GetMetricCollector(),
-		cacheKeys:     make([]string, 0),
 		mutex:         &sync.Mutex{},
 		clonedProduct: make(map[string]string),
 		dimension:     "apiproxy",
@@ -81,12 +82,6 @@ func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 func withStartTime(startTime time.Time) func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
 		p.startTime = startTime
-	}
-}
-
-func withIncrement(increment time.Duration) func(p *pollApigeeStats) {
-	return func(p *pollApigeeStats) {
-		p.increment = increment
 	}
 }
 
@@ -120,6 +115,12 @@ func withIsReady(ready isReady) func(p *pollApigeeStats) {
 	}
 }
 
+func withAllTraffic(allTraffic bool) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.reportAllTraffic = allTraffic
+	}
+}
+
 func withProductMode() func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
 		p.dimension = "api_product"
@@ -139,27 +140,20 @@ func (j *pollApigeeStats) Execute() error {
 	id, _ := uuid.NewV4()
 	logger := j.logger.WithField("executionID", id)
 
-	//start the metric channel
-	j.metrics = []metric.Detail{}
-
 	logger.Trace("starting execution")
 	j.envs = j.client.GetEnvironments()
-	j.cacheKeys = make([]string, 0)
-	lastTime := j.lastTime
-	startTime := j.startTime
-	if j.increment == 0 {
-		lastTime = time.Now()
-		startTime = time.Now().Add(time.Minute * -30) // go back 30 minutes
-	}
 
-	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric}, ",")
+	// when start time is 0 we are in our regular execution loop
+	j.endTime = time.Now().Add(time.Minute * -10).Truncate(time.Minute)
+
+	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric, minResponseMetric, maxResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
 	for _, e := range j.envs {
 		wg.Add(1)
 		go func(logger log.FieldLogger, envName string) {
 			defer wg.Done()
 			logger = logger.WithField("env", envName)
-			metrics, err := j.client.GetStats(envName, j.dimension, metricSelect, startTime, lastTime)
+			metrics, err := j.client.GetStats(envName, j.dimension, metricSelect, j.startTime, j.endTime)
 			if err != nil {
 				return
 			}
@@ -174,19 +168,16 @@ func (j *pollApigeeStats) Execute() error {
 		j.cleanCache()
 	}
 
-	if j.increment != 0 {
-		// update the start and lastTime times
-		j.startTime = j.startTime.Add(j.increment)
-		j.lastTime = j.lastTime.Add(j.increment)
-	}
+	// set startTime for the next api call
+	j.startTime = j.endTime
 
 	// only update the lastStartTime when it is not zero
-	if !startTime.IsZero() {
-		j.statCache.Set(lastStartTimeKey, startTime.String())
+	if !j.startTime.IsZero() {
+		j.statCache.Set(lastStartTimeKey, j.startTime.String())
 		j.statCache.Save(j.cachePath)
 	}
+	j.collector.Publish()
 
-	j.sendMetrics(logger)
 	return nil
 }
 
@@ -208,18 +199,21 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 		policyErrMetric:   -1,
 		serverErrMetric:   -1,
 		avgResponseMetric: -1,
+		maxResponseMetric: -1,
+		minResponseMetric: -1,
 	}
 
+	// initialize the metrics index map for each proxy
 	for i, m := range metrics.Environments[0].Dimensions[0].Metrics { // api_proxies or api_product
 		if _, found := metricsIndex[m.Name]; !found {
-			logger.Warnf("skipping metric, %s, in return data", m.Name)
+			logger.Tracef("skipping metric, %s, in return data", m.Name)
 		}
 		metricsIndex[m.Name] = i
 	}
 
 	// check for -1 index in metricsIndex
 	for key, index := range metricsIndex {
-		if index < 0 {
+		if key != "" && index < 0 {
 			logger.Errorf("did not find the %s metric in the returned data", key)
 			return
 		}
@@ -231,34 +225,38 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 	}
 
 	logger.WithField("value", dimensions).Trace("dimensions")
-	wg := sync.WaitGroup{}
-	for _, d := range metrics.Environments[0].Dimensions { // api_proxies
-		logger := logger.WithField("dimension", d.Name)
+	// wg := sync.WaitGroup{}
+	for _, d := range metrics.Environments[0].Dimensions {
+		serviceName := j.getBaseProduct(d.Name)
+		logger := logger.WithField("name", d.Name).WithField("serviceName", serviceName)
 		logger.Trace("processing metric for dimension")
+		if serviceName == "(not set)" {
+			continue
+		}
+		if !j.reportAllTraffic && !agent.IsAPIPublishedByID(serviceName) {
+			logger.Trace("skipping as its not discovered")
+			continue
+		}
 		for i := range d.Metrics[0].MetricValues {
 			if d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value == "0.0" {
 				continue
 			}
 
-			data := &metricData{
-				environment:    metrics.Environments[0].Name,
-				name:           j.getBaseProduct(d.Name),
-				baseName:       d.Name,
-				timestamp:      d.Metrics[metricsIndex[countMetric]].MetricValues[i].Timestamp,
-				count:          d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value,
-				policyErrCount: d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
-				serverErrCount: d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
-				responseTime:   d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
-			}
-			wg.Add(1)
-
-			go func(md *metricData) {
-				j.processMetric(logger, md)
-				wg.Done()
-			}(data)
+			j.processMetric(logger, &metricData{
+				environment:     metrics.Environments[0].Name,
+				name:            serviceName,
+				baseName:        d.Name,
+				timestamp:       d.Metrics[metricsIndex[countMetric]].MetricValues[i].Timestamp,
+				count:           d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value,
+				policyErrCount:  d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
+				serverErrCount:  d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
+				avgResponseTime: d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
+				minResponseTime: d.Metrics[metricsIndex[minResponseMetric]].MetricValues[i].Value,
+				maxResponseTime: d.Metrics[metricsIndex[maxResponseMetric]].MetricValues[i].Value,
+			})
 		}
 	}
-	wg.Wait()
+	// wg.Wait()
 	logger.Trace("finished processing env")
 }
 
@@ -285,69 +283,28 @@ func (j *pollApigeeStats) getBaseProduct(name string) string {
 	return name
 }
 
-func (j *pollApigeeStats) sendMetrics(logger log.FieldLogger) {
-	logger.Trace("sending all metrics")
-	for _, msg := range j.metrics {
-		j.collector.AddMetricDetail(msg)
-	}
-}
-
 func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricData) {
-	metricCacheKey := fmt.Sprintf("%s-%s-%d", metData.environment, metData.baseName, metData.timestamp)
-	logger = logger.WithField("metricKey", metricCacheKey)
-	logger.Trace("begin processing metric")
-
-	j.mutex.Lock()
-	j.cacheKeys = append(j.cacheKeys, metricCacheKey)
-	j.mutex.Unlock()
-
-	// get the cached values
-	newMetricData := &metricCache{
-		ProxyName: metData.name,
-		Timestamp: metData.timestamp,
-	}
-	if data, err := j.statCache.Get(metricCacheKey); err == nil {
-		stringData := data.(string)
-		err := json.Unmarshal([]byte(stringData), &newMetricData)
-		if err != nil {
-			return
-		}
-	}
 
 	// get the average response time
-	s, err := strconv.ParseFloat(metData.responseTime, 64)
-	if err != nil {
-		logger.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
-		return
-	}
-	newMetricData.ResponseTime = int64(s)
+	avgResponseTime, _ := strconv.ParseFloat(metData.avgResponseTime, 64)
+
+	// get the min response time
+	minResponseTime, _ := strconv.ParseFloat(metData.minResponseTime, 64)
+
+	// get the max response time
+	maxResponseTime, _ := strconv.ParseFloat(metData.maxResponseTime, 64)
 
 	// get the total messages
-	s, err = strconv.ParseFloat(metData.count, 64)
-	if err != nil {
-		logger.Errorf("could not read message metric value %s, at timestamp %d, as it was not a number", metData.count, metData.timestamp)
-		return
-	}
-	newMetricData.Total = int(s)
+	total, _ := strconv.ParseFloat(metData.count, 64)
 
 	// get the policy errors
-	s, err = strconv.ParseFloat(metData.policyErrCount, 64)
-	if err != nil {
-		logger.Errorf("could not read policy error metric value %s, at timestamp %d, as it was not a number", metData.policyErrCount, metData.timestamp)
-		return
-	}
-	newMetricData.PolicyError = int(s)
+	policyErr, _ := strconv.ParseFloat(metData.policyErrCount, 64)
 
 	// get the server errors
-	s, err = strconv.ParseFloat(metData.serverErrCount, 64)
-	if err != nil {
-		logger.Errorf("could not read server error metric value %s, at timestamp %d, as it was not a number", metData.serverErrCount, metData.timestamp)
-		return
-	}
-	newMetricData.ServerError = int(s)
+	serverErr, _ := strconv.ParseFloat(metData.serverErrCount, 64)
 
 	// calculate the number of successes
-	newMetricData.Success = newMetricData.Total - newMetricData.PolicyError - newMetricData.ServerError
+	success := total - policyErr - serverErr
 
 	// create the api details structure for the metric collector
 	apiName := fmt.Sprintf("%s (%s)", metData.name, metData.environment)
@@ -362,77 +319,42 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 		Name:     apiName,
 		Revision: 1,
 	}
-	logger = logger.WithField("success", newMetricData.Success).WithField("policyErr", newMetricData.PolicyError).WithField("serverErr", newMetricData.ServerError)
+	logger = logger.WithField("success", success).WithField("policyErr", policyErr).WithField("serverErr", serverErr).WithField("time", j.endTime.Format(time.RFC822))
 	logger.Debug("reporting metrics")
 
-	thisMetric := metric.Detail{
-		APIDetails: apiDetail,
-		Duration:   newMetricData.ResponseTime,
-		Bytes:      0,
-		AppDetails: metricModels.AppDetails{},
+	reportMetric := func(count int64, code string) {
+		if count == 0 {
+			return
+		}
+		j.collector.AddAPIMetric(&metric.APIMetric{
+			API:        apiDetail,
+			StatusCode: code,
+			Count:      count,
+			Response: metric.ResponseMetrics{
+				Avg: avgResponseTime,
+				Max: int64(maxResponseTime),
+				Min: int64(minResponseTime),
+			},
+			StartTime: j.startTime,
+			Observation: metric.ObservationDetails{
+				Start: j.startTime.UnixMilli(),
+				End:   j.endTime.UnixMilli(),
+			},
+		})
 	}
+	reportMetric(int64(policyErr), "400")
+	reportMetric(int64(serverErr), "500")
+	reportMetric(int64(success), "200")
 
-	appendFunc := func(m metric.Detail) {
-		j.mutex.Lock()
-		defer j.mutex.Unlock()
-		j.metrics = append(j.metrics, m)
-	}
-
-	thisMetric.StatusCode = "400"
-	for i := newMetricData.PolicyError - newMetricData.ReportedPolicyError; i > 0; i-- {
-		appendFunc(thisMetric)
-		newMetricData.ReportedPolicyError++
-	}
-	thisMetric.StatusCode = "500"
-	for i := newMetricData.ServerError - newMetricData.ReportedServerError; i > 0; i-- {
-		appendFunc(thisMetric)
-		newMetricData.ReportedServerError++
-	}
-	thisMetric.StatusCode = "200"
-	for i := newMetricData.Success - newMetricData.ReportedSuccess; i > 0; i-- {
-		appendFunc(thisMetric)
-		newMetricData.ReportedSuccess++
-	}
-
-	// convert the metric data to a json string
-	data, err := json.Marshal(newMetricData)
-	if err != nil {
-		return
-	}
-	err = j.statCache.Set(metricCacheKey, string(data))
-	if err != nil {
-		logger.Error(err)
-	}
-	logger.Trace("finished processing metric")
+	logger.Info("finished processing metric")
 }
 
 func (j *pollApigeeStats) cleanCache() {
-	// get cache keys from cache
-	knownKeys := j.statCache.GetKeys()
-
-	// find the keys that can be cleaned
-	cleanKeys := make([]string, 0)
-	keysMap := make(map[string]struct{})
-
-	// add keys that should be kept
-	j.mutex.Lock()
-	for _, key := range j.cacheKeys {
-		keysMap[key] = struct{}{}
-	}
-	j.mutex.Unlock()
-
-	// find keys not in the keysMap, these should be cleaned
-	for _, key := range knownKeys {
+	// clean the cache, only need lastStarTtime
+	for _, key := range j.statCache.GetKeys() {
 		if key == lastStartTimeKey {
 			continue
 		}
-		if _, found := keysMap[key]; !found {
-			cleanKeys = append(cleanKeys, key)
-		}
-	}
-
-	// clean the cache items with keys from cleanKeys
-	for _, key := range cleanKeys {
 		j.statCache.Delete(key)
 	}
 }
