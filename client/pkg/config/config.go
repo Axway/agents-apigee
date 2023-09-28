@@ -23,6 +23,7 @@ type ApigeeConfig struct {
 	Workers         *ApigeeWorkers   `config:"workers"`
 	CloneAttributes bool             `config:"cloneAttributes"`
 	AllTraffic      bool             `config:"allTraffic"`
+	NotSetTraffic   bool             `config:"notSetTraffic"`
 	mode            discoveryMode
 }
 
@@ -79,6 +80,7 @@ const (
 	pathFilter             = "apigee.filter"
 	pathCloneAttributes    = "apigee.cloneAttributes"
 	pathAllTraffic         = "apigee.allTraffic"
+	pathNotSetTraffic      = "apigee.notSetTraffic"
 	pathAuthURL            = "apigee.auth.url"
 	pathAuthServerUsername = "apigee.auth.serverUsername"
 	pathAuthServerPassword = "apigee.auth.serverPassword"
@@ -106,7 +108,8 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddStringProperty(pathAuthServerUsername, "edgecli", "Username to use to when requesting APIGEE token")
 	rootProps.AddStringProperty(pathAuthServerPassword, "edgeclisecret", "Password to use to when requesting APIGEE token")
 	rootProps.AddBoolProperty(pathCloneAttributes, false, "Set to true to copy the tags when provisioning a Product in product mode")
-	rootProps.AddBoolProperty(pathAllTraffic, false, "Set to true report metrics for all traffic for the selected mode")
+	rootProps.AddBoolProperty(pathAllTraffic, false, "Set to true to report metrics for all traffic for the selected mode")
+	rootProps.AddBoolProperty(pathNotSetTraffic, false, "Set to true to report metrics for values reported with (not set) ast the name")
 	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs", properties.WithLowerLimit(1*time.Minute))
@@ -131,6 +134,7 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 		Filter:          rootProps.StringPropertyValue(pathFilter),
 		CloneAttributes: rootProps.BoolPropertyValue(pathCloneAttributes),
 		AllTraffic:      rootProps.BoolPropertyValue(pathAllTraffic),
+		NotSetTraffic:   rootProps.BoolPropertyValue(pathNotSetTraffic),
 		Intervals: &ApigeeIntervals{
 			Stats:   rootProps.DurationPropertyValue(pathStatsInterval),
 			Proxy:   rootProps.DurationPropertyValue(pathProxyInterval),
@@ -222,4 +226,8 @@ func (a *ApigeeConfig) ShouldCloneAttributes() bool {
 
 func (a *ApigeeConfig) ShouldReportAllTraffic() bool {
 	return a.AllTraffic
+}
+
+func (a *ApigeeConfig) ShouldReportNotSetTraffic() bool {
+	return a.NotSetTraffic
 }

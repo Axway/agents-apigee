@@ -47,21 +47,22 @@ type metricData struct {
 
 type pollApigeeStats struct {
 	jobs.Job
-	startTime        time.Time
-	endTime          time.Time
-	envs             []string
-	mutex            *sync.Mutex
-	cacheClean       bool
-	reportAllTraffic bool
-	collector        metric.Collector
-	ready            isReady
-	client           definitions.StatsClient
-	statCache        cache.Cache
-	cachePath        string
-	clonedProduct    map[string]string
-	dimension        string
-	isProduct        bool
-	logger           log.FieldLogger
+	startTime           time.Time
+	endTime             time.Time
+	envs                []string
+	mutex               *sync.Mutex
+	cacheClean          bool
+	reportAllTraffic    bool
+	reportNotSetTraffic bool
+	collector           metric.Collector
+	ready               isReady
+	client              definitions.StatsClient
+	statCache           cache.Cache
+	cachePath           string
+	clonedProduct       map[string]string
+	dimension           string
+	isProduct           bool
+	logger              log.FieldLogger
 }
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
@@ -118,6 +119,12 @@ func withIsReady(ready isReady) func(p *pollApigeeStats) {
 func withAllTraffic(allTraffic bool) func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
 		p.reportAllTraffic = allTraffic
+	}
+}
+
+func withNotSetTraffic(notSetTraffic bool) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.reportNotSetTraffic = notSetTraffic
 	}
 }
 
@@ -230,7 +237,7 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 		serviceName := j.getBaseProduct(d.Name)
 		logger := logger.WithField("name", d.Name).WithField("serviceName", serviceName)
 		logger.Trace("processing metric for dimension")
-		if serviceName == "(not set)" {
+		if !j.reportNotSetTraffic && serviceName == "(not set)" {
 			continue
 		}
 		if !j.reportAllTraffic && !agent.IsAPIPublishedByID(serviceName) {
