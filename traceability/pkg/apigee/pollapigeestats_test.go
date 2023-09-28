@@ -134,11 +134,11 @@ func TestProcessMetric(t *testing.T) {
 		{
 			name:      "Multiple Calls",
 			responses: []string{"multiple_calls_1.json", "multiple_calls_2.json"},
-			total:     21,
-			successes: 7,
+			total:     28,
+			successes: 14,
 			errors:    14,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {21, 7, 14},
+				"Petstore (prod)": {28, 14, 14},
 			},
 		},
 		{
@@ -217,73 +217,6 @@ func TestProcessMetric(t *testing.T) {
 	}
 }
 
-func TestCleanCache(t *testing.T) {
-	testCases := []struct {
-		name        string
-		inputs      [][]string
-		cleanedKeys []string
-	}{
-		{
-			name: "Create Keys",
-			inputs: [][]string{
-				{"key3", "key2", "key1"},
-			},
-			cleanedKeys: []string{},
-		},
-		{
-			name: "Same Keys",
-			inputs: [][]string{
-				{"key3", "key2", "key1"},
-				{"key3", "key2", "key1"},
-			},
-			cleanedKeys: []string{},
-		},
-		{
-			name: "Clean Keys",
-			inputs: [][]string{
-				{"key3", "key2", "key1"},
-				{"key3", "key2", "key1"},
-				{"key4", "key3", "key2"},
-				{"key5", "key4", "key3"},
-				{"key6", "key5", "key4"},
-				{"key6", "key5", "key4"},
-				{"key7", "key6", "key5"},
-			},
-			cleanedKeys: []string{"key4", "key3", "key2", "key1"},
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			job := newPollStatsJob(
-				withStatsCache(cache.New()),
-			)
-
-			expected := test.inputs[len(test.inputs)-1 : len(test.inputs)][0]
-			// load the cache with keys from all inputs and send inputs to cleanCache
-			for _, in := range test.inputs {
-				for _, key := range in {
-					job.statCache.Set(key, nil)
-				}
-				job.cacheKeys = in
-				job.cleanCache()
-			}
-
-			// check that all expected keys still in cache
-			for _, key := range expected {
-				_, err := job.statCache.Get(key)
-				assert.Nil(t, err)
-			}
-
-			// check that all cleaned keys not in cache
-			for _, key := range test.cleanedKeys {
-				_, err := job.statCache.Get(key)
-				assert.NotNil(t, err)
-			}
-		})
-	}
-}
-
 func TestNewPollStatsJob(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -318,9 +251,6 @@ func TestNewPollStatsJob(t *testing.T) {
 			if !test.startTime.IsZero() {
 				opts = append(opts, withStartTime(test.startTime))
 			}
-			if test.increment > 0 {
-				opts = append(opts, withIncrement(test.increment))
-			}
 			if test.cacheClean {
 				opts = append(opts, withCacheClean())
 			}
@@ -341,9 +271,7 @@ func TestNewPollStatsJob(t *testing.T) {
 
 			assert.NotNil(t, job)
 			assert.Equal(t, test.startTime, job.startTime)
-			assert.Equal(t, test.increment, job.increment)
 			assert.Equal(t, test.cachePath, job.cachePath)
-			assert.Equal(t, []string{}, job.cacheKeys)
 			assert.NotNil(t, job.mutex)
 			if test.cacheClean {
 				assert.True(t, job.cacheClean)

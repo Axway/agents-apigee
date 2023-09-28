@@ -8,19 +8,19 @@
               "name": "sum(message_count)",
               "values": [
                 {
-                  "timestamp": 1642648380000,
+                  "timestamp": 1642648390000,
                   "value": "6.0"
                 },
                 {
-                  "timestamp": 1642648320000,
+                  "timestamp": 1642648370000,
                   "value": "3.0"
                 },
                 {
-                  "timestamp": 1642648200000,
+                  "timestamp": 1642648210000,
                   "value": "6.0"
                 },
                 {
-                  "timestamp": 1642545960000,
+                  "timestamp": 1642545970000,
                   "value": "6.0"
                 }
               ]
@@ -29,19 +29,19 @@
               "name": "sum(policy_error)",
               "values": [
                 {
-                  "timestamp": 1642648380000,
+                  "timestamp": 1642648390000,
                   "value": "2.0"
                 },
                 {
-                  "timestamp": 1642648320000,
+                  "timestamp": 1642648370000,
                   "value": "1.0"
                 },
                 {
-                  "timestamp": 1642648200000,
+                  "timestamp": 1642648210000,
                   "value": "2.0"
                 },
                 {
-                  "timestamp": 1642545960000,
+                  "timestamp": 1642545970000,
                   "value": "2.0"
                 }
               ]
@@ -50,19 +50,19 @@
               "name": "sum(target_error)",
               "values": [
                 {
-                  "timestamp": 1642648380000,
+                  "timestamp": 1642648390000,
                   "value": "2.0"
                 },
                 {
-                  "timestamp": 1642648320000,
+                  "timestamp": 1642648370000,
                   "value": "1.0"
                 },
                 {
-                  "timestamp": 1642648200000,
+                  "timestamp": 1642648210000,
                   "value": "2.0"
                 },
                 {
-                  "timestamp": 1642545960000,
+                  "timestamp": 1642545970000,
                   "value": "2.0"
                 }
               ]
@@ -71,19 +71,19 @@
               "name": "avg(total_response_time)",
               "values": [
                 {
-                  "timestamp": 1642648380000,
+                  "timestamp": 1642648390000,
                   "value": "60.0"
                 },
                 {
-                  "timestamp": 1642648320000,
+                  "timestamp": 1642648330000,
                   "value": "30.0"
                 },
                 {
-                  "timestamp": 1642648200000,
+                  "timestamp": 1642648210000,
                   "value": "20.0"
                 },
                 {
-                  "timestamp": 1642545960000,
+                  "timestamp": 1642545970000,
                   "value": "70.0"
                 }
               ]
