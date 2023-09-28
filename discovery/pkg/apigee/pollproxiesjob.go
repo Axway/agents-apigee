@@ -374,6 +374,10 @@ func (j *pollProxiesJob) publish(ctx context.Context) {
 		logger.WithError(err).Error("building service body")
 		return
 	}
+	if serviceBody == nil {
+		return
+	}
+
 	serviceBodyHash, _ := coreutil.ComputeHash(*serviceBody)
 	hashString := util.ConvertUnitToString(serviceBodyHash)
 	cacheKey := createProxyCacheKey(getStringFromContext(ctx, proxyNameField), envName)
@@ -420,7 +424,8 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	}
 
 	if len(spec) == 0 {
-		return nil, fmt.Errorf("skipping proxy creation without a spec")
+		log.Warn("skipping proxy creation without a spec")
+		return nil, nil
 	}
 	logger.Debug("creating service body")
 
