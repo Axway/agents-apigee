@@ -3,7 +3,6 @@ package apigee
 import (
 	"encoding/json"
 	"os"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -34,28 +33,32 @@ func newMockCollector() *mockCollector {
 	}
 }
 
-func (m *mockCollector) AddMetricDetail(metricDetail metric.Detail) {
-	m.AddMetric(metricDetail.APIDetails, metricDetail.StatusCode, metricDetail.Duration, metricDetail.Bytes, metricDetail.AppDetails.Name)
+func (m *mockCollector) AddAPIMetric(met *metric.APIMetric) {
+	apiName := met.API.Name
+	if _, ok := m.apiCounts[apiName]; !ok {
+		m.apiCounts[apiName] = make([]int, 3)
+	}
+	code := met.StatusCode
+	m.apiCounts[apiName][0] += int(met.Count)
+	m.total += int(met.Count)
+	switch code {
+	case "200":
+		m.apiCounts[apiName][1] += int(met.Count)
+		m.successes += int(met.Count)
+	case "400":
+		fallthrough
+	case "500":
+		m.apiCounts[apiName][2] += int(met.Count)
+		m.errors += int(met.Count)
+	}
 }
 
+func (m *mockCollector) AddMetricDetail(metricData metric.Detail) {}
+
 func (m *mockCollector) AddMetric(apiDetails metricModels.APIDetails, statusCode string, duration, bytes int64, appName string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	apiCount := make([]int, 3)
-	if c, ok := m.apiCounts[apiDetails.Name]; ok {
-		apiCount = c
-	}
-	m.total++
-	apiCount[0]++
-	if code, _ := strconv.Atoi(statusCode); code < 400 {
-		m.successes++
-		apiCount[1]++
-	} else {
-		m.errors++
-		apiCount[2]++
-	}
-	m.apiCounts[apiDetails.Name] = apiCount
 }
+
+func (m *mockCollector) Publish() {}
 
 type mockClient struct {
 	envs          []string
@@ -110,6 +113,7 @@ func TestProcessMetric(t *testing.T) {
 		apiCalls      map[string][]int
 		isProductMode bool
 		productsMap   map[string]string
+		skipNotSet    bool
 	}{
 		{
 			name:      "Only Success",
@@ -176,6 +180,21 @@ func TestProcessMetric(t *testing.T) {
 				"Test-planname": "Test",
 			},
 		},
+		{
+			name:      "Real Data - Product Mode - No Not Set",
+			responses: []string{"real_data_2.json"},
+			total:     24,
+			successes: 24,
+			errors:    0,
+			apiCalls: map[string][]int{
+				"Test": {24, 24, 0},
+			},
+			isProductMode: true,
+			productsMap: map[string]string{
+				"Test-planname": "Test",
+			},
+			skipNotSet: true,
+		},
 	}
 
 	for _, test := range testCases {
@@ -187,6 +206,8 @@ func TestProcessMetric(t *testing.T) {
 					envs:          []string{"test"},
 					productsMap:   test.productsMap,
 				}),
+				withAllTraffic(true),
+				withNotSetTraffic(!test.skipNotSet),
 			}
 			if test.isProductMode {
 				opts = append(opts, withProductMode())

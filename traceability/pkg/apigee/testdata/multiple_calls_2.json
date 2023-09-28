@@ -87,6 +87,48 @@
                   "value": "70.0"
                 }
               ]
+            },
+            {
+              "name": "max(total_response_time)",
+              "values": [
+                {
+                  "timestamp": 1642648390000,
+                  "value": "60.0"
+                },
+                {
+                  "timestamp": 1642648330000,
+                  "value": "30.0"
+                },
+                {
+                  "timestamp": 1642648210000,
+                  "value": "20.0"
+                },
+                {
+                  "timestamp": 1642545970000,
+                  "value": "70.0"
+                }
+              ]
+            },
+            {
+              "name": "min(total_response_time)",
+              "values": [
+                {
+                  "timestamp": 1642648390000,
+                  "value": "60.0"
+                },
+                {
+                  "timestamp": 1642648330000,
+                  "value": "30.0"
+                },
+                {
+                  "timestamp": 1642648210000,
+                  "value": "20.0"
+                },
+                {
+                  "timestamp": 1642545970000,
+                  "value": "70.0"
+                }
+              ]
             }
           ],
           "name": "Petstore"
