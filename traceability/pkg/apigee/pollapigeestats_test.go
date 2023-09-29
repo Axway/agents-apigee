@@ -3,7 +3,6 @@ package apigee
 import (
 	"encoding/json"
 	"os"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -34,28 +33,32 @@ func newMockCollector() *mockCollector {
 	}
 }
 
-func (m *mockCollector) AddMetricDetail(metricDetail metric.Detail) {
-	m.AddMetric(metricDetail.APIDetails, metricDetail.StatusCode, metricDetail.Duration, metricDetail.Bytes, metricDetail.AppDetails.Name)
+func (m *mockCollector) AddAPIMetric(met *metric.APIMetric) {
+	apiName := met.API.Name
+	if _, ok := m.apiCounts[apiName]; !ok {
+		m.apiCounts[apiName] = make([]int, 3)
+	}
+	code := met.StatusCode
+	m.apiCounts[apiName][0] += int(met.Count)
+	m.total += int(met.Count)
+	switch code {
+	case "200":
+		m.apiCounts[apiName][1] += int(met.Count)
+		m.successes += int(met.Count)
+	case "400":
+		fallthrough
+	case "500":
+		m.apiCounts[apiName][2] += int(met.Count)
+		m.errors += int(met.Count)
+	}
 }
 
+func (m *mockCollector) AddMetricDetail(metricData metric.Detail) {}
+
 func (m *mockCollector) AddMetric(apiDetails metricModels.APIDetails, statusCode string, duration, bytes int64, appName string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	apiCount := make([]int, 3)
-	if c, ok := m.apiCounts[apiDetails.Name]; ok {
-		apiCount = c
-	}
-	m.total++
-	apiCount[0]++
-	if code, _ := strconv.Atoi(statusCode); code < 400 {
-		m.successes++
-		apiCount[1]++
-	} else {
-		m.errors++
-		apiCount[2]++
-	}
-	m.apiCounts[apiDetails.Name] = apiCount
 }
+
+func (m *mockCollector) Publish() {}
 
 type mockClient struct {
 	envs          []string
@@ -110,6 +113,7 @@ func TestProcessMetric(t *testing.T) {
 		apiCalls      map[string][]int
 		isProductMode bool
 		productsMap   map[string]string
+		skipNotSet    bool
 	}{
 		{
 			name:      "Only Success",
@@ -118,7 +122,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 7,
 			errors:    0,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {7, 7, 0},
+				"Petstore": {7, 7, 0},
 			},
 		},
 		{
@@ -128,17 +132,17 @@ func TestProcessMetric(t *testing.T) {
 			successes: 0,
 			errors:    7,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {7, 0, 7},
+				"Petstore": {7, 0, 7},
 			},
 		},
 		{
 			name:      "Multiple Calls",
 			responses: []string{"multiple_calls_1.json", "multiple_calls_2.json"},
-			total:     21,
-			successes: 7,
+			total:     28,
+			successes: 14,
 			errors:    14,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {21, 7, 14},
+				"Petstore": {28, 14, 14},
 			},
 		},
 		{
@@ -148,8 +152,8 @@ func TestProcessMetric(t *testing.T) {
 			successes: 27,
 			errors:    18,
 			apiCalls: map[string][]int{
-				"Petstore (prod)":     {19, 11, 8},
-				"Practitioner (prod)": {26, 16, 10},
+				"Petstore":     {19, 11, 8},
+				"Practitioner": {26, 16, 10},
 			},
 		},
 		{
@@ -159,7 +163,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 894,
 			errors:    894,
 			apiCalls: map[string][]int{
-				"Swagger-Petstore (prod)": {1788, 894, 894},
+				"Swagger-Petstore": {1788, 894, 894},
 			},
 		},
 		{
@@ -176,6 +180,21 @@ func TestProcessMetric(t *testing.T) {
 				"Test-planname": "Test",
 			},
 		},
+		{
+			name:      "Real Data - Product Mode - No Not Set",
+			responses: []string{"real_data_2.json"},
+			total:     24,
+			successes: 24,
+			errors:    0,
+			apiCalls: map[string][]int{
+				"Test": {24, 24, 0},
+			},
+			isProductMode: true,
+			productsMap: map[string]string{
+				"Test-planname": "Test",
+			},
+			skipNotSet: true,
+		},
 	}
 
 	for _, test := range testCases {
@@ -187,6 +206,8 @@ func TestProcessMetric(t *testing.T) {
 					envs:          []string{"test"},
 					productsMap:   test.productsMap,
 				}),
+				withAllTraffic(true),
+				withNotSetTraffic(!test.skipNotSet),
 			}
 			if test.isProductMode {
 				opts = append(opts, withProductMode())
@@ -212,73 +233,6 @@ func TestProcessMetric(t *testing.T) {
 			for proxy, expectedCounts := range test.apiCalls {
 				assert.Contains(t, mCollector.apiCounts, proxy)
 				assert.Equal(t, expectedCounts, mCollector.apiCounts[proxy])
-			}
-		})
-	}
-}
-
-func TestCleanCache(t *testing.T) {
-	testCases := []struct {
-		name        string
-		inputs      [][]string
-		cleanedKeys []string
-	}{
-		{
-			name: "Create Keys",
-			inputs: [][]string{
-				{"key3", "key2", "key1"},
-			},
-			cleanedKeys: []string{},
-		},
-		{
-			name: "Same Keys",
-			inputs: [][]string{
-				{"key3", "key2", "key1"},
-				{"key3", "key2", "key1"},
-			},
-			cleanedKeys: []string{},
-		},
-		{
-			name: "Clean Keys",
-			inputs: [][]string{
-				{"key3", "key2", "key1"},
-				{"key3", "key2", "key1"},
-				{"key4", "key3", "key2"},
-				{"key5", "key4", "key3"},
-				{"key6", "key5", "key4"},
-				{"key6", "key5", "key4"},
-				{"key7", "key6", "key5"},
-			},
-			cleanedKeys: []string{"key4", "key3", "key2", "key1"},
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			job := newPollStatsJob(
-				withStatsCache(cache.New()),
-			)
-
-			expected := test.inputs[len(test.inputs)-1 : len(test.inputs)][0]
-			// load the cache with keys from all inputs and send inputs to cleanCache
-			for _, in := range test.inputs {
-				for _, key := range in {
-					job.statCache.Set(key, nil)
-				}
-				job.cacheKeys = in
-				job.cleanCache()
-			}
-
-			// check that all expected keys still in cache
-			for _, key := range expected {
-				_, err := job.statCache.Get(key)
-				assert.Nil(t, err)
-			}
-
-			// check that all cleaned keys not in cache
-			for _, key := range test.cleanedKeys {
-				_, err := job.statCache.Get(key)
-				assert.NotNil(t, err)
 			}
 		})
 	}
@@ -318,9 +272,6 @@ func TestNewPollStatsJob(t *testing.T) {
 			if !test.startTime.IsZero() {
 				opts = append(opts, withStartTime(test.startTime))
 			}
-			if test.increment > 0 {
-				opts = append(opts, withIncrement(test.increment))
-			}
 			if test.cacheClean {
 				opts = append(opts, withCacheClean())
 			}
@@ -341,9 +292,7 @@ func TestNewPollStatsJob(t *testing.T) {
 
 			assert.NotNil(t, job)
 			assert.Equal(t, test.startTime, job.startTime)
-			assert.Equal(t, test.increment, job.increment)
 			assert.Equal(t, test.cachePath, job.cachePath)
-			assert.Equal(t, []string{}, job.cacheKeys)
 			assert.NotNil(t, job.mutex)
 			if test.cacheClean {
 				assert.True(t, job.cacheClean)
