@@ -2,12 +2,12 @@ module github.com/Axway/agents-apigee/traceability
 
 go 1.18
 
-// replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
+replace github.com/Axway/agent-sdk => /Users/jcollins/go/src/github.com/Axway/agent-sdk
 
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.64-0.20230928222826-f3219f020f84
+	github.com/Axway/agent-sdk v1.1.64-0.20230929032235-1a663636b488
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/elastic/beats/v7 v7.17.5
 	github.com/gofrs/uuid v4.2.0+incompatible
