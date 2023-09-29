@@ -1,7 +1,6 @@
 package apigee
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -300,19 +299,6 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 		success = 0
 	}
 
-	// create the api details structure for the metric collector
-	apiName := fmt.Sprintf("%s (%s)", metData.name, metData.environment)
-	apiID := util.FormatProxyID(fmt.Sprintf("%s-%s", metData.name, metData.environment))
-	if j.isProduct {
-		apiName = metData.name
-		apiID = util.FormatProxyID(metData.name)
-	}
-
-	apiDetail := metricModels.APIDetails{
-		ID:       apiID,
-		Name:     apiName,
-		Revision: 1,
-	}
 	logger = logger.WithField("success", success).WithField("policyErr", policyErr).WithField("serverErr", serverErr).WithField("time", j.endTime.Format(time.RFC822))
 	logger.Debug("reporting metrics")
 
@@ -321,7 +307,11 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 			return
 		}
 		j.collector.AddAPIMetric(&metric.APIMetric{
-			API:        apiDetail,
+			API: metricModels.APIDetails{
+				ID:       util.FormatProxyID(metData.name),
+				Name:     metData.name,
+				Revision: 1,
+			},
 			StatusCode: code,
 			Count:      count,
 			Response: metric.ResponseMetrics{
