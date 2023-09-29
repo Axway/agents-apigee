@@ -122,7 +122,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 7,
 			errors:    0,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {7, 7, 0},
+				"Petstore": {7, 7, 0},
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 0,
 			errors:    7,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {7, 0, 7},
+				"Petstore": {7, 0, 7},
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 14,
 			errors:    14,
 			apiCalls: map[string][]int{
-				"Petstore (prod)": {28, 14, 14},
+				"Petstore": {28, 14, 14},
 			},
 		},
 		{
@@ -152,8 +152,8 @@ func TestProcessMetric(t *testing.T) {
 			successes: 27,
 			errors:    18,
 			apiCalls: map[string][]int{
-				"Petstore (prod)":     {19, 11, 8},
-				"Practitioner (prod)": {26, 16, 10},
+				"Petstore":     {19, 11, 8},
+				"Practitioner": {26, 16, 10},
 			},
 		},
 		{
@@ -163,7 +163,7 @@ func TestProcessMetric(t *testing.T) {
 			successes: 894,
 			errors:    894,
 			apiCalls: map[string][]int{
-				"Swagger-Petstore (prod)": {1788, 894, 894},
+				"Swagger-Petstore": {1788, 894, 894},
 			},
 		},
 		{
