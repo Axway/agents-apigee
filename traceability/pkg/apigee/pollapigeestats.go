@@ -2,7 +2,6 @@ package apigee
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -291,27 +290,15 @@ func (j *pollApigeeStats) getBaseProduct(name string) string {
 }
 
 func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricData) {
-
-	// get the average response time
-	avgResponseTime, _ := strconv.ParseFloat(metData.avgResponseTime, 64)
-
-	// get the min response time
-	minResponseTime, _ := strconv.ParseFloat(metData.minResponseTime, 64)
-
-	// get the max response time
-	maxResponseTime, _ := strconv.ParseFloat(metData.maxResponseTime, 64)
-
-	// get the total messages
-	total, _ := strconv.ParseFloat(metData.count, 64)
-
 	// get the policy errors
-	policyErr, _ := strconv.ParseFloat(metData.policyErrCount, 64)
-
+	policyErr := parseFloatToInt64(metData.policyErrCount)
 	// get the server errors
-	serverErr, _ := strconv.ParseFloat(metData.serverErrCount, 64)
-
-	// calculate the number of successes
-	success := total - policyErr - serverErr
+	serverErr := parseFloatToInt64(metData.serverErrCount)
+	// calculate the successes
+	success := parseFloatToInt64(metData.count) - policyErr - serverErr
+	if success < 0 {
+		success = 0
+	}
 
 	// create the api details structure for the metric collector
 	apiName := fmt.Sprintf("%s (%s)", metData.name, metData.environment)
@@ -338,20 +325,20 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 			StatusCode: code,
 			Count:      count,
 			Response: metric.ResponseMetrics{
-				Avg: avgResponseTime,
-				Max: int64(maxResponseTime),
-				Min: int64(minResponseTime),
+				Avg: parseFloatToFloat64(metData.avgResponseTime),
+				Max: parseFloatToInt64(metData.maxResponseTime),
+				Min: parseFloatToInt64(metData.minResponseTime),
 			},
-			StartTime: j.startTime,
+			StartTime: time.UnixMilli(metData.timestamp),
 			Observation: metric.ObservationDetails{
-				Start: j.startTime.UnixMilli(),
-				End:   j.endTime.UnixMilli(),
+				Start: metData.timestamp,
+				End:   time.Minute.Milliseconds(),
 			},
 		})
 	}
-	reportMetric(int64(policyErr), "400")
-	reportMetric(int64(serverErr), "500")
-	reportMetric(int64(success), "200")
+	reportMetric(policyErr, "400")
+	reportMetric(serverErr, "500")
+	reportMetric(success, "200")
 
 	logger.Info("finished processing metric")
 }
