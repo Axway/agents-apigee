@@ -2,7 +2,7 @@
 shopt -s nocasematch
 
 # you can add variables like this to test locally. Just run ./release.sh. Note that to run on MAC, you must install bash 5.x. 
-# Then, to run the script you must do: /usr/local/bin/bash ./release.sh
+#  Then, to run the script you must do: /usr/local/bin/bash ./release.sh
 # TEAMS_WEBHOOK_URL="foo.bar"
 # TAG="1.2.3"
 
