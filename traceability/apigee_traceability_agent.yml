@@ -66,6 +66,9 @@ apigee_traceability_agent:
     level: ${LOG_LEVEL:info}
     format: ${LOG_FORMAT:json}
     output: ${LOG_OUTPUT:stdout}
+    file:
+      name: ${LOG_FILE_NAME:traceability_agent.log}
+      path: ${LOG_FILE_PATH:logs}
 
 # Condor Ingestion service
 output.traceability:
