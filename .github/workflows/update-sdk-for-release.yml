@@ -1,0 +1,50 @@
+# this action is triggered by selecting the action in the github UI and then clicking "run workflow"
+name: Update SDK version for release
+
+on: workflow_dispatch
+
+jobs:
+  updateAndCreatePR:
+    env:
+      GOFLAGS: "-mod=mod"
+      GOWORK: "off"
+    defaults:
+      run:
+        working-directory: .
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
+
+      - name: Get latest SDK version
+        run: |
+          export LATEST_REMOTE_TAG_CMD="git ls-remote --tags --refs --sort='version:refname' REMOTE_REPO | grep -Eo 'v?[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1"
+          REMOTE_REPO_PATH="https://github.com/Axway/agent-sdk"
+          CMD=${LATEST_REMOTE_TAG_CMD/"REMOTE_REPO"/${REMOTE_REPO_PATH}}
+          export SDK_VERSION=$(eval $CMD)
+          echo "SDK_VERSION=${SDK_VERSION}" >> $GITHUB_ENV
+      - name: Update SDK version in go.mod
+        working-directory: .
+        run: |
+          echo "SDK_VERSION is ${{ env.SDK_VERSION }}"
+          make dep-version sdk=v1.1.62
+          cat discovery/go.mod
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5.0.2
+        with:
+          branch: APIGOV-UpdateSDK
+          commit-message: 'Update to SDK ${{ env.SDK_VERSION }}'
+          title: 'APIGOV-UpdateSDK - Update to SDK ${{ env.SDK_VERSION }}'
+          delete-branch: true
+          reviewers: dfeldick
+      
+      - name: Enable Pull Request Automerge
+        run: gh pr merge APIGOV-UpdateSDK --admin --merge --subject "Merge branch APIGOV-UpdateSDK"
+        env:
+          GH_TOKEN: ${{ secrets.ACTION_ACCESS_TOKEN }}

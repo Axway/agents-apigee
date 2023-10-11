@@ -1,0 +1,33 @@
+# This action gets triggered by a closed PR on branch named 'APIGOV-UpdateSDK'
+name: Create tag for release
+
+on:
+  pull_request:
+    types:
+      - closed
+  
+jobs:
+  if_SDK_update_merged:
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'APIGOV-UpdateSDK')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Bump tag version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          # by default, this action creates a tag with a 'v' prefix, and bumps the patch version.
+          # See https://github.com/mathieudutour/github-tag-action to customize these rules.
+          github_token: ${{ secrets.ACTION_ACCESS_TOKEN }}
+      
+      - name: Show the new tag
+        run: |
+          echo "previous tag ${{ steps.tag_version.outputs.previous_tag }}
+          echo "new tag ${{ steps.tag_version.outputs.new_tag }}
+      
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
