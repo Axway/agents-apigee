@@ -32,7 +32,6 @@ jobs:
         run: |
           echo "SDK_VERSION is ${{ env.SDK_VERSION }}"
           make dep-version sdk=${{ env.SDK_VERSION }}
-          cat discovery/go.mod
 
       - name: Create Pull Request
         id: cpr
