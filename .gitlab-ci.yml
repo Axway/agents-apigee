@@ -153,9 +153,3 @@ twistlock:
 twistlock:on-schedule:
   rules:
     - !reference [.only-never-rule, rules]
-
-###################
-# These overridden from jobs.xml to never run      
-###################
-test:
-  extends: .only-never
