@@ -44,8 +44,5 @@ test-sonar: dep
 	@go vet ${GO_PKG_LIST}
 	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
 	
-sonar: test-sonar
-	./build/scripts/sonar.sh $(sonarHost)
-
 apigee-generate: ## generate apigee resources
 	docker run --rm -v $(shell pwd)/specs:/codegen/specs -v $(shell pwd)/scripts:/codegen/scripts -v $(shell pwd)/pkg/apigee/models:/codegen/output  -e USERID=$(shell id -u) -e GROUPID=$(shell id -g) -w /codegen/scripts --entrypoint ./apigee_generate.sh ampc-beano-docker-release-phx.artifactory-phx.ecd.axway.int/base-images/beano-alpine-codegen:latest

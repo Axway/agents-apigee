@@ -26,6 +26,3 @@ test-sonar:
 	@go vet ${GO_PKG_LIST}
 	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
 
-sonar: test-sonar
-	./sonar.sh
-
