@@ -24,8 +24,11 @@ dep-sdk:
 
 test-sonar:
 	@go vet ${GO_PKG_LIST}
-	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
+	@go test -v -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
 
 test: dep
+	@echo "${GO_PKG_LIST}"
 	@go vet ${GO_PKG_LIST}
 	@go test -race -v -short -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST}
+	@ls -la ${WORKSPACE}
+	@cat ./gocoverage.out
