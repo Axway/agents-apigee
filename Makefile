@@ -1,4 +1,5 @@
 
+WORKSPACE ?= $$(pwd)
 GO_PKG_LIST := $(shell go list ./client/pkg/... ./discovery/... ./traceability/...)
 
 dep:
@@ -24,8 +25,8 @@ dep-sdk:
 
 test-sonar:
 	@go vet ${GO_PKG_LIST}
-	@go test -v -short -coverpkg=./... -coverprofile=./gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
+	@go test -v -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST} -json > ./goreport.json
 
-sonar: test-sonar
-	./sonar.sh
-
+test: dep
+	@go vet ${GO_PKG_LIST}
+	@go test -race -v -short -coverpkg=./... -coverprofile=${WORKSPACE}/gocoverage.out -count=1 ${GO_PKG_LIST}
