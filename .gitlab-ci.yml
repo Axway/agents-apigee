@@ -120,6 +120,12 @@ whitesource:
   before_script:
     - export GOWORK=off
 
+blackduck:
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
+  before_script:
+    - export GOWORK=off
+
 run-csr:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
