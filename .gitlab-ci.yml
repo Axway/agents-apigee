@@ -109,6 +109,8 @@ twistlock-traceability:on-schedule:
 fortify:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
+  script:
+    - echo "none"
 
 fetch-fortify:
   rules:
@@ -119,6 +121,8 @@ whitesource:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - export GOWORK=off
+  script:
+    - echo "none"
 
 blackduck:
   variables:
@@ -174,10 +178,3 @@ sonar_preview:
   script:
     - echo "none"
 
-fortify:
-  script:
-    - echo "none"
-
-whitesource:
-  script:
-    - echo "none"
