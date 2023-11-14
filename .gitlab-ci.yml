@@ -121,6 +121,8 @@ whitesource:
     - export GOWORK=off
 
 blackduck:
+  variables:
+    CODE_LOCATION_NAME: "client"
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
@@ -163,3 +165,19 @@ twistlock:
 twistlock:on-schedule:
   rules:
     - !reference [.only-never-rule, rules]
+
+unit_tests:
+  script:
+    - echo "none"
+
+sonar_preview:
+  script:
+    - echo "none"
+
+fortify:
+  script:
+    - echo "none"
+
+whitesource:
+  script:
+    - echo "none"
