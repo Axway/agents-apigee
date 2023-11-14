@@ -126,6 +126,7 @@ whitesource:
 
 blackduck:
   variables:
+    SOURCE_PATH: "./client"
     CODE_LOCATION_NAME: "client"
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
