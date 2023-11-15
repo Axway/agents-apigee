@@ -139,7 +139,7 @@ blackduck:
 #   rules:
 #     - !reference [.mirror-branch-csr-rules, rules]
 
-# blackduck:
+# blackduck: 
 #   extends: .blackduck
   # variables:
   #   SOURCE_PATH: "discovery"
