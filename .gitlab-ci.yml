@@ -124,34 +124,34 @@ whitesource:
   script:
     - echo "none"
 
-blackduck:
-  extends: .only-never-rule
+# blackduck:
+#   extends: .only-never-rule
   
-blackduck-client:
+# blackduck-client:
+#   extends: .blackduck
+#   variables:
+#     SOURCE_PATH: "client"
+#     CODE_LOCATION_NAME: "client"
+#   rules:
+#     - !reference [.mirror-branch-csr-rules, rules]
+
+blackduck:
   extends: .blackduck
-  variables:
-    SOURCE_PATH: "client"
-    CODE_LOCATION_NAME: "client"
+  # variables:
+  #   SOURCE_PATH: "discovery"
+  #   CODE_LOCATION_NAME: "discovery"
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
 
-blackduck-discovery:
-  extends: .blackduck
-  variables:
-    SOURCE_PATH: "discovery"
-    CODE_LOCATION_NAME: "discovery"
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
-
-blackduck-traceability:
-  extends: .blackduck
-  variables:
-    SOURCE_PATH: "traceability"
-    CODE_LOCATION_NAME: "traceability"
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
-  before_script:
-    - export GOWORK=off
+# blackduck-traceability:
+#   extends: .blackduck
+#   variables:
+#     SOURCE_PATH: "traceability"
+#     CODE_LOCATION_NAME: "traceability"
+#   rules:
+#     - !reference [.mirror-branch-csr-rules, rules]
+#   before_script:
+#     - export GOWORK=off
 
 run-csr:
   rules:
