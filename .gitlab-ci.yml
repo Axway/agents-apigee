@@ -120,14 +120,6 @@ whitesource:
   before_script:
     - export GOWORK=off
 
-blackduck:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
-
-run-csr:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
-
 whitesource:on-schedule:
   extends: .whitesource
   rules:
@@ -140,6 +132,26 @@ whitesource:on-schedule:
     - *get-latest-tag
     - echo "Checking out ${GIT_TAG_PREFIX}${LATEST_TAG}"
     - git checkout ${GIT_TAG_PREFIX}${LATEST_TAG}
+
+blackduck:
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
+
+blackduck:on-schedule:
+  extends: .blackduck
+  rules:
+    - !reference [.mirror-schedule-csr-rules, rules]
+  before_script:
+    - git config --global http.sslVerify false
+    - git config --global url."ssh://git@git.ecd.axway.org".insteadOf "https://git.ecd.axway.org"''
+    - git fetch
+    - *get-latest-tag
+    - echo "Checking out ${GIT_TAG_PREFIX}${LATEST_TAG}"
+    - git checkout ${GIT_TAG_PREFIX}${LATEST_TAG}
+
+run-csr:
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
 
 ####################
 # CSR - overridden from csrjobs.yml to effectively not see these jobs ever. For some reason, probably multi-level
