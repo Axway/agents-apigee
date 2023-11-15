@@ -132,7 +132,7 @@ blackduck:
 #   extends: .only-never-rule
   
 # blackduck-client:
-#   extends: .blackduck
+#   extends: .blackduck 
 #   variables:
 #     SOURCE_PATH: "client"
 #     CODE_LOCATION_NAME: "client"
