@@ -124,6 +124,10 @@ whitesource:
   script:
     - echo "none"
 
+blackduck:
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
+
 # blackduck:
 #   extends: .only-never-rule
   
@@ -135,13 +139,13 @@ whitesource:
 #   rules:
 #     - !reference [.mirror-branch-csr-rules, rules]
 
-blackduck:
-  extends: .blackduck
+# blackduck:
+#   extends: .blackduck
   # variables:
   #   SOURCE_PATH: "discovery"
   #   CODE_LOCATION_NAME: "discovery"
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+  # rules:
+  #   - !reference [.mirror-branch-csr-rules, rules]
 
 # blackduck-traceability:
 #   extends: .blackduck
