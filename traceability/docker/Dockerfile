@@ -41,7 +41,7 @@ RUN chown -R axway:axway /go/src/github.com/Axway/agents-apigee/traceability/bin
 USER axway
 
 # alpine 3.18 linux/amd64 
-FROM docker.io@alpine@sha256:d695c3de6fcd8cfe3a6222b0358425d40adfd129a8a47c3416faff1a8aece389
+FROM docker.io/alpine@sha256:d695c3de6fcd8cfe3a6222b0358425d40adfd129a8a47c3416faff1a8aece389
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd
