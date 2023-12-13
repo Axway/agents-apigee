@@ -1,6 +1,4 @@
 # Build image
-# golang:1.21.3-alpine3.18 linux/amd64 
-FROM docker.io/golang@sha256:27c76dcf886c5024320f4fa8ceb57d907494a3bb3d477d0aa7ac8385acd871ea AS builder
 # golang:1.21.5-alpine3.18 linux/amd64
 FROM dockerhub.artifactory-phx.ecd.axway.int/golang@sha256:2aa0f0960cffcfd8daac2e765b8fdd3aa001a97d967c9ae96d58d06ff11ecdb4
 
