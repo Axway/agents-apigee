@@ -1,6 +1,6 @@
 # Build image
-# golang:1.21.3-alpine3.18 linux/amd64 
-FROM docker.io/golang@sha256:27c76dcf886c5024320f4fa8ceb57d907494a3bb3d477d0aa7ac8385acd871ea AS builder
+# golang:1.21.5-alpine3.18 linux/amd64
+FROM dockerhub.artifactory-phx.ecd.axway.int/golang@sha256:2aa0f0960cffcfd8daac2e765b8fdd3aa001a97d967c9ae96d58d06ff11ecdb4
 
 ENV GOFLAGS "-mod=mod"
 ENV GOWORK "off"
@@ -40,8 +40,8 @@ RUN addgroup -g 2500 axway && adduser -u 2500 -D -G axway axway
 RUN chown -R axway:axway /go/src/github.com/Axway/agents-apigee/traceability/bin/apigee_traceability_agent
 USER axway
 
-# alpine 3.18.3
-FROM docker.io/alpine@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33
+# alpine 3.18 linux/amd64 
+FROM docker.io@alpine@sha256:d695c3de6fcd8cfe3a6222b0358425d40adfd129a8a47c3416faff1a8aece389
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd
