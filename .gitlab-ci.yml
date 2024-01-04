@@ -114,7 +114,6 @@ blackduck-rapid:
     - !reference [.mirror-branch-csr-rules, rules]
 
 blackduck:on-schedule:
-  extends: .blackduck
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
   before_script:
