@@ -10,10 +10,6 @@ variables:
   FORTIFY_INCLUDE: "**/*.go"
   FORTIFY_EXCLUDE: "**/*_test.go"
 
-  # Whitesource
-  WS_PROJECT_ID: "agents-apigee"
-  WS_CONFIG_FILE: "whitesource.config"
-
   # Blackduck
   BLACKDUCK_PROJECT_NAME: "Amplify - APIC Apigee Agents"
 
@@ -35,12 +31,11 @@ include:
       - "/gitlabci/restrictions.yml"
       - "/gitlabci/jobs.yml"
   - project: "scurity/gitlabci"
-    ref: $SCURITY_V2
+    ref: $SCURITY_LATEST
     file:
       - "/.gitlab-ci-fortify.yml"
       - "/.gitlab-ci-twistlock.yml"
       - "/.gitlab-ci-iriusrisk.yml"
-      - "/.gitlab-ci-whitesource.yml"
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
@@ -114,26 +109,7 @@ fetch-fortify:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
 
-whitesource:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
-  before_script:
-    - export GOWORK=off
-
-whitesource:on-schedule:
-  extends: .whitesource
-  rules:
-    - !reference [.mirror-schedule-csr-rules, rules]
-  before_script:
-    - export GOWORK=off
-    - git config --global http.sslVerify false
-    - git config --global url."ssh://git@git.ecd.axway.org".insteadOf "https://git.ecd.axway.org"''
-    - git fetch
-    - *get-latest-tag
-    - echo "Checking out ${GIT_TAG_PREFIX}${LATEST_TAG}"
-    - git checkout ${GIT_TAG_PREFIX}${LATEST_TAG}
-
-blackduck:
+blackduck-rapid:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
 
