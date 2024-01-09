@@ -41,6 +41,7 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 		client.authType = "Basic"
 		client.authValue = base64.StdEncoding.EncodeToString([]byte(
 			fmt.Sprintf("%s:%s", apigeeCfg.GetAuth().GetUsername(), apigeeCfg.GetAuth().GetPassword())))
+		client.isReady = true
 	} else {
 		// create the auth job and register it
 		client.authType = "Bearer"
