@@ -1,6 +1,8 @@
 package apigee
 
 import (
+	"fmt"
+
 	coreapi "github.com/Axway/agent-sdk/pkg/api"
 )
 
@@ -9,7 +11,8 @@ type RequestOption func(*apigeeRequest)
 type apigeeRequest struct {
 	method      string
 	url         string
-	token       string
+	authValue   string
+	authType    string
 	headers     map[string]string
 	queryParams map[string]string
 	body        []byte
@@ -29,7 +32,7 @@ func (r *apigeeRequest) Execute() (*coreapi.Response, error) {
 }
 
 func (a *ApigeeClient) newRequest(method, url string, options ...RequestOption) *apigeeRequest {
-	req := &apigeeRequest{method: method, url: url, client: a.apiClient, token: a.accessToken}
+	req := &apigeeRequest{method: method, url: url, client: a.apiClient, authValue: a.authValue, authType: a.authType}
 	for _, o := range options {
 		o(req)
 	}
@@ -43,7 +46,7 @@ func WithDefaultHeaders() RequestOption {
 			r.headers = make(map[string]string)
 		}
 		r.headers["Accept"] = "application/json"
-		r.headers["Authorization"] = "Bearer " + r.token
+		r.headers["Authorization"] = fmt.Sprintf("%s %s", r.authType, r.authValue)
 	}
 }
 

@@ -1,6 +1,7 @@
 package apigee
 
 import (
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 type ApigeeClient struct {
 	cfg         *config.ApigeeConfig
 	apiClient   coreapi.Client
-	accessToken string
+	authType    string
+	authValue   string
 	developerID string
 	envToURLs   map[string][]string
 	isReady     bool
@@ -34,23 +36,31 @@ func NewClient(apigeeCfg *config.ApigeeConfig) (*ApigeeClient, error) {
 		dataURL:     apigeeCfg.DataURL,
 	}
 
-	// create the auth job and register it
-	authentication := newAuthJob(
-		withAPIClient(client.apiClient),
-		withUsername(apigeeCfg.Auth.GetUsername()),
-		withPassword(apigeeCfg.Auth.GetPassword()),
-		withURL(apigeeCfg.Auth.GetURL()),
-		withAuthServerUsername(apigeeCfg.Auth.GetServerUsername()),
-		withAuthServerPassword(apigeeCfg.Auth.GetServerPassword()),
-		withTokenSetter(client.setAccessToken),
-	)
-	jobs.RegisterIntervalJobWithName(authentication, 10*time.Minute, "APIGEE Auth Token")
+	if apigeeCfg.Auth.UseBasicAuth() {
+		// setup the use of basic auth
+		client.authType = "Basic"
+		client.authValue = base64.StdEncoding.EncodeToString([]byte(
+			fmt.Sprintf("%s:%s", apigeeCfg.GetAuth().GetUsername(), apigeeCfg.GetAuth().GetPassword())))
+	} else {
+		// create the auth job and register it
+		client.authType = "Bearer"
+		authentication := newAuthJob(
+			withAPIClient(client.apiClient),
+			withUsername(apigeeCfg.Auth.GetUsername()),
+			withPassword(apigeeCfg.Auth.GetPassword()),
+			withURL(apigeeCfg.Auth.GetURL()),
+			withAuthServerUsername(apigeeCfg.Auth.GetServerUsername()),
+			withAuthServerPassword(apigeeCfg.Auth.GetServerPassword()),
+			withTokenSetter(client.setAccessToken),
+		)
+		jobs.RegisterIntervalJobWithName(authentication, 10*time.Minute, "APIGEE Auth Token")
+	}
 
 	return client, nil
 }
 
 func (a *ApigeeClient) setAccessToken(token string) {
-	a.accessToken = token
+	a.authValue = token
 	a.isReady = true
 }
 
