@@ -61,6 +61,7 @@ go build -tags static_all \
 | APIGEE_INTERVAL_STATS      | The polling interval checking for API Proxy changes, only in proxy mode                                                  | 5m (5 minutes), >=1m, <=15m       |
 | APIGEE_AUTH_USERNAME       | The Apigee account username/email address                                                                                |                                   |
 | APIGEE_AUTH_PASSWORD       | The Apigee account password                                                                                              |                                   |
+| APIGEE_AUTH_USEBASICAUTH   | Set this to true to have the Apigee api client use HTTP Basic Authentication                                             | false                             |
 | APIGEE_AUTH_URL            | The IDP URL                                                                                                              | https://login.apigee.com          |
 | APIGEE_AUTH_SERVERUSERNAME | The IDP username for requesting tokens                                                                                   | edgecli                           |
 | APIGEE_AUTH_SERVERPASSWORD | The IDP password for requesting tokens                                                                                   | edgeclisecret                     |

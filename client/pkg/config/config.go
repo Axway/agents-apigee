@@ -9,6 +9,17 @@ import (
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 )
 
+type props interface {
+	AddStringProperty(name string, defaultVal string, description string)
+	AddIntProperty(name string, defaultVal int, description string)
+	AddBoolProperty(name string, defaultVal bool, description string)
+	AddDurationProperty(name string, defaultVal time.Duration, description string, opts ...properties.DurationOpt)
+	StringPropertyValue(name string) string
+	IntPropertyValue(name string) int
+	BoolPropertyValue(name string) bool
+	DurationPropertyValue(name string) time.Duration
+}
+
 // ApigeeConfig - represents the config for gateway
 type ApigeeConfig struct {
 	corecfg.IConfigValidator
@@ -56,7 +67,7 @@ const (
 
 func (m discoveryMode) String() string {
 	return map[discoveryMode]string{
-		discoveryModeProxy:   discoveryModeProductString,
+		discoveryModeProxy:   discoveryModeProxyString,
 		discoveryModeProduct: discoveryModeProductString,
 	}[m]
 }
@@ -86,6 +97,7 @@ const (
 	pathAuthServerPassword = "apigee.auth.serverPassword"
 	pathAuthUsername       = "apigee.auth.username"
 	pathAuthPassword       = "apigee.auth.password"
+	pathAuthBasicAuth      = "apigee.auth.useBasicAuth"
 	pathSpecInterval       = "apigee.interval.spec"
 	pathProxyInterval      = "apigee.interval.proxy"
 	pathProductInterval    = "apigee.interval.product"
@@ -97,7 +109,7 @@ const (
 )
 
 // AddProperties - adds config needed for apigee client
-func AddProperties(rootProps properties.Properties) {
+func AddProperties(rootProps props) {
 	rootProps.AddStringProperty(pathMode, "proxy", "APIGEE Organization")
 	rootProps.AddStringProperty(pathOrganization, "", "APIGEE Organization")
 	rootProps.AddStringProperty(pathURL, "https://api.enterprise.apigee.com", "APIGEE Base URL")
@@ -107,11 +119,12 @@ func AddProperties(rootProps properties.Properties) {
 	rootProps.AddStringProperty(pathAuthURL, "https://login.apigee.com", "URL to use when authenticating to APIGEE")
 	rootProps.AddStringProperty(pathAuthServerUsername, "edgecli", "Username to use to when requesting APIGEE token")
 	rootProps.AddStringProperty(pathAuthServerPassword, "edgeclisecret", "Password to use to when requesting APIGEE token")
+	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
+	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
+	rootProps.AddBoolProperty(pathAuthBasicAuth, false, "Set to true to use basic authentication to authenticate to APIGEE")
 	rootProps.AddBoolProperty(pathCloneAttributes, false, "Set to true to copy the tags when provisioning a Product in product mode")
 	rootProps.AddBoolProperty(pathAllTraffic, false, "Set to true to report metrics for all traffic for the selected mode")
 	rootProps.AddBoolProperty(pathNotSetTraffic, false, "Set to true to report metrics for values reported with (not set) ast the name")
-	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
-	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs", properties.WithLowerLimit(1*time.Minute))
 	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies", properties.WithUpperLimit(5*time.Minute))
 	rootProps.AddDurationProperty(pathProductInterval, 30*time.Second, "The time interval between checking for updated products", properties.WithUpperLimit(5*time.Minute))
@@ -123,7 +136,7 @@ func AddProperties(rootProps properties.Properties) {
 }
 
 // ParseConfig - parse the config on startup
-func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
+func ParseConfig(rootProps props) *ApigeeConfig {
 	return &ApigeeConfig{
 		Organization:    rootProps.StringPropertyValue(pathOrganization),
 		URL:             strings.TrimSuffix(rootProps.StringPropertyValue(pathURL), "/"),
@@ -152,6 +165,7 @@ func ParseConfig(rootProps properties.Properties) *ApigeeConfig {
 			ServerUsername: rootProps.StringPropertyValue(pathAuthServerUsername),
 			ServerPassword: rootProps.StringPropertyValue(pathAuthServerPassword),
 			URL:            rootProps.StringPropertyValue(pathAuthURL),
+			BasicAuth:      rootProps.BoolPropertyValue(pathAuthBasicAuth),
 		},
 	}
 }
@@ -174,23 +188,23 @@ func (a *ApigeeConfig) ValidateCfg() (err error) {
 		return errors.New("invalid APIGEE configuration: data url is not configured")
 	}
 
-	if a.Auth.Username == "" {
+	if a.Auth == nil || a.Auth.Username == "" {
 		return errors.New("invalid APIGEE configuration: username is not configured")
 	}
 
-	if a.Auth.Password == "" {
+	if a.Auth == nil || a.Auth.Password == "" {
 		return errors.New("invalid APIGEE configuration: password is not configured")
 	}
 
 	if a.DeveloperID == "" {
-		return errors.New("invalid APIGEE configuration: developer ID must be configured")
+		return errors.New("invalid APIGEE configuration: developer ID is not configured")
 	}
 
-	if a.Workers.Proxy < 1 {
+	if a.Workers == nil || a.Workers.Proxy < 1 {
 		return errors.New("invalid APIGEE configuration: proxy workers must be greater than 0")
 	}
 
-	if a.Workers.Spec < 1 {
+	if a.Workers == nil || a.Workers.Spec < 1 {
 		return errors.New("invalid APIGEE configuration: spec workers must be greater than 0")
 	}
 

@@ -149,7 +149,8 @@ Here is a sample Quota policy that may be added to the desired Proxies.
 | APIGEE_WORKERS_PRODUCT     | The number of workers processing Products, only in product mode                      | 10                                |
 | APIGEE_WORKERS_SPEC        | The number of workers processing API Specs                                           | 20                                |
 | APIGEE_AUTH_USERNAME       | The Apigee account username/email address                                            |                                   |
-| APIGEE_AUTH_PASSWORD       | The Apigee account password                                                          |                                   |
+| APIGEE_AUTH_PASSWORD       | The Apigee account password                                                          |
+| APIGEE_AUTH_USEBASICAUTH   | Set this to true to have the Apigee api client use HTTP Basic Authentication         | false                             |
 | APIGEE_AUTH_URL            | The IDP URL                                                                          | https://login.apigee.com          |
 | APIGEE_AUTH_SERVERUSERNAME | The IDP username for requesting tokens                                               | edgecli                           |
 | APIGEE_AUTH_SERVERPASSWORD | The IDP password for requesting tokens                                               | edgeclisecret                     |

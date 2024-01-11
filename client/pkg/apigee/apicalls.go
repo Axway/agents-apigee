@@ -152,7 +152,10 @@ func (a *ApigeeClient) GetProduct(productName string) (*models.ApiProduct, error
 	}
 
 	product := &models.ApiProduct{}
-	json.Unmarshal(response.Body, product)
+	err = json.Unmarshal(response.Body, product)
+	if err != nil {
+		return nil, err
+	}
 
 	return product, nil
 }

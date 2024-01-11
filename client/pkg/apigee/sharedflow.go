@@ -45,7 +45,7 @@ func (a *ApigeeClient) CreateSharedFlow(data []byte, name string) error {
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/sharedflows?action=import&name=%s", a.orgURL, name), &buffer)
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Authorization", "Bearer "+a.accessToken)
+	req.Header.Add("Authorization", "Bearer "+a.authValue)
 	client := &http.Client{}
 
 	// submit the request

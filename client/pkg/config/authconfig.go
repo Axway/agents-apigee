@@ -7,6 +7,7 @@ type AuthConfig struct {
 	ServerPassword string `config:"serverPassword"`
 	Username       string `config:"username"`
 	Password       string `config:"password"`
+	BasicAuth      bool   `config:"useBasicAuth"`
 }
 
 // GetServerUsername - Returns the APIGEE auth server username
@@ -32,4 +33,9 @@ func (a *AuthConfig) GetUsername() string {
 // GetPassword - Returns the APIGEE password
 func (a *AuthConfig) GetPassword() string {
 	return a.Password
+}
+
+// UseBasicAuth - Returns true if Basic Authentication should be used for the APIGEE api calls
+func (a *AuthConfig) UseBasicAuth() bool {
+	return a.BasicAuth
 }
