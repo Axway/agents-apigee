@@ -121,7 +121,7 @@ func AddProperties(rootProps props) {
 	rootProps.AddStringProperty(pathAuthServerPassword, "edgeclisecret", "Password to use to when requesting APIGEE token")
 	rootProps.AddStringProperty(pathAuthUsername, "", "Username to use to authenticate to APIGEE")
 	rootProps.AddStringProperty(pathAuthPassword, "", "Password for the user to authenticate to APIGEE")
-	rootProps.AddBoolProperty(pathAuthBasicAuth, false, "Set to tru to use basic authentication to authenticate to APIGEE")
+	rootProps.AddBoolProperty(pathAuthBasicAuth, false, "Set to true to use basic authentication to authenticate to APIGEE")
 	rootProps.AddBoolProperty(pathCloneAttributes, false, "Set to true to copy the tags when provisioning a Product in product mode")
 	rootProps.AddBoolProperty(pathAllTraffic, false, "Set to true to report metrics for all traffic for the selected mode")
 	rootProps.AddBoolProperty(pathNotSetTraffic, false, "Set to true to report metrics for values reported with (not set) ast the name")

@@ -35,7 +35,7 @@ func (a *AuthConfig) GetPassword() string {
 	return a.Password
 }
 
-// GetPassword - Returns true if Basic Authentication should be used for the APIGEE api calls
+// UseBasicAuth - Returns true if Basic Authentication should be used for the APIGEE api calls
 func (a *AuthConfig) UseBasicAuth() bool {
 	return a.BasicAuth
 }
