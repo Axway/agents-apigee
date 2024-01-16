@@ -1,5 +1,5 @@
 # this action is triggered by selecting the action in the github UI and then clicking "run workflow"
-name: Update SDK version for release
+name: Fully automated release
 
 on: workflow_dispatch
 
