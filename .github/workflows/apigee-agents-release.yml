@@ -29,16 +29,6 @@ jobs:
           echo "${{ github.ref_name }}" > version
           make build
 
-      - name: Upload release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: discovery/bin/apigee_discovery_agent
-          asset_name: apigee_discovery_agent
-          tag: ${{ github.ref }}
-          overwrite: true
-          body: "Apigee Discovery Agent - ${{ github.ref }}"
-
   buildTraceabilityAgent:
     env:
       GOFLAGS: "-mod=mod"
@@ -61,26 +51,6 @@ jobs:
           git rev-parse --short HEAD > commit_id
           echo "${{ github.ref_name }}" > version
           make build
-
-      - name: Upload release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: traceability/bin/apigee_traceability_agent
-          asset_name: apigee_traceability_agent
-          tag: ${{ github.ref }}
-          overwrite: true
-          body: "Apigee Traceability Agent - ${{ github.ref }}"
-
-      - name: Upload release yaml
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: traceability/apigee_traceability_agent.yml
-          asset_name: apigee_traceability_agent.yml
-          tag: ${{ github.ref }}
-          overwrite: true
-          body: "Apigee Traceability Agent YAML - ${{ github.ref }}"
 
   notifyTeamsChannel:
     needs: [buildDiscoveryAgent, buildTraceabilityAgent]
