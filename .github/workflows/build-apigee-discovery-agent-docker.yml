@@ -14,7 +14,7 @@ jobs:
       ORG_NAME: Axway
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Create commit_id & version files
         working-directory: discovery
@@ -23,7 +23,7 @@ jobs:
           echo "${{ github.ref_name }}" > version
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -31,13 +31,13 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           flavor: latest=false
           images: ghcr.io/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: discovery/docker/Dockerfile
