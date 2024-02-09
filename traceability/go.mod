@@ -2,16 +2,16 @@ module github.com/Axway/agents-apigee/traceability
 
 go 1.21
 
-toolchain go1.21.6
+toolchain go1.21.3
 
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.75-0.20240209181601-89b35ab87009
+	github.com/Axway/agent-sdk v1.1.73
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
-	github.com/elastic/beats/v7 v7.17.16
+	github.com/elastic/beats/v7 v7.17.17
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/stretchr/testify v1.8.4
 )
@@ -29,8 +29,8 @@ require (
 	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/dop251/goja v0.0.0-20200831102558-9af81ddcf0e1 // indirect
-	github.com/dop251/goja_nodejs v0.0.0-20171011081505-adff31b136e6 // indirect
+	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d // indirect
+	github.com/dop251/goja_nodejs v0.0.0-20231122114759-e84d9a924c5c // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
@@ -119,7 +119,6 @@ require (
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shirou/gopsutil v3.20.12+incompatible // indirect
-	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowzach/rotatefilehook v0.0.0-20220211133110-53752135082d // indirect
 	github.com/spf13/afero v1.8.2 // indirect
@@ -140,7 +139,7 @@ require (
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.elastic.co/apm v1.15.0 // indirect
 	go.elastic.co/apm/module/apmelasticsearch v1.7.2 // indirect
-	go.elastic.co/apm/module/apmhttp v1.7.2 // indirect
+	go.elastic.co/apm/module/apmhttp v1.15.0 // indirect
 	go.elastic.co/ecszap v1.0.2 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

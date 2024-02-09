@@ -36,8 +36,8 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/Axway/agent-sdk v1.1.75-0.20240209181601-89b35ab87009 h1:7EDx3L6cmcm6DxpWQjYvJojkP2RN/O9duFqASdre6Sc=
-github.com/Axway/agent-sdk v1.1.75-0.20240209181601-89b35ab87009/go.mod h1:BS+CB4RtKbmU03QACSdmRh6ibU7oKmpsLCnJXkQAqrA=
+github.com/Axway/agent-sdk v1.1.73 h1:aLtVRDeWNz/bvlZrhDyYL7lWelWV0TsMqzHmsG2BUAY=
+github.com/Axway/agent-sdk v1.1.73/go.mod h1:CMuNRWCU4UswYhaR65bzLKEDT0xcViQwHJUGFCnH2yk=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
@@ -68,8 +68,8 @@ github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKoh
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
-github.com/elastic/beats/v7 v7.17.16 h1:OE7Zr3HLtMsXfWlv2GUPSg71BylA1IvTs9Srg6nC5z8=
-github.com/elastic/beats/v7 v7.17.16/go.mod h1:y6EuhCZoj8WmkRNKd0JWGzMzKrnigxQcZUH6K6kvnvM=
+github.com/elastic/beats/v7 v7.17.17 h1:4NOBSc98bshb5tcPHDPICntj00sXuvGmXfw66Jamjbg=
+github.com/elastic/beats/v7 v7.17.17/go.mod h1:WheUDWAtQFQaSM78p0Jn+hY0mzPZQAcwRl3NT+4li5M=
 github.com/elastic/elastic-agent-client/v7 v7.8.0 h1:GHFzDJIWpdgI0qDk5EcqbQJGvwTsl2E2vQK3/xe+MYQ=
 github.com/elastic/elastic-agent-client/v7 v7.8.0/go.mod h1:ihtjqJzYiIltlRhNruaSSc0ogxIhqPD5hOMKq16cI1s=
 github.com/elastic/elastic-agent-libs v0.7.5 h1:4UMqB3BREvhwecYTs/L23oQp1hs/XUkcunPlmTZn5yg=

@@ -2,12 +2,12 @@ module github.com/Axway/agents-apigee/client
 
 go 1.21
 
-toolchain go1.21.6
+toolchain go1.21.3
 
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.75-0.20240209181601-89b35ab87009
+	github.com/Axway/agent-sdk v1.1.73
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -16,7 +16,7 @@ require (
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
-	github.com/elastic/beats/v7 v7.17.16 // indirect
+	github.com/elastic/beats/v7 v7.17.17 // indirect
 	github.com/elastic/elastic-agent-client/v7 v7.8.0 // indirect
 	github.com/elastic/elastic-agent-libs v0.7.5 // indirect
 	github.com/elastic/go-licenser v0.4.1 // indirect
