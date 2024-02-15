@@ -105,5 +105,7 @@ require (
 replace (
 	github.com/Axway/agents-apigee/client => ../client
 	github.com/Shopify/sarama => github.com/elastic/sarama v1.19.1-0.20210823122811-11c3ef800752
+	github.com/containerd/containerd => github.com/containerd/containerd v1.5.18
+	github.com/docker/docker => github.com/docker/engine v0.0.0-20191113042239-ea84732a7725
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.67.0
 )
