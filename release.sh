@@ -74,8 +74,8 @@ main() {
     fi
 
     # gather stats
-    releaseStats="- SDK version: ${SDK}\n"
-    releaseStats+="- Apigee agents version: ${TAG}\n"
+    releaseStats="- Apigee agents version: ${TAG}\n"
+    releaseStats+="- SDK version: ${SDK}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
     post_to_teams "${releaseStats}"
