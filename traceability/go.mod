@@ -9,7 +9,7 @@ toolchain go1.21.3
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.73
+	github.com/Axway/agent-sdk v1.1.75
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/elastic/beats/v7 v7.17.17
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -120,6 +120,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shirou/gopsutil v3.20.12+incompatible // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowzach/rotatefilehook v0.0.0-20220211133110-53752135082d // indirect
 	github.com/spf13/afero v1.8.2 // indirect
