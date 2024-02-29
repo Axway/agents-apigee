@@ -20,22 +20,39 @@ type props interface {
 	DurationPropertyValue(name string) time.Duration
 }
 
+func NewApigeeConfig() *ApigeeConfig {
+	return &ApigeeConfig{
+		Auth:      &AuthConfig{},
+		Intervals: &ApigeeIntervals{},
+		Workers:   &ApigeeWorkers{},
+		Specs:     &ApigeeSpecConfig{},
+	}
+}
+
 // ApigeeConfig - represents the config for gateway
 type ApigeeConfig struct {
 	corecfg.IConfigValidator
-	Organization    string           `config:"organization"`
-	URL             string           `config:"url"`
-	DataURL         string           `config:"dataURL"`
-	APIVersion      string           `config:"apiVersion"`
-	Filter          string           `config:"filter"`
-	DeveloperID     string           `config:"developerID"`
-	Auth            *AuthConfig      `config:"auth"`
-	Intervals       *ApigeeIntervals `config:"interval"`
-	Workers         *ApigeeWorkers   `config:"workers"`
-	CloneAttributes bool             `config:"cloneAttributes"`
-	AllTraffic      bool             `config:"allTraffic"`
-	NotSetTraffic   bool             `config:"notSetTraffic"`
+	Organization    string            `config:"organization"`
+	URL             string            `config:"url"`
+	DataURL         string            `config:"dataURL"`
+	APIVersion      string            `config:"apiVersion"`
+	Filter          string            `config:"filter"`
+	DeveloperID     string            `config:"developerID"`
+	Auth            *AuthConfig       `config:"auth"`
+	Intervals       *ApigeeIntervals  `config:"interval"`
+	Workers         *ApigeeWorkers    `config:"workers"`
+	Specs           *ApigeeSpecConfig `config:"specs"`
+	CloneAttributes bool              `config:"cloneAttributes"`
+	AllTraffic      bool              `config:"allTraffic"`
+	NotSetTraffic   bool              `config:"notSetTraffic"`
 	mode            discoveryMode
+}
+
+// ApigeeWorkers - number of workers for the apigee agent to use
+type ApigeeSpecConfig struct {
+	DisablePollForSpecs bool   `config:"disablePollForSpecs"`
+	Unstructured        bool   `config:"unstructured"`
+	LocalPath           string `config:"localDirectory"`
 }
 
 // ApigeeIntervals - intervals for the apigee agent to use
@@ -83,29 +100,32 @@ func stringToDiscoveryMode(s string) discoveryMode {
 }
 
 const (
-	pathURL                = "apigee.url"
-	pathDataURL            = "apigee.dataURL"
-	pathAPIVersion         = "apigee.apiVersion"
-	pathOrganization       = "apigee.organization"
-	pathMode               = "apigee.discoveryMode"
-	pathFilter             = "apigee.filter"
-	pathCloneAttributes    = "apigee.cloneAttributes"
-	pathAllTraffic         = "apigee.allTraffic"
-	pathNotSetTraffic      = "apigee.notSetTraffic"
-	pathAuthURL            = "apigee.auth.url"
-	pathAuthServerUsername = "apigee.auth.serverUsername"
-	pathAuthServerPassword = "apigee.auth.serverPassword"
-	pathAuthUsername       = "apigee.auth.username"
-	pathAuthPassword       = "apigee.auth.password"
-	pathAuthBasicAuth      = "apigee.auth.useBasicAuth"
-	pathSpecInterval       = "apigee.interval.spec"
-	pathProxyInterval      = "apigee.interval.proxy"
-	pathProductInterval    = "apigee.interval.product"
-	pathStatsInterval      = "apigee.interval.stats"
-	pathDeveloper          = "apigee.developerID"
-	pathSpecWorkers        = "apigee.workers.spec"
-	pathProxyWorkers       = "apigee.workers.proxy"
-	pathProductWorkers     = "apigee.workers.product"
+	pathURL                     = "apigee.url"
+	pathDataURL                 = "apigee.dataURL"
+	pathAPIVersion              = "apigee.apiVersion"
+	pathOrganization            = "apigee.organization"
+	pathMode                    = "apigee.discoveryMode"
+	pathFilter                  = "apigee.filter"
+	pathCloneAttributes         = "apigee.cloneAttributes"
+	pathAllTraffic              = "apigee.allTraffic"
+	pathNotSetTraffic           = "apigee.notSetTraffic"
+	pathAuthURL                 = "apigee.auth.url"
+	pathAuthServerUsername      = "apigee.auth.serverUsername"
+	pathAuthServerPassword      = "apigee.auth.serverPassword"
+	pathAuthUsername            = "apigee.auth.username"
+	pathAuthPassword            = "apigee.auth.password"
+	pathAuthBasicAuth           = "apigee.auth.useBasicAuth"
+	pathSpecInterval            = "apigee.interval.spec"
+	pathProxyInterval           = "apigee.interval.proxy"
+	pathProductInterval         = "apigee.interval.product"
+	pathStatsInterval           = "apigee.interval.stats"
+	pathDeveloper               = "apigee.developerID"
+	pathSpecWorkers             = "apigee.workers.spec"
+	pathProxyWorkers            = "apigee.workers.proxy"
+	pathProductWorkers          = "apigee.workers.product"
+	pathSpecLocalPath           = "apigee.specConfig.localPath"
+	pathSpecUnstructured        = "apigee.specConfig.unstructured"
+	pathSpecDisablePollForSpecs = "apigee.specConfig.disablePollForSpecs"
 )
 
 // AddProperties - adds config needed for apigee client
@@ -133,6 +153,9 @@ func AddProperties(rootProps props) {
 	rootProps.AddIntProperty(pathProxyWorkers, 10, "Max number of workers discovering proxies")
 	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
 	rootProps.AddIntProperty(pathProductWorkers, 10, "Max number of workers discovering products")
+	rootProps.AddStringProperty(pathSpecLocalPath, "", "Path to a local directory that contains the spec files")
+	rootProps.AddBoolProperty(pathSpecUnstructured, false, "Set to true to enable discovering apis that have no associated spec")
+	rootProps.AddBoolProperty(pathSpecDisablePollForSpecs, false, "Set to true to disable polling apigee for specs, rely on the local directory or spec URLs")
 }
 
 // ParseConfig - parse the config on startup
@@ -166,6 +189,11 @@ func ParseConfig(rootProps props) *ApigeeConfig {
 			ServerPassword: rootProps.StringPropertyValue(pathAuthServerPassword),
 			URL:            rootProps.StringPropertyValue(pathAuthURL),
 			BasicAuth:      rootProps.BoolPropertyValue(pathAuthBasicAuth),
+		},
+		Specs: &ApigeeSpecConfig{
+			LocalPath:           rootProps.StringPropertyValue(pathSpecLocalPath),
+			DisablePollForSpecs: rootProps.BoolPropertyValue(pathSpecDisablePollForSpecs),
+			Unstructured:        rootProps.BoolPropertyValue(pathSpecUnstructured),
 		},
 	}
 }
