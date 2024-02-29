@@ -35,7 +35,7 @@ jobs:
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v5.0.2
+        uses: peter-evans/create-pull-request@v6
         with:
           branch: APIGOV-UpdateSDK
           commit-message: 'Update to SDK ${{ env.SDK_VERSION }}'
