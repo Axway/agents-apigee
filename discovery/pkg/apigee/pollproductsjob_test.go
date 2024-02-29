@@ -8,6 +8,7 @@ import (
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/client/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -109,10 +110,15 @@ func Test_pollProductsJob(t *testing.T) {
 
 type mockProductClient struct {
 	t             *testing.T
+	cfg           *config.ApigeeConfig
 	productName   string
 	allProductErr bool
 	getProductErr bool
 	specNotFound  bool
+}
+
+func (m mockProductClient) GetConfig() *config.ApigeeConfig {
+	return m.cfg
 }
 
 func (m mockProductClient) GetProducts() (products apigee.Products, err error) {
@@ -236,10 +242,10 @@ func (m mockProductCache) GetSpecWithName(name string) (*specCacheItem, error) {
 func (m mockProductCache) AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody) {
 }
 
-func (m mockProductCache) AddProductToCache(name string, modDate time.Time, specModDate time.Time) {
+func (m mockProductCache) AddProductToCache(name string, modDate time.Time, specHash string) {
 }
 
-func (m mockProductCache) HasProductChanged(name string, modDate time.Time, specModDate time.Time) bool {
+func (m mockProductCache) HasProductChanged(name string, modDate time.Time, specHash string) bool {
 	return true
 }
 
