@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"strings"
 	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -15,11 +17,13 @@ import (
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/client/pkg/config"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
 
 const (
 	gatewayType = "Apigee"
+	tagPrefix   = "spec_local_"
 
 	proxyNameField       ctxKeys = "proxy"
 	envNameField         ctxKeys = "environment"
@@ -32,6 +36,7 @@ const (
 )
 
 type proxyClient interface {
+	GetConfig() *config.ApigeeConfig
 	GetAllProxies() (apigee.Proxies, error)
 	GetRevision(proxyName, revision string) (*models.ApiProxyRevision, error)
 	GetRevisionResourceFile(proxyName, revision, resourceType, resourceName string) ([]byte, error)
@@ -54,8 +59,8 @@ type proxyCache interface {
 type pollProxiesJob struct {
 	jobs.Job
 	client          proxyClient
-	cache           proxyCache
 	firstRun        bool
+	cache           proxyCache
 	logger          log.FieldLogger
 	specsReady      jobFirstRunDone
 	pubLock         sync.Mutex
@@ -409,21 +414,28 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	specPath := getStringFromContext(ctx, specPathField)
+
 	// get the spec to build the service body
 	spec := []byte{}
 	var err error
 	if isFullURL(specPath) {
 		spec, err = j.client.GetSpecFromURL(specPath)
+	} else if strings.HasPrefix(specPath, "spec_local_") {
+		filename := specPath[len(tagPrefix):]
+		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, filename)
+		spec, err = loadSpecFile(j.logger, specFilePath)
 	} else if specPath != "" {
+		// try to get the spec from the APIgee spec repo
 		spec, err = j.client.GetSpecFile(specPath)
 	}
 
 	// if we should have a spec and can not get it then fall out
 	if err != nil {
+		logger.WithError(err).WithField("specInfo", specPath).Error("could not gather spec")
 		return nil, err
 	}
 
-	if len(spec) == 0 {
+	if len(spec) == 0 && !j.client.GetConfig().Specs.Unstructured {
 		log.Warn("skipping proxy creation without a spec")
 		return nil, nil
 	}

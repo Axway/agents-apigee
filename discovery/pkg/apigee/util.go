@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 
 	"github.com/Axway/agent-sdk/pkg/apic"
@@ -101,4 +102,20 @@ func createEndpointsFromURLS(urls []string) []apic.EndpointDefinition {
 		})
 	}
 	return endpoints
+}
+
+func loadSpecFile(log log.FieldLogger, specFilePath string) ([]byte, error) {
+	log = log.WithField("specFilePath", specFilePath)
+
+	if _, err := os.Stat(specFilePath); os.IsNotExist(err) {
+		log.Debug("spec file not found")
+		return nil, nil
+	}
+
+	data, err := os.ReadFile(specFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
