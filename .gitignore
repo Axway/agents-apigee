@@ -12,3 +12,5 @@ gocoverage.out
 goreport.json
 **/.idea/
 __debug_bin
+discovery/specs/
+**/data/
