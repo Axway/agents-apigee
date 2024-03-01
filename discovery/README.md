@@ -66,8 +66,8 @@ This is the default operating mode that discoveries API Proxies and attempts to 
     * Using deployed URL path check for specs for match, use it
   * Check proxy for Key or Oauth policy for authentication
   * Create API Service
-    * If spec was found use it in revision
-    * If spec was not found create as unstructured, given option to do so is set (see below)
+    * If the spec was found use it in revision
+    * If the spec was not found create as unstructured, given option to do so is set (see below)
     * Attach appropriate Credential Request Definition based on policy in proxy
 
 ### Proxy provisioning
@@ -89,13 +89,13 @@ This mode can be setting the `APIGEE_DISCOVERYMODE` environment variable to `pro
 * Find all specs
   * Parsing within the specs job is not necessary in this mode
   * Save info to cache
-  * If using a local specs path set the "spec_local" attribute with a value of the spec file name in that path
+  * If using a local specs path, set the "spec_local" attribute with a value of the spec file name in that path
 * Find all Products defined
   * Using the `APIGEE_FILTER` determine if the product should be discovered
   * Determine spec
-    * Is a spec_local attribute is set on the product look for the spec in the local specs path
+    * If a spec_local attribute is set on the product look for the spec in the local specs path
     * Using the product's name or display name, match it to a spec (case insensitive)
-  * If a spec is found create an API Service (create as unstructured when no spec is found, if optino set)
+  * If a spec is found, create an API Service (create as unstructured when no spec is found, if optino set)
     * Use product definition, add attributes to Service
     * Donwload and attach spec file
 
