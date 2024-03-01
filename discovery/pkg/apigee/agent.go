@@ -72,16 +72,24 @@ func (a *Agent) Run() error {
 func (a *Agent) registerJobs() error {
 	var err error
 
-	specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache, a.cfg.ApigeeCfg.GetWorkers().Spec, a.cfg.ApigeeCfg.IsProxyMode())
-	_, err = jobs.RegisterIntervalJobWithName(specsJob, a.apigeeClient.GetConfig().GetIntervals().Spec, "Poll Specs")
-	if err != nil {
-		return err
+	// create a function to let the proxy or product poll job to start if spec polling is disabled
+	startPollingJob := func() bool {
+		return true
+	}
+
+	if !a.cfg.ApigeeCfg.Specs.DisablePollForSpecs {
+		specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache, a.cfg.ApigeeCfg.GetWorkers().Spec, a.cfg.ApigeeCfg.IsProxyMode())
+		_, err = jobs.RegisterIntervalJobWithName(specsJob, a.apigeeClient.GetConfig().GetIntervals().Spec, "Poll Specs")
+		if err != nil {
+			return err
+		}
+		startPollingJob = specsJob.FirstRunComplete
 	}
 
 	var validatorReady jobFirstRunDone
 
 	if a.cfg.ApigeeCfg.IsProxyMode() {
-		proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Proxy)
+		proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, startPollingJob, a.cfg.ApigeeCfg.GetWorkers().Proxy)
 		_, err = jobs.RegisterIntervalJobWithName(proxiesJob, a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
 		if err != nil {
 			return err
@@ -90,7 +98,7 @@ func (a *Agent) registerJobs() error {
 		// register the api validator job
 		validatorReady = proxiesJob.FirstRunComplete
 	} else {
-		productsJob := newPollProductsJob(a.apigeeClient, a.agentCache, specsJob.FirstRunComplete, a.cfg.ApigeeCfg.GetWorkers().Product, a.shouldPushAPI)
+		productsJob := newPollProductsJob(a.apigeeClient, a.agentCache, startPollingJob, a.cfg.ApigeeCfg.GetWorkers().Product, a.shouldPushAPI)
 		_, err = jobs.RegisterIntervalJobWithName(productsJob, a.apigeeClient.GetConfig().GetIntervals().Product, "Poll Products")
 		if err != nil {
 			return err

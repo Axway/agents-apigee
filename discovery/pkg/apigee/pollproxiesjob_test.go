@@ -3,11 +3,13 @@ package apigee
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Axway/agent-sdk/pkg/apic"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/client/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,6 +81,7 @@ func Test_pollProxiesJob(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			client := mockProxyClient{
 				t:                t,
+				cfg:              config.NewApigeeConfig(),
 				allProxyErr:      tc.allProxyErr,
 				getDeploymentErr: tc.getDeploymentErr,
 				getRevisionErr:   tc.getRevisionErr,
@@ -126,6 +129,7 @@ func Test_pollProxiesJob(t *testing.T) {
 
 type mockProxyClient struct {
 	t                *testing.T
+	cfg              *config.ApigeeConfig
 	allProxyErr      bool
 	getDeploymentErr bool
 	getRevisionErr   bool
@@ -134,6 +138,10 @@ type mockProxyClient struct {
 	specInResource   bool
 	hasAPIKey        bool
 	hasOauth         bool
+}
+
+func (m mockProxyClient) GetConfig() *config.ApigeeConfig {
+	return m.cfg
 }
 
 func (m mockProxyClient) GetAllProxies() (proxies apigee.Proxies, err error) {
@@ -170,11 +178,12 @@ func (m mockProxyClient) GetRevision(apiName, revision string) (rev *models.ApiP
 	assert.Contains(m.t, proxyName, apiName)
 	assert.Contains(m.t, revName, revision)
 	rev = &models.ApiProxyRevision{
-		Name:        proxyName,
-		DisplayName: "A Proxy",
-		Revision:    revName,
-		Description: "A Proxy Description",
-		Policies:    []string{},
+		Name:           proxyName,
+		DisplayName:    "A Proxy",
+		Revision:       revName,
+		Description:    "A Proxy Description",
+		Policies:       []string{},
+		LastModifiedAt: int(time.Now().UnixMilli()),
 	}
 	if m.revSpec {
 		rev.Spec = specPath
@@ -206,7 +215,7 @@ func (m mockProxyClient) GetRevision(apiName, revision string) (rev *models.ApiP
 }
 
 func (m mockProxyClient) GetRevisionConnectionType(proxyName, revision string) (*apigee.HTTPProxyConnection, error) {
-	return nil, nil
+	return &apigee.HTTPProxyConnection{VirtualHost: "virtualhost.com"}, nil
 }
 
 func (m mockProxyClient) GetRevisionResourceFile(apiName, revision, resourceType, resourceName string) ([]byte, error) {
@@ -220,7 +229,7 @@ func (m mockProxyClient) GetRevisionResourceFile(apiName, revision, resourceType
 }
 
 func (m mockProxyClient) GetVirtualHost(envName, virtualHostName string) (*models.VirtualHost, error) {
-	return nil, nil
+	return &models.VirtualHost{}, nil
 }
 
 func (m mockProxyClient) GetSpecFile(path string) ([]byte, error) {

@@ -116,17 +116,17 @@ func productPrimaryKey(name string) string {
 	return fmt.Sprintf("product-%s", name)
 }
 
-func (a *agentCache) AddProductToCache(name string, modDate time.Time, specModDate time.Time) {
+func (a *agentCache) AddProductToCache(name string, modDate time.Time, specHash string) {
 	item := productCacheItem{
-		Name:        strings.ToLower(name),
-		ModDate:     modDate,
-		SpecModDate: specModDate,
+		Name:     strings.ToLower(name),
+		ModDate:  modDate,
+		SpecHash: specHash,
 	}
 
 	a.cache.Set(productPrimaryKey(name), item)
 }
 
-func (a *agentCache) HasProductChanged(name string, modDate time.Time, specModDate time.Time) bool {
+func (a *agentCache) HasProductChanged(name string, modDate time.Time, specHash string) bool {
 	data, err := a.cache.Get(productPrimaryKey(name))
 	if err != nil || data == nil {
 		// spec not in cache
@@ -134,7 +134,7 @@ func (a *agentCache) HasProductChanged(name string, modDate time.Time, specModDa
 	}
 
 	productItem := data.(productCacheItem)
-	return (modDate.After(productItem.ModDate) || specModDate.After(productItem.SpecModDate))
+	return modDate.After(productItem.ModDate) || specHash != productItem.SpecHash
 }
 
 func (a *agentCache) GetProductWithName(name string) (*productCacheItem, error) {

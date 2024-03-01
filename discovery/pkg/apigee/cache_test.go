@@ -61,7 +61,7 @@ func Test_cacheProducts(t *testing.T) {
 	assert.NotNil(t, c)
 
 	// add products to cache
-	c.AddProductToCache("prod1", time.Now(), time.Now())
+	c.AddProductToCache("prod1", time.Now(), "123")
 
 	// get product item
 	//exists
@@ -75,15 +75,15 @@ func Test_cacheProducts(t *testing.T) {
 
 	// has product changed
 	//product change
-	changed := c.HasProductChanged("prod1", time.Now().Add(time.Hour), time.Now().Add(-1*time.Hour))
+	changed := c.HasProductChanged("prod1", time.Now().Add(time.Hour), "123")
 	assert.True(t, changed)
 	//spec change
-	changed = c.HasProductChanged("prod1", time.Now().Add(-1*time.Hour), time.Now().Add(time.Hour))
+	changed = c.HasProductChanged("prod1", time.Now().Add(-1*time.Hour), "456")
 	assert.True(t, changed)
 	//no change
-	changed = c.HasProductChanged("prod1", time.Now().Add(-1*time.Hour), time.Now().Add(-1*time.Hour))
+	changed = c.HasProductChanged("prod1", time.Now().Add(-1*time.Hour), "123")
 	assert.False(t, changed)
 	//spec change
-	changed = c.HasProductChanged("prod2", time.Now().Add(-1*time.Hour), time.Now().Add(-1*time.Hour)) // no match returns changed
+	changed = c.HasProductChanged("prod2", time.Now().Add(-1*time.Hour), "789") // no match returns changed
 	assert.True(t, changed)
 }

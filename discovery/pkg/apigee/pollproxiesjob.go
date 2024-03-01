@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
 	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
+	"github.com/Axway/agents-apigee/client/pkg/config"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
 
@@ -32,6 +34,7 @@ const (
 )
 
 type proxyClient interface {
+	GetConfig() *config.ApigeeConfig
 	GetAllProxies() (apigee.Proxies, error)
 	GetRevision(proxyName, revision string) (*models.ApiProxyRevision, error)
 	GetRevisionResourceFile(proxyName, revision, resourceType, resourceName string) ([]byte, error)
@@ -54,8 +57,8 @@ type proxyCache interface {
 type pollProxiesJob struct {
 	jobs.Job
 	client          proxyClient
-	cache           proxyCache
 	firstRun        bool
+	cache           proxyCache
 	logger          log.FieldLogger
 	specsReady      jobFirstRunDone
 	pubLock         sync.Mutex
@@ -201,7 +204,9 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	logger := getLoggerFromContext(ctx).WithField(revNameField.String(), revName)
 	addLoggerToContext(ctx, logger)
 	logger.Debug("handling revision")
+	pName := getStringFromContext(ctx, proxyNameField)
 
+	_ = pName
 	revision, err := j.client.GetRevision(getStringFromContext(ctx, proxyNameField), revName)
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
@@ -409,25 +414,27 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	specPath := getStringFromContext(ctx, specPathField)
-	// get the spec to build the service body
-	spec := []byte{}
-	var err error
-	if isFullURL(specPath) {
-		spec, err = j.client.GetSpecFromURL(specPath)
-	} else if specPath != "" {
-		spec, err = j.client.GetSpecFile(specPath)
-	}
 
+	spec, err := j.findSpecFile(specPath, revision)
 	// if we should have a spec and can not get it then fall out
 	if err != nil {
+		logger.WithError(err).WithField("specInfo", specPath).Error("could not gather spec")
 		return nil, err
 	}
 
-	if len(spec) == 0 {
+	if len(spec) == 0 && !j.client.GetConfig().Specs.Unstructured {
 		log.Warn("skipping proxy creation without a spec")
 		return nil, nil
 	}
 	logger.Debug("creating service body")
+
+	specHash, _ := coreutil.ComputeHash(spec)
+	specHashString := coreutil.ConvertUnitToString(specHash)
+
+	// create the agent details with the modification dates
+	serviceDetails := map[string]interface{}{
+		"specContentHash": specHashString,
+	}
 
 	crds := []string{}
 	if ctx.Value(hasAPIKeyPolicyField) != nil {
@@ -451,8 +458,31 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		SetAccessRequestDefinitionName(provisioning.APIKeyARD, false).
 		SetCredentialRequestDefinitions(crds).
 		SetServiceEndpoints(endpoints).
+		SetServiceAgentDetails(serviceDetails).
 		Build()
 	return &sb, err
+}
+
+func (j *pollProxiesJob) findSpecFile(specPath string, revision *models.ApiProxyRevision) ([]byte, error) {
+	// get the spec to build the service body
+	if j.client.GetConfig().Specs.LocalPath != "" {
+		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, revision.Name)
+		spec, err := findSpecFile(j.logger, specFilePath, j.client.GetConfig().Specs.Extensions)
+		if len(spec) > 0 && err != nil {
+			return spec, err
+		}
+	}
+
+	if isFullURL(specPath) {
+		return j.client.GetSpecFromURL(specPath)
+	}
+
+	if specPath != "" {
+		// try to get the spec from the APIgee spec repo
+		return j.client.GetSpecFile(specPath)
+	}
+
+	return nil, nil
 }
 
 func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString, cacheKey string) error {
