@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"strings"
 	"sync"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
@@ -23,7 +22,6 @@ import (
 
 const (
 	gatewayType = "Apigee"
-	tagPrefix   = "spec_local_"
 
 	proxyNameField       ctxKeys = "proxy"
 	envNameField         ctxKeys = "environment"
@@ -206,7 +204,9 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	logger := getLoggerFromContext(ctx).WithField(revNameField.String(), revName)
 	addLoggerToContext(ctx, logger)
 	logger.Debug("handling revision")
+	pName := getStringFromContext(ctx, proxyNameField)
 
+	_ = pName
 	revision, err := j.client.GetRevision(getStringFromContext(ctx, proxyNameField), revName)
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
@@ -420,10 +420,9 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	var err error
 	if isFullURL(specPath) {
 		spec, err = j.client.GetSpecFromURL(specPath)
-	} else if strings.HasPrefix(specPath, "spec_local_") {
-		filename := specPath[len(tagPrefix):]
-		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, filename)
-		spec, err = loadSpecFile(j.logger, specFilePath)
+	} else if specPath == "" && j.client.GetConfig().Specs.LocalPath != "" {
+		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, revision.Name)
+		spec, err = loadSpecFile(j.logger, specFilePath, j.client.GetConfig().Specs.Extensions)
 	} else if specPath != "" {
 		// try to get the spec from the APIgee spec repo
 		spec, err = j.client.GetSpecFile(specPath)
@@ -440,6 +439,14 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		return nil, nil
 	}
 	logger.Debug("creating service body")
+
+	specHash, _ := coreutil.ComputeHash(spec)
+	specHashString := coreutil.ConvertUnitToString(specHash)
+
+	// create the agent details with the modification dates
+	serviceDetails := map[string]interface{}{
+		"specContentHash": specHashString,
+	}
 
 	crds := []string{}
 	if ctx.Value(hasAPIKeyPolicyField) != nil {
@@ -463,6 +470,7 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		SetAccessRequestDefinitionName(provisioning.APIKeyARD, false).
 		SetCredentialRequestDefinitions(crds).
 		SetServiceEndpoints(endpoints).
+		SetServiceAgentDetails(serviceDetails).
 		Build()
 	return &sb, err
 }

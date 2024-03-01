@@ -104,18 +104,35 @@ func createEndpointsFromURLS(urls []string) []apic.EndpointDefinition {
 	return endpoints
 }
 
-func loadSpecFile(log log.FieldLogger, specFilePath string) ([]byte, error) {
-	log = log.WithField("specFilePath", specFilePath)
+func loadSpecFile(log log.FieldLogger, specFilePath string, exes []string) ([]byte, error) {
+	getFileData := func(filePath string) ([]byte, error) {
+		log = log.WithField("specFilePath", filePath)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			log.Debug("spec file not found")
+			return nil, nil
+		}
 
-	if _, err := os.Stat(specFilePath); os.IsNotExist(err) {
-		log.Debug("spec file not found")
-		return nil, nil
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			log.WithError(err).Error("could not read spec file")
+			return nil, err
+		}
+		return data, nil
 	}
 
-	data, err := os.ReadFile(specFilePath)
-	if err != nil {
-		return nil, err
+	if len(exes) == 0 {
+		return getFileData(specFilePath)
 	}
 
-	return data, nil
+	for _, e := range exes {
+		filePath := fmt.Sprintf("%s.%s", specFilePath, e)
+		data, err := getFileData(filePath)
+		if err != nil {
+			return nil, err
+		}
+		if data != nil {
+			return data, nil
+		}
+	}
+	return nil, nil
 }

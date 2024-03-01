@@ -3,6 +3,7 @@ package apigee
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"github.com/Axway/agents-apigee/client/pkg/config"
 	"github.com/Axway/agents-apigee/discovery/pkg/util"
 )
+
+const specLocalTag = "spec_local"
 
 type productClient interface {
 	GetConfig() *config.ApigeeConfig
@@ -230,8 +233,8 @@ func (j *pollProductsJob) shouldPublishProduct(logger log.FieldLogger, product *
 func (j *pollProductsJob) getSpecDetails(ctx context.Context, product *models.ApiProduct) (context.Context, error) {
 	for _, att := range product.Attributes {
 		// find the spec_local tag
-		if strings.ToLower(att.Name) == "spec_local" {
-			ctx = context.WithValue(ctx, specPathField, strings.Join([]string{tagPrefix, att.Value}, "_"))
+		if strings.ToLower(att.Name) == specLocalTag {
+			ctx = context.WithValue(ctx, specPathField, strings.Join([]string{specLocalTag, att.Value}, "_"))
 			return ctx, nil
 		}
 	}
@@ -252,8 +255,19 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context, product *models.
 	logger := getLoggerFromContext(ctx)
 	specPath := getStringFromContext(ctx, specPathField)
 
-	// get the spec to build the service body
-	spec, err := j.client.GetSpecFile(specPath)
+	var spec []byte
+	var err error
+	if strings.HasPrefix(specPath, specLocalTag) {
+		logger = logger.WithField("specLocalDir", "true")
+		fileName := strings.TrimPrefix(specPath, specLocalTag+"_")
+		filePath := path.Join(j.client.GetConfig().Specs.LocalPath, fileName)
+		spec, err = loadSpecFile(logger, filePath, nil)
+	} else {
+		logger = logger.WithField("specLocalDir", "false")
+		// get the spec to build the service body
+		spec, err = j.client.GetSpecFile(specPath)
+	}
+
 	if err != nil {
 		logger.WithError(err).Error("could not download spec")
 		return nil, 0, err

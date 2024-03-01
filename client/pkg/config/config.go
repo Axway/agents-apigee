@@ -53,6 +53,8 @@ type ApigeeSpecConfig struct {
 	DisablePollForSpecs bool   `config:"disablePollForSpecs"`
 	Unstructured        bool   `config:"unstructured"`
 	LocalPath           string `config:"localDirectory"`
+	SpecExtensions      string `config:"extensions"`
+	Extensions          []string
 }
 
 // ApigeeIntervals - intervals for the apigee agent to use
@@ -124,6 +126,7 @@ const (
 	pathProxyWorkers            = "apigee.workers.proxy"
 	pathProductWorkers          = "apigee.workers.product"
 	pathSpecLocalPath           = "apigee.specConfig.localPath"
+	pathSpecExtensions          = "apigee.specConfig.extensions"
 	pathSpecUnstructured        = "apigee.specConfig.unstructured"
 	pathSpecDisablePollForSpecs = "apigee.specConfig.disablePollForSpecs"
 )
@@ -154,12 +157,18 @@ func AddProperties(rootProps props) {
 	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
 	rootProps.AddIntProperty(pathProductWorkers, 10, "Max number of workers discovering products")
 	rootProps.AddStringProperty(pathSpecLocalPath, "", "Path to a local directory that contains the spec files")
+	rootProps.AddStringProperty(pathSpecExtensions, "json,yaml,yml", "Comma separated list of spec file extensions, needed for proxy mode")
 	rootProps.AddBoolProperty(pathSpecUnstructured, false, "Set to true to enable discovering apis that have no associated spec")
 	rootProps.AddBoolProperty(pathSpecDisablePollForSpecs, false, "Set to true to disable polling apigee for specs, rely on the local directory or spec URLs")
 }
 
 // ParseConfig - parse the config on startup
 func ParseConfig(rootProps props) *ApigeeConfig {
+	specExtensions := rootProps.StringPropertyValue(pathSpecExtensions)
+	extensions := []string{}
+	for _, e := range strings.Split(specExtensions, ",") {
+		extensions = append(extensions, strings.TrimSpace(e))
+	}
 	return &ApigeeConfig{
 		Organization:    rootProps.StringPropertyValue(pathOrganization),
 		URL:             strings.TrimSuffix(rootProps.StringPropertyValue(pathURL), "/"),
@@ -194,6 +203,8 @@ func ParseConfig(rootProps props) *ApigeeConfig {
 			LocalPath:           rootProps.StringPropertyValue(pathSpecLocalPath),
 			DisablePollForSpecs: rootProps.BoolPropertyValue(pathSpecDisablePollForSpecs),
 			Unstructured:        rootProps.BoolPropertyValue(pathSpecUnstructured),
+			SpecExtensions:      specExtensions,
+			Extensions:          extensions,
 		},
 	}
 }

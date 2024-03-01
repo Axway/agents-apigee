@@ -112,9 +112,6 @@ func (p provisioner) AccessRequestDeprovision(req prov.AccessRequest) prov.Reque
 				if err != nil {
 					return failed(logger, ps, fmt.Errorf("failed to revoke api product %s from credential: %s", prod.Apiproduct, err))
 				}
-				if err != nil {
-					return failed(logger, ps, fmt.Errorf("failed to revoke api %s from app: %s", "api-product-name", err))
-				}
 			}
 		}
 	}
