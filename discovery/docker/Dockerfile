@@ -47,15 +47,15 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /go/src/github.com/Axway/agents-apigee/discovery/bin/apigee_discovery_agent /apigee_discovery_agent
 
-RUN mkdir /keys && \
-  chown -R axway /keys && \
+RUN mkdir /keys /specs && \
+  chown -R axway /keys /specs && \
   apk --no-cache add openssl libssl3 libcrypto3 musl musl-utils libc6-compat busybox curl && \
   touch /apigee_discovery_agent.yml && \
   find / -perm /6000 -type f -exec chmod a-s {} \; || true
 
 USER axway
 
-VOLUME ["/keys"]
+VOLUME ["/keys", "/specs"]
 
 HEALTHCHECK --retries=1 CMD /apigee_discovery_agent --status || exit 1
 
