@@ -104,29 +104,10 @@ func createEndpointsFromURLS(urls []string) []apic.EndpointDefinition {
 	return endpoints
 }
 
-func loadSpecFile(log log.FieldLogger, specFilePath string, exes []string) ([]byte, error) {
-	getFileData := func(filePath string) ([]byte, error) {
-		log = log.WithField("specFilePath", filePath)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			log.Debug("spec file not found")
-			return nil, nil
-		}
-
-		data, err := os.ReadFile(filePath)
-		if err != nil {
-			log.WithError(err).Error("could not read spec file")
-			return nil, err
-		}
-		return data, nil
-	}
-
-	if len(exes) == 0 {
-		return getFileData(specFilePath)
-	}
-
+func findSpecFile(log log.FieldLogger, specFilePath string, exes []string) ([]byte, error) {
 	for _, e := range exes {
 		filePath := fmt.Sprintf("%s.%s", specFilePath, e)
-		data, err := getFileData(filePath)
+		data, err := loadSpecFile(log, filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -135,4 +116,19 @@ func loadSpecFile(log log.FieldLogger, specFilePath string, exes []string) ([]by
 		}
 	}
 	return nil, nil
+}
+
+func loadSpecFile(log log.FieldLogger, filePath string) ([]byte, error) {
+	log = log.WithField("specFilePath", filePath)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		log.Debug("spec file not found")
+		return nil, nil
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		log.WithError(err).Error("could not read spec file")
+		return nil, err
+	}
+	return data, nil
 }

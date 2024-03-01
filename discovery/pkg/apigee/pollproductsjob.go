@@ -261,7 +261,7 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context, product *models.
 		logger = logger.WithField("specLocalDir", "true")
 		fileName := strings.TrimPrefix(specPath, specLocalTag+"_")
 		filePath := path.Join(j.client.GetConfig().Specs.LocalPath, fileName)
-		spec, err = loadSpecFile(logger, filePath, nil)
+		spec, err = loadSpecFile(logger, filePath)
 	} else {
 		logger = logger.WithField("specLocalDir", "false")
 		// get the spec to build the service body

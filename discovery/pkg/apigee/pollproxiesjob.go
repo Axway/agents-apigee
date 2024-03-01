@@ -467,7 +467,7 @@ func (j *pollProxiesJob) findSpecFile(specPath string, revision *models.ApiProxy
 	// get the spec to build the service body
 	if j.client.GetConfig().Specs.LocalPath != "" {
 		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, revision.Name)
-		spec, err := loadSpecFile(j.logger, specFilePath, j.client.GetConfig().Specs.Extensions)
+		spec, err := findSpecFile(j.logger, specFilePath, j.client.GetConfig().Specs.Extensions)
 		if len(spec) > 0 && err != nil {
 			return spec, err
 		}
