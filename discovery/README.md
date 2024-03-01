@@ -66,8 +66,8 @@ This is the default operating mode that discoveries API Proxies and attempts to 
     * Using deployed URL path check for specs for match, use it
   * Check proxy for Key or Oauth policy for authentication
   * Create API Service
-    * If the spec was found use it in revision
-    * If the spec was not found create as unstructured, given option to do so is set (see below)
+    * If the spec was found, use it in revision
+    * If the spec was not found, create as unstructured, given option to do so is set (see below)
     * Attach appropriate Credential Request Definition based on policy in proxy
 
 ### Proxy provisioning
