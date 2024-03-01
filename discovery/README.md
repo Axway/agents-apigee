@@ -4,7 +4,7 @@ The Discovery agent finds deployed API Proxies in Apigee then sends them to API 
 
 ## Executing
 
-The Apigee Discovery Agent is built and distributed as a docker container. To execute the container the following command may be executed, updating the version.
+The Apigee Discovery Agent is built and distributed as a docker image. To execute the agent with the image the following command may be executed, updating the version.
 
 ```shell
 docker run --env-file env_vars -v `pwd`/keys:/keys ghcr.io/axway/apigee_discovery_agent:v0.1.31
