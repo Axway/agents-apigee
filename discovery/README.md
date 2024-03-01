@@ -2,50 +2,18 @@
 
 The Discovery agent finds deployed API Proxies in Apigee then sends them to API Central
 
-## Build and run
+## Executing
 
-The following make targets are available
-
-| Target          | Description                                                    | Output(s)                     |
-| --------------- | -------------------------------------------------------------- | ----------------------------- |
-| dep             | downloads all dependencies needed to build the discovery agent | /vendor                       |
-| test            | runs go test against all test files int he repo                | test results                  |
-| update-sdk      | pulls the latest changes to main on the SDK repo               |                               |
-| build           | builds the binary discovery agent                              | bin/apigee_discovery_agent    |
-| apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models             |
-| docker-build    | builds the discovery agent in a docker container               | apigee-discovery-agent:latest |
-
-### Build (Docker)
+The Apigee Discovery Agent is built and distributed as a docker image. To execute the agent using the image, the following command may be executed. Update the version in the examples below.
 
 ```shell
-make docker-build
+docker run --env-file env_vars -v `pwd`/keys:/keys ghcr.io/axway/apigee_discovery_agent:v0.1.31
 ```
 
-### Run (Docker)
+If using a local specs path, mount into the /specs volume and set the `APIGEE_SPECCONFIG_LOCALPATH` variable to `/specs`.
 
 ```shell
-docker run --env-file env_vars -v `pwd`/keys:/keys apigee-discovery-agent:latest
-```
-
-### Build (Windows)
-
-* Build the agent using the following command
-
-```shell
-go build -tags static_all \
-    -ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
-        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
-        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
-        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEEDiscoveryAgent'" \
-    -a -o ./bin/apigee_discovery_agent.exe ./main.go
-```
-
-### Run (Windows)
-
-* After a successful build, you should see the executable under the bin folder.   And you can execute it using the following command
-
-```shell
-./apigee_discovery_agent.exe --envFile env_vars
+docker run --env-file env_vars -v `pwd`/specs:/specs -v `pwd`/keys:/keys ghcr.io/axway/apigee_discovery_agent:v0.1.31
 ```
 
 ## Discovery Mode - Proxy
@@ -162,3 +130,52 @@ Here is a sample Quota policy that may be added to the desired Proxies.
 | APIGEE_SPECCONFIG_EXTENSIONS          | Comma separated list of file extensions that the agent will look for spec in the local path for | json,yaml,yml                     |
 | APIGEE_SPECCONFIG_UNSTRUCTURED        | Set to true to enable discovering apis that have no associated spec                             | false                             |
 | APIGEE_SPECCONFIG_DISABLEPOLLFORSPECS | Set to true to disable polling apigee for specs, rely on the local directory or spec URLs       | false                             |
+
+
+## Development
+
+### Build and run
+
+The following make targets are available
+
+| Target          | Description                                                    | Output(s)                     |
+| --------------- | -------------------------------------------------------------- | ----------------------------- |
+| dep             | downloads all dependencies needed to build the discovery agent | /vendor                       |
+| test            | runs go test against all test files int he repo                | test results                  |
+| update-sdk      | pulls the latest changes to main on the SDK repo               |                               |
+| build           | builds the binary discovery agent                              | bin/apigee_discovery_agent    |
+| apigee-generate | generates the models for the Apigee APIs                       | pkg/apigee/models             |
+| docker-build    | builds the discovery agent in a docker container               | apigee-discovery-agent:latest |
+
+#### Build (Docker)
+
+```shell
+make docker-build
+```
+
+#### Run (Docker)
+
+```shell
+docker run --env-file env_vars -v `pwd`/keys:/keys apigee-discovery-agent:latest
+```
+
+#### Build (Windows)
+
+* Build the agent using the following command
+
+```shell
+go build -tags static_all \
+    -ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=$${time}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=$${version}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=$${commit_id}' \
+        -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=APIGEEDiscoveryAgent'" \
+    -a -o ./bin/apigee_discovery_agent.exe ./main.go
+```
+
+#### Run (Windows)
+
+* After a successful build, you should see the executable under the bin folder.   And you can execute it using the following command
+
+```shell
+./apigee_discovery_agent.exe --envFile env_vars
+```
