@@ -273,7 +273,7 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context, product *models.
 		return nil, 0, err
 	}
 
-	if len(spec) == 0 {
+	if len(spec) == 0 && !j.client.GetConfig().Specs.Unstructured {
 		return nil, 0, fmt.Errorf("spec had no content")
 	}
 

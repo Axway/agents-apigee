@@ -415,19 +415,7 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	specPath := getStringFromContext(ctx, specPathField)
 
-	// get the spec to build the service body
-	spec := []byte{}
-	var err error
-	if isFullURL(specPath) {
-		spec, err = j.client.GetSpecFromURL(specPath)
-	} else if specPath == "" && j.client.GetConfig().Specs.LocalPath != "" {
-		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, revision.Name)
-		spec, err = loadSpecFile(j.logger, specFilePath, j.client.GetConfig().Specs.Extensions)
-	} else if specPath != "" {
-		// try to get the spec from the APIgee spec repo
-		spec, err = j.client.GetSpecFile(specPath)
-	}
-
+	spec, err := j.findSpecFile(specPath, revision)
 	// if we should have a spec and can not get it then fall out
 	if err != nil {
 		logger.WithError(err).WithField("specInfo", specPath).Error("could not gather spec")
@@ -473,6 +461,28 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		SetServiceAgentDetails(serviceDetails).
 		Build()
 	return &sb, err
+}
+
+func (j *pollProxiesJob) findSpecFile(specPath string, revision *models.ApiProxyRevision) ([]byte, error) {
+	// get the spec to build the service body
+	if j.client.GetConfig().Specs.LocalPath != "" {
+		specFilePath := path.Join(j.client.GetConfig().Specs.LocalPath, revision.Name)
+		spec, err := loadSpecFile(j.logger, specFilePath, j.client.GetConfig().Specs.Extensions)
+		if len(spec) > 0 && err != nil {
+			return spec, err
+		}
+	}
+
+	if isFullURL(specPath) {
+		return j.client.GetSpecFromURL(specPath)
+	}
+
+	if specPath != "" {
+		// try to get the spec from the APIgee spec repo
+		return j.client.GetSpecFile(specPath)
+	}
+
+	return nil, nil
 }
 
 func (j *pollProxiesJob) publishAPI(serviceBody apic.ServiceBody, envName, hashString, cacheKey string) error {

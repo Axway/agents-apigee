@@ -54,11 +54,12 @@ This is the default operating mode that discoveries API Proxies and attempts to 
 
 ### Proxy discovery
 
-* Find all specs
+* Find all specs (unless disabled, see options below)
   * Parse all specs to determine endpoints with in
   * Save info to cache
 * Find all Deployed API Proxies
   * Find the Spec
+    * If local specs path set, see options below, check for the spec there using the Proxy Name as the file name and searching using the extensions
     * Proxy Revision has spec set, use it
     * Proxy Revision has association.json resource file, get path
       * Using path check to see if it is in the specs that were found by agent, use it
@@ -66,7 +67,7 @@ This is the default operating mode that discoveries API Proxies and attempts to 
   * Check proxy for Key or Oauth policy for authentication
   * Create API Service
     * If spec was found use it in revision
-    * If spec was not found create as unstructured  
+    * If spec was not found create as unstructured, given option to do so is set (see below)
     * Attach appropriate Credential Request Definition based on policy in proxy
 
 ### Proxy provisioning
@@ -86,12 +87,15 @@ This mode can be setting the `APIGEE_DISCOVERYMODE` environment variable to `pro
 ### Product discovery
 
 * Find all specs
-  * Parsing is not necessary in this mode
+  * Parsing within the specs job is not necessary in this mode
   * Save info to cache
+  * If using a local specs path set the "spec_local" attribute with a value of the spec file name in that path
 * Find all Products defined
   * Using the `APIGEE_FILTER` determine if the product should be discovered
-  * Using the product's name or display name, match it to a spec (case insensitive)
-  * If a spec is found create an API Service
+  * Determine spec
+    * Is a spec_local attribute is set on the product look for the spec in the local specs path
+    * Using the product's name or display name, match it to a spec (case insensitive)
+  * If a spec is found create an API Service (create as unstructured when no spec is found, if optino set)
     * Use product definition, add attributes to Service
     * Donwload and attach spec file
 
