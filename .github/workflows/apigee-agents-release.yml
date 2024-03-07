@@ -1,59 +1,13 @@
 name: Release Apigee Agents
 
 on:
-  push:
-    tags:
-      - "*"
+  workflow_run:
+    workflows: [Discovery Agent Docker, Traceability Agent Docker]
+    types:
+      - completed
 
 jobs:
-  buildDiscoveryAgent:
-    env:
-      GOFLAGS: "-mod=mod"
-      GOWORK: "off"
-    defaults:
-      run:
-        working-directory: ${{ env.GOPATH }}/discovery
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.21
-
-      - name: Build discovery agent
-        working-directory: discovery
-        run: |
-          git rev-parse --short HEAD > commit_id
-          echo "${{ github.ref_name }}" > version
-          make build
-
-  buildTraceabilityAgent:
-    env:
-      GOFLAGS: "-mod=mod"
-      GOWORK: "off"
-    defaults:
-      run:
-        working-directory: ${{ env.GOPATH }}/traceability
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.21
-
-      - name: Build traceability agent
-        working-directory: traceability
-        run: |
-          git rev-parse --short HEAD > commit_id
-          echo "${{ github.ref_name }}" > version
-          make build
-
   notifyTeamsChannel:
-    needs: [buildDiscoveryAgent, buildTraceabilityAgent]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,4 +16,5 @@ jobs:
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG: ${{ github.ref_name }}
-        run: ./release.sh
+        # run: ./release.sh
+        run: echo "testing done"
