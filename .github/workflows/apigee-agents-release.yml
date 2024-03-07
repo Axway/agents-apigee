@@ -2,7 +2,7 @@ name: Release Apigee Agents
 
 on:
   workflow_run:
-    workflows: [Discovery Agent Docker]
+    workflows: [Discovery Agent Docker, Traceability Agent Docker]
     types:
       - completed
 
