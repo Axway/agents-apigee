@@ -15,4 +15,5 @@ jobs:
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG: ${{ github.ref_name }}
-        run: ./release.sh
+        # run: ./release.sh
+        run: echo "testing done"
