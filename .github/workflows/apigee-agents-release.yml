@@ -2,8 +2,9 @@ name: Release Apigee Agents
 
 on:
   workflow_run:
-    workflows: [Build Apigee Discovery Agent, Discovery Agent Docker, Build Apigee Traceability Agent, Traceability Agent Docker]
-    types: [completed]
+    workflows: [Discovery Agent Docker]
+    types:
+      - completed
 
 jobs:
   notifyTeamsChannel:
