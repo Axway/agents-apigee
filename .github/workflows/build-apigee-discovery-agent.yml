@@ -26,6 +26,7 @@ jobs:
         run: go test -race -v ./...
 
   buildDiscoveryAgent:
+    needs: testDiscoveryAgent
     env:
       GOFLAGS: "-mod=mod"
       GOWORK: "off"
@@ -53,3 +54,4 @@ jobs:
         with:
           name: apigee_discovery_agent
           path: discovery/bin/apigee_discovery_agent
+        
