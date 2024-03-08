@@ -1,14 +1,9 @@
-# this action will run after the Traceability docker workflow is done. It's maybe a bad assumption
-# that the TA workflow will take the longest, but at least this action prevents the release message
-# from displaying before any previous workflows are done. Quite a bit of rework is needed to ensure
-# that the builds and docker builds all finish before the message.
 name: Release Apigee Agents
 
 on:
-  workflow_run:
-    workflows: [Traceability Agent Docker]
-    types:
-      - completed
+  push:
+    tags:
+      - "*"
 
 jobs:
   notifyTeamsChannel:
