@@ -26,6 +26,8 @@ const (
 func Test_pollProxiesJob(t *testing.T) {
 	tests := []struct {
 		name             string
+		specPath         bool
+		specName         bool
 		allProxyErr      bool
 		getDeploymentErr bool
 		getRevisionErr   bool
@@ -38,10 +40,18 @@ func Test_pollProxiesJob(t *testing.T) {
 	}{
 		{
 			name:           "should create proxy when spec in revision resource file",
+			specPath:       true,
 			specFound:      true,
 			specInResource: true,
 			hasOauth:       true,
 			hasAPIKey:      true,
+		},
+		{
+			name:      "should create proxy when spec is matched by name",
+			specName:  true,
+			specFound: true,
+			hasOauth:  true,
+			hasAPIKey: true,
 		},
 		{
 			name:      "should create proxy when spec url on revision",
@@ -91,7 +101,7 @@ func Test_pollProxiesJob(t *testing.T) {
 				hasAPIKey:        tc.hasAPIKey,
 				hasOauth:         tc.hasOauth,
 			}
-			proxyJob := newPollProxiesJob(client, mockProxyCache{}, func() bool { return true }, 10)
+			proxyJob := newPollProxiesJob(client, mockProxyCache{pathSpec: tc.specPath, nameSpec: tc.specName}, func() bool { return true }, 10)
 			assert.False(t, proxyJob.FirstRunComplete())
 
 			// receive the publish call and validate what was published
@@ -260,10 +270,25 @@ func (m mockProxyClient) GetRevisionPolicyByName(apiName, revision, policyName s
 
 func (m mockProxyClient) IsReady() bool { return false }
 
-type mockProxyCache struct{}
+type mockProxyCache struct {
+	pathSpec bool
+	nameSpec bool
+}
 
 func (m mockProxyCache) GetSpecWithPath(path string) (*specCacheItem, error) {
-	return &specCacheItem{}, nil
+	if m.pathSpec {
+		return &specCacheItem{}, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func (m mockProxyCache) GetSpecWithName(path string) (*specCacheItem, error) {
+	if m.nameSpec {
+		return &specCacheItem{}, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (m mockProxyCache) GetSpecPathWithEndpoint(endpoint string) (string, error) {
