@@ -49,6 +49,7 @@ type proxyClient interface {
 
 type proxyCache interface {
 	GetSpecWithPath(path string) (*specCacheItem, error)
+	GetSpecWithName(name string) (*specCacheItem, error)
 	GetSpecPathWithEndpoint(endpoint string) (string, error)
 	AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody)
 }
@@ -276,11 +277,21 @@ func (j *pollProxiesJob) specFromRevision(ctx context.Context) string {
 	logger := getLoggerFromContext(ctx)
 	logger.Trace("checking revision resource files")
 
+	// get the spec using the association.json file, if it exists
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	for _, resource := range revision.ResourceFiles.ResourceFile {
-		if resource.Type == openapi && resource.Name == association {
-			return j.getSpecFromResourceFile(ctx, resource.Type, resource.Name)
+		if resource.Type != openapi || resource.Name != association {
+			continue
 		}
+		if path := j.getSpecFromResourceFile(ctx, resource.Type, resource.Name); path != "" {
+			return path
+		}
+	}
+
+	// get a spec match based off the proxy name to the spec name
+	specData, _ := j.cache.GetSpecWithName(revision.Name)
+	if specData != nil {
+		return specData.ContentPath
 	}
 
 	return j.getSpecFromVirtualHosts(ctx)
