@@ -57,32 +57,30 @@ type proxyCache interface {
 // job that will poll for any new portals on APIGEE Edge
 type pollProxiesJob struct {
 	jobs.Job
-	client          proxyClient
-	firstRun        bool
-	cache           proxyCache
-	logger          log.FieldLogger
-	specsReady      jobFirstRunDone
-	pubLock         sync.Mutex
-	publishFunc     agent.PublishAPIFunc
-	workers         int
-	running         bool
-	runningLock     sync.Mutex
-	virtualHostURLs map[string]map[string][]string
-	lastTime        int
-	runTime         int
+	client      proxyClient
+	firstRun    bool
+	cache       proxyCache
+	logger      log.FieldLogger
+	specsReady  jobFirstRunDone
+	pubLock     sync.Mutex
+	publishFunc agent.PublishAPIFunc
+	workers     int
+	running     bool
+	runningLock sync.Mutex
+	lastTime    int
+	runTime     int
 }
 
 func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady jobFirstRunDone, workers int) *pollProxiesJob {
 	job := &pollProxiesJob{
-		client:          client,
-		cache:           cache,
-		firstRun:        true,
-		specsReady:      specsReady,
-		logger:          log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
-		publishFunc:     agent.PublishAPI,
-		workers:         workers,
-		runningLock:     sync.Mutex{},
-		virtualHostURLs: make(map[string]map[string][]string),
+		client:      client,
+		cache:       cache,
+		firstRun:    true,
+		specsReady:  specsReady,
+		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
+		publishFunc: agent.PublishAPI,
+		workers:     workers,
+		runningLock: sync.Mutex{},
 	}
 	return job
 }
@@ -312,20 +310,22 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 		return context.WithValue(ctx, endpointsField, allURLs)
 	}
 
-	if _, ok := j.virtualHostURLs[envName]; !ok {
-		j.virtualHostURLs[envName] = make(map[string][]string)
+	virtualHostURLs := make(map[string]map[string][]string)
+
+	if _, ok := virtualHostURLs[envName]; !ok {
+		virtualHostURLs[envName] = make(map[string][]string)
 	}
 
-	if _, ok := j.virtualHostURLs[envName][connection.VirtualHost]; !ok {
+	if _, ok := virtualHostURLs[envName][connection.VirtualHost]; !ok {
 		virtualHost, err := j.client.GetVirtualHost(envName, connection.VirtualHost)
 		if err != nil {
 			logger.WithError(err).Error("could not get the virtual host info")
 			return context.WithValue(ctx, endpointsField, allURLs)
 		}
-		j.virtualHostURLs[envName][connection.VirtualHost] = urlsFromVirtualHost(virtualHost)
+		virtualHostURLs[envName][connection.VirtualHost] = urlsFromVirtualHost(virtualHost)
 	}
 
-	for _, url := range j.virtualHostURLs[envName][connection.VirtualHost] {
+	for _, url := range virtualHostURLs[envName][connection.VirtualHost] {
 		allURLs = append(allURLs, fmt.Sprintf("%s%s", url, connection.BasePath))
 	}
 
