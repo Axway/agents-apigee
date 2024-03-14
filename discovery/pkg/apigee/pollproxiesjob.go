@@ -397,12 +397,7 @@ func (j *pollProxiesJob) getSpecFromResourceFile(ctx context.Context, resourceTy
 		logger.WithError(err).Debug("could not read resource file content")
 	}
 
-	// get the association.json file content
-	_, err = j.cache.GetSpecWithPath(associationFile.URL)
-	if err != nil {
-		logger.WithError(err).Error("spec path not found in cache")
-		return ""
-	}
+	// return the association.json file content
 	return associationFile.URL
 }
 
