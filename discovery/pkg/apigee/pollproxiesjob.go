@@ -225,9 +225,7 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	logger := getLoggerFromContext(ctx).WithField(revNameField.String(), revName)
 	addLoggerToContext(ctx, logger)
 	logger.Debug("handling revision")
-	pName := getStringFromContext(ctx, proxyNameField)
 
-	_ = pName
 	revision, err := j.client.GetRevision(getStringFromContext(ctx, proxyNameField), revName)
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
