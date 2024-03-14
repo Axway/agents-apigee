@@ -79,6 +79,14 @@ func getStringFromContext(ctx context.Context, key ctxKeys) string {
 	return ctx.Value(key).(string)
 }
 
+func getStringArrayFromContext(ctx context.Context, key ctxKeys) []string {
+	v := ctx.Value(key)
+	if v != nil {
+		return v.([]string)
+	}
+	return []string{}
+}
+
 func createEndpointsFromURLS(urls []string) []apic.EndpointDefinition {
 	endpoints := []apic.EndpointDefinition{}
 

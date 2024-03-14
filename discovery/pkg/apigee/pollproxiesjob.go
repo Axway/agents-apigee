@@ -322,7 +322,7 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	envName := getStringFromContext(ctx, envNameField)
 	proxyName := getStringFromContext(ctx, proxyNameField)
-	allURLs := []string{}
+	allURLs := getStringArrayFromContext(ctx, endpointsField)
 
 	connection, err := j.client.GetRevisionConnectionType(proxyName, revision.Revision)
 	if err != nil {
