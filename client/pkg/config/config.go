@@ -52,6 +52,7 @@ type ApigeeConfig struct {
 type ApigeeSpecConfig struct {
 	DisablePollForSpecs bool   `config:"disablePollForSpecs"`
 	Unstructured        bool   `config:"unstructured"`
+	MatchOnURL          bool   `config:"matchOnURL"`
 	LocalPath           string `config:"localDirectory"`
 	SpecExtensions      string `config:"extensions"`
 	Extensions          []string
@@ -125,6 +126,7 @@ const (
 	pathSpecWorkers             = "apigee.workers.spec"
 	pathProxyWorkers            = "apigee.workers.proxy"
 	pathProductWorkers          = "apigee.workers.product"
+	pathSpecMatchOnURL          = "apigee.specConfig.matchOnURL"
 	pathSpecLocalPath           = "apigee.specConfig.localPath"
 	pathSpecExtensions          = "apigee.specConfig.extensions"
 	pathSpecUnstructured        = "apigee.specConfig.unstructured"
@@ -156,6 +158,7 @@ func AddProperties(rootProps props) {
 	rootProps.AddIntProperty(pathProxyWorkers, 10, "Max number of workers discovering proxies")
 	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
 	rootProps.AddIntProperty(pathProductWorkers, 10, "Max number of workers discovering products")
+	rootProps.AddBoolProperty(pathSpecMatchOnURL, true, "Set to false to skip matching spec URLs to proxy URLs")
 	rootProps.AddStringProperty(pathSpecLocalPath, "", "Path to a local directory that contains the spec files")
 	rootProps.AddStringProperty(pathSpecExtensions, "json,yaml,yml", "Comma separated list of spec file extensions, needed for proxy mode")
 	rootProps.AddBoolProperty(pathSpecUnstructured, false, "Set to true to enable discovering apis that have no associated spec")
@@ -200,6 +203,7 @@ func ParseConfig(rootProps props) *ApigeeConfig {
 			BasicAuth:      rootProps.BoolPropertyValue(pathAuthBasicAuth),
 		},
 		Specs: &ApigeeSpecConfig{
+			MatchOnURL:          rootProps.BoolPropertyValue(pathSpecMatchOnURL),
 			LocalPath:           rootProps.StringPropertyValue(pathSpecLocalPath),
 			DisablePollForSpecs: rootProps.BoolPropertyValue(pathSpecDisablePollForSpecs),
 			Unstructured:        rootProps.BoolPropertyValue(pathSpecUnstructured),

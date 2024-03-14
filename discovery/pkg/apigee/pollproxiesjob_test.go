@@ -101,7 +101,11 @@ func Test_pollProxiesJob(t *testing.T) {
 				hasAPIKey:        tc.hasAPIKey,
 				hasOauth:         tc.hasOauth,
 			}
-			proxyJob := newPollProxiesJob(client, mockProxyCache{pathSpec: tc.specPath, nameSpec: tc.specName}, func() bool { return true }, 10)
+			proxyJob := newPollProxiesJob().
+				SetSpecClient(client).
+				SetSpecCache(mockProxyCache{pathSpec: tc.specPath, nameSpec: tc.specName}).
+				SetSpecsReady(func() bool { return true }).
+				SetWorkers(10)
 			assert.False(t, proxyJob.FirstRunComplete())
 
 			// receive the publish call and validate what was published

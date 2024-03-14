@@ -66,23 +66,45 @@ type pollProxiesJob struct {
 	publishFunc agent.PublishAPIFunc
 	workers     int
 	running     bool
+	matchOnURL  bool
 	runningLock sync.Mutex
 	lastTime    int
 	runTime     int
 }
 
-func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady jobFirstRunDone, workers int) *pollProxiesJob {
+func newPollProxiesJob() *pollProxiesJob {
 	job := &pollProxiesJob{
-		client:      client,
-		cache:       cache,
 		firstRun:    true,
-		specsReady:  specsReady,
 		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
 		publishFunc: agent.PublishAPI,
-		workers:     workers,
 		runningLock: sync.Mutex{},
 	}
 	return job
+}
+
+func (j *pollProxiesJob) SetSpecClient(client proxyClient) *pollProxiesJob {
+	j.client = client
+	return j
+}
+
+func (j *pollProxiesJob) SetSpecCache(cache proxyCache) *pollProxiesJob {
+	j.cache = cache
+	return j
+}
+
+func (j *pollProxiesJob) SetSpecsReady(specsReady jobFirstRunDone) *pollProxiesJob {
+	j.specsReady = specsReady
+	return j
+}
+
+func (j *pollProxiesJob) SetWorkers(workers int) *pollProxiesJob {
+	j.workers = workers
+	return j
+}
+
+func (j *pollProxiesJob) SetMatchOnURL(matchOnURL bool) *pollProxiesJob {
+	j.matchOnURL = matchOnURL
+	return j
 }
 
 func (j *pollProxiesJob) FirstRunComplete() bool {
@@ -333,6 +355,10 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 }
 
 func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
+	if !j.matchOnURL {
+		return ""
+	}
+
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 

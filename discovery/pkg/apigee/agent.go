@@ -77,8 +77,14 @@ func (a *Agent) registerJobs() error {
 		return true
 	}
 
+	parseSpec := a.cfg.ApigeeCfg.IsProxyMode() && a.cfg.ApigeeCfg.Specs.MatchOnURL // parse specs if proxy mode and match on url set
 	if !a.cfg.ApigeeCfg.Specs.DisablePollForSpecs {
-		specsJob := newPollSpecsJob(a.apigeeClient, a.agentCache, a.cfg.ApigeeCfg.GetWorkers().Spec, a.cfg.ApigeeCfg.IsProxyMode())
+		specsJob := newPollSpecsJob().
+			SetSpecClient(a.apigeeClient).
+			SetSpecCache(a.agentCache).
+			SetWorkers(a.cfg.ApigeeCfg.GetWorkers().Spec).
+			SetParseSpec(parseSpec)
+
 		_, err = jobs.RegisterIntervalJobWithName(specsJob, a.apigeeClient.GetConfig().GetIntervals().Spec, "Poll Specs")
 		if err != nil {
 			return err
@@ -89,7 +95,13 @@ func (a *Agent) registerJobs() error {
 	var validatorReady jobFirstRunDone
 
 	if a.cfg.ApigeeCfg.IsProxyMode() {
-		proxiesJob := newPollProxiesJob(a.apigeeClient, a.agentCache, startPollingJob, a.cfg.ApigeeCfg.GetWorkers().Proxy)
+		proxiesJob := newPollProxiesJob().
+			SetSpecClient(a.apigeeClient).
+			SetSpecCache(a.agentCache).
+			SetSpecsReady(startPollingJob).
+			SetWorkers(a.cfg.ApigeeCfg.GetWorkers().Proxy).
+			SetMatchOnURL(a.cfg.ApigeeCfg.Specs.MatchOnURL)
+
 		_, err = jobs.RegisterIntervalJobWithName(proxiesJob, a.apigeeClient.GetConfig().GetIntervals().Proxy, "Poll Proxies")
 		if err != nil {
 			return err
