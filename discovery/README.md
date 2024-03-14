@@ -104,32 +104,33 @@ Here is a sample Quota policy that may be added to the desired Proxies.
 * TimeUnit - in this case using the API Key policy gets the quota time unit from the product definition
 Í
 
-| Environment Variable                  | Description                                                                                     | Default (if applicable)           |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------- |
-| APIGEE_URL                            | The base Apigee URL for this agent to connect to                                                | https://api.enterprise.apigee.com |
-| APIGEE_APIVERSION                     | The version of the API for the agent to use                                                     | v1                                |
-| APIGEE_DATAURL                        | The base Apigee Data API URL for this agent to connect to                                       | https://apigee.com/dapi/api       |
-| APIGEE_ORGANIZATION                   | The Apigee organization name                                                                    |                                   |
-| APIGEE_DEVELOPERID                    | The Apigee developer, email, that will own all apps                                             |                                   |
-| APIGEE_DISCOVERYMODE                  | The mode in which the agent operates, discover proxies (proxy) or products (product)            | proxy                             |
-| APIGEE_FILTER                         | The tag filter to use against an Apigee product's attributes, only in product mode              |                                   |
-| APIGEE_CLONEATTRIBUTES                | Set this to true if the tags on a product should also be cloned on provisioning                 | false                             |
-| APIGEE_INTERVAL_PROXY                 | The polling interval checking for API Proxy changes, only in proxy mode                         | 30s (30 seconds), >=30s, <=5m     |
-| APIGEE_INTERVAL_PRODUCT               | The polling interval checking for Product changes, only in product mode                         | 30s (30 seconds), >=30s, <=5m     |
-| APIGEE_INTERVAL_SPEC                  | The polling interval for checking for new Specs                                                 | 30m (30 minute), >=1m             |
-| APIGEE_WORKERS_PROXY                  | The number of workers processing API Proxies, only in proxy mode                                | 10                                |
-| APIGEE_WORKERS_PRODUCT                | The number of workers processing Products, only in product mode                                 | 10                                |
-| APIGEE_WORKERS_SPEC                   | The number of workers processing API Specs                                                      | 20                                |
-| APIGEE_AUTH_USERNAME                  | The Apigee account username/email address                                                       |                                   |
-| APIGEE_AUTH_PASSWORD                  | The Apigee account password                                                                     |                                   |
-| APIGEE_AUTH_USEBASICAUTH              | Set this to true to have the Apigee api client use HTTP Basic Authentication                    | false                             |
-| APIGEE_AUTH_URL                       | The IDP URL                                                                                     | https://login.apigee.com          |
-| APIGEE_AUTH_SERVERUSERNAME            | The IDP username for requesting tokens                                                          | edgecli                           |
-| APIGEE_AUTH_SERVERPASSWORD            | The IDP password for requesting tokens                                                          | edgeclisecret                     |
-| APIGEE_SPECCONFIG_LOCALPATH           | Path to a local directory that contains the spec files                                          |                                   |
-| APIGEE_SPECCONFIG_EXTENSIONS          | Comma separated list of file extensions that the agent will look for spec in the local path for | json,yaml,yml                     |
-| APIGEE_SPECCONFIG_UNSTRUCTURED        | Set to true to enable discovering apis that have no associated spec                             | false                             |
-| APIGEE_SPECCONFIG_DISABLEPOLLFORSPECS | Set to true to disable polling apigee for specs, rely on the local directory or spec URLs       | false                             |
+| Environment Variable                  | Description                                                                                         | Default (if applicable)           |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------- |
+| APIGEE_URL                            | The base Apigee URL for this agent to connect to                                                    | https://api.enterprise.apigee.com |
+| APIGEE_APIVERSION                     | The version of the API for the agent to use                                                         | v1                                |
+| APIGEE_DATAURL                        | The base Apigee Data API URL for this agent to connect to                                           | https://apigee.com/dapi/api       |
+| APIGEE_ORGANIZATION                   | The Apigee organization name                                                                        |                                   |
+| APIGEE_DEVELOPERID                    | The Apigee developer, email, that will own all apps                                                 |                                   |
+| APIGEE_DISCOVERYMODE                  | The mode in which the agent operates, discover proxies (proxy) or products (product)                | proxy                             |
+| APIGEE_FILTER                         | The tag filter to use against an Apigee product's attributes, only in product mode                  |                                   |
+| APIGEE_CLONEATTRIBUTES                | Set this to true if the tags on a product should also be cloned on provisioning                     | false                             |
+| APIGEE_INTERVAL_PROXY                 | The polling interval checking for API Proxy changes, only in proxy mode                             | 30s (30 seconds), >=30s, <=5m     |
+| APIGEE_INTERVAL_PRODUCT               | The polling interval checking for Product changes, only in product mode                             | 30s (30 seconds), >=30s, <=5m     |
+| APIGEE_INTERVAL_SPEC                  | The polling interval for checking for new Specs                                                     | 30m (30 minute), >=1m             |
+| APIGEE_WORKERS_PROXY                  | The number of workers processing API Proxies, only in proxy mode                                    | 10                                |
+| APIGEE_WORKERS_PRODUCT                | The number of workers processing Products, only in product mode                                     | 10                                |
+| APIGEE_WORKERS_SPEC                   | The number of workers processing API Specs                                                          | 20                                |
+| APIGEE_AUTH_USERNAME                  | The Apigee account username/email address                                                           |                                   |
+| APIGEE_AUTH_PASSWORD                  | The Apigee account password                                                                         |                                   |
+| APIGEE_AUTH_USEBASICAUTH              | Set this to true to have the Apigee api client use HTTP Basic Authentication                        | false                             |
+| APIGEE_AUTH_URL                       | The IDP URL                                                                                         | https://login.apigee.com          |
+| APIGEE_AUTH_SERVERUSERNAME            | The IDP username for requesting tokens                                                              | edgecli                           |
+| APIGEE_AUTH_SERVERPASSWORD            | The IDP password for requesting tokens                                                              | edgeclisecret                     |
+| APIGEE_SPECCONFIG_MATCHONURL          | Set to false to skip parsing specs for URLs and matching to computed proxy url for spec association | true                              |
+| APIGEE_SPECCONFIG_LOCALPATH           | Path to a local directory that contains the spec files                                              |                                   |
+| APIGEE_SPECCONFIG_EXTENSIONS          | Comma separated list of file extensions that the agent will look for spec in the local path for     | json,yaml,yml                     |
+| APIGEE_SPECCONFIG_UNSTRUCTURED        | Set to true to enable discovering apis that have no associated spec                                 | false                             |
+| APIGEE_SPECCONFIG_DISABLEPOLLFORSPECS | Set to true to disable polling apigee for specs, rely on the local directory or spec URLs           | false                             |
 
 
 ## Development
