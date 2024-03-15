@@ -16,6 +16,9 @@ func (a *ApigeeClient) GetSpecFile(specPath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if response.Code != http.StatusOK {
+		return nil, fmt.Errorf("spec file not found at path")
+	}
 
 	return response.Body, nil
 }

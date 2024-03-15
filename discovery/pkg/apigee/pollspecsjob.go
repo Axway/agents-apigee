@@ -37,17 +37,33 @@ type pollSpecsJob struct {
 	runningLock sync.Mutex
 }
 
-func newPollSpecsJob(client specClient, cache specCache, workers int, parseSpec bool) *pollSpecsJob {
+func newPollSpecsJob() *pollSpecsJob {
 	job := &pollSpecsJob{
-		client:      client,
-		cache:       cache,
 		firstRun:    true,
 		logger:      log.NewFieldLogger().WithComponent("pollSpecs").WithPackage("apigee"),
-		workers:     workers,
 		runningLock: sync.Mutex{},
-		parseSpec:   parseSpec,
 	}
 	return job
+}
+
+func (j *pollSpecsJob) SetSpecClient(client specClient) *pollSpecsJob {
+	j.client = client
+	return j
+}
+
+func (j *pollSpecsJob) SetSpecCache(cache specCache) *pollSpecsJob {
+	j.cache = cache
+	return j
+}
+
+func (j *pollSpecsJob) SetWorkers(workers int) *pollSpecsJob {
+	j.workers = workers
+	return j
+}
+
+func (j *pollSpecsJob) SetParseSpec(parseSpec bool) *pollSpecsJob {
+	j.parseSpec = parseSpec
+	return j
 }
 
 func (j *pollSpecsJob) Ready() bool {

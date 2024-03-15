@@ -49,6 +49,7 @@ type proxyClient interface {
 
 type proxyCache interface {
 	GetSpecWithPath(path string) (*specCacheItem, error)
+	GetSpecWithName(name string) (*specCacheItem, error)
 	GetSpecPathWithEndpoint(endpoint string) (string, error)
 	AddPublishedServiceToCache(cacheKey string, serviceBody *apic.ServiceBody)
 }
@@ -56,34 +57,54 @@ type proxyCache interface {
 // job that will poll for any new portals on APIGEE Edge
 type pollProxiesJob struct {
 	jobs.Job
-	client          proxyClient
-	firstRun        bool
-	cache           proxyCache
-	logger          log.FieldLogger
-	specsReady      jobFirstRunDone
-	pubLock         sync.Mutex
-	publishFunc     agent.PublishAPIFunc
-	workers         int
-	running         bool
-	runningLock     sync.Mutex
-	virtualHostURLs map[string]map[string][]string
-	lastTime        int
-	runTime         int
+	client      proxyClient
+	firstRun    bool
+	cache       proxyCache
+	logger      log.FieldLogger
+	specsReady  jobFirstRunDone
+	pubLock     sync.Mutex
+	publishFunc agent.PublishAPIFunc
+	workers     int
+	running     bool
+	matchOnURL  bool
+	runningLock sync.Mutex
+	lastTime    int
+	runTime     int
 }
 
-func newPollProxiesJob(client proxyClient, cache proxyCache, specsReady jobFirstRunDone, workers int) *pollProxiesJob {
+func newPollProxiesJob() *pollProxiesJob {
 	job := &pollProxiesJob{
-		client:          client,
-		cache:           cache,
-		firstRun:        true,
-		specsReady:      specsReady,
-		logger:          log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
-		publishFunc:     agent.PublishAPI,
-		workers:         workers,
-		runningLock:     sync.Mutex{},
-		virtualHostURLs: make(map[string]map[string][]string),
+		firstRun:    true,
+		logger:      log.NewFieldLogger().WithComponent("pollProxies").WithPackage("apigee"),
+		publishFunc: agent.PublishAPI,
+		runningLock: sync.Mutex{},
 	}
 	return job
+}
+
+func (j *pollProxiesJob) SetSpecClient(client proxyClient) *pollProxiesJob {
+	j.client = client
+	return j
+}
+
+func (j *pollProxiesJob) SetSpecCache(cache proxyCache) *pollProxiesJob {
+	j.cache = cache
+	return j
+}
+
+func (j *pollProxiesJob) SetSpecsReady(specsReady jobFirstRunDone) *pollProxiesJob {
+	j.specsReady = specsReady
+	return j
+}
+
+func (j *pollProxiesJob) SetWorkers(workers int) *pollProxiesJob {
+	j.workers = workers
+	return j
+}
+
+func (j *pollProxiesJob) SetMatchOnURL(matchOnURL bool) *pollProxiesJob {
+	j.matchOnURL = matchOnURL
+	return j
 }
 
 func (j *pollProxiesJob) FirstRunComplete() bool {
@@ -204,9 +225,7 @@ func (j *pollProxiesJob) handleRevision(ctx context.Context, revName string) {
 	logger := getLoggerFromContext(ctx).WithField(revNameField.String(), revName)
 	addLoggerToContext(ctx, logger)
 	logger.Debug("handling revision")
-	pName := getStringFromContext(ctx, proxyNameField)
 
-	_ = pName
 	revision, err := j.client.GetRevision(getStringFromContext(ctx, proxyNameField), revName)
 	if err != nil {
 		logger.WithError(err).Error("getting revision")
@@ -278,11 +297,21 @@ func (j *pollProxiesJob) specFromRevision(ctx context.Context) string {
 	logger := getLoggerFromContext(ctx)
 	logger.Trace("checking revision resource files")
 
+	// get the spec using the association.json file, if it exists
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	for _, resource := range revision.ResourceFiles.ResourceFile {
-		if resource.Type == openapi && resource.Name == association {
-			return j.getSpecFromResourceFile(ctx, resource.Type, resource.Name)
+		if resource.Type != openapi || resource.Name != association {
+			continue
 		}
+		if path := j.getSpecFromResourceFile(ctx, resource.Type, resource.Name); path != "" {
+			return path
+		}
+	}
+
+	// get a spec match based off the proxy name to the spec name
+	specData, _ := j.cache.GetSpecWithName(revision.Name)
+	if specData != nil {
+		return specData.ContentPath
 	}
 
 	return j.getSpecFromVirtualHosts(ctx)
@@ -293,7 +322,7 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 	envName := getStringFromContext(ctx, envNameField)
 	proxyName := getStringFromContext(ctx, proxyNameField)
-	allURLs := []string{}
+	allURLs := getStringArrayFromContext(ctx, endpointsField)
 
 	connection, err := j.client.GetRevisionConnectionType(proxyName, revision.Revision)
 	if err != nil {
@@ -301,20 +330,22 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 		return context.WithValue(ctx, endpointsField, allURLs)
 	}
 
-	if _, ok := j.virtualHostURLs[envName]; !ok {
-		j.virtualHostURLs[envName] = make(map[string][]string)
+	virtualHostURLs := make(map[string]map[string][]string)
+
+	if _, ok := virtualHostURLs[envName]; !ok {
+		virtualHostURLs[envName] = make(map[string][]string)
 	}
 
-	if _, ok := j.virtualHostURLs[envName][connection.VirtualHost]; !ok {
+	if _, ok := virtualHostURLs[envName][connection.VirtualHost]; !ok {
 		virtualHost, err := j.client.GetVirtualHost(envName, connection.VirtualHost)
 		if err != nil {
 			logger.WithError(err).Error("could not get the virtual host info")
 			return context.WithValue(ctx, endpointsField, allURLs)
 		}
-		j.virtualHostURLs[envName][connection.VirtualHost] = urlsFromVirtualHost(virtualHost)
+		virtualHostURLs[envName][connection.VirtualHost] = urlsFromVirtualHost(virtualHost)
 	}
 
-	for _, url := range j.virtualHostURLs[envName][connection.VirtualHost] {
+	for _, url := range virtualHostURLs[envName][connection.VirtualHost] {
 		allURLs = append(allURLs, fmt.Sprintf("%s%s", url, connection.BasePath))
 	}
 
@@ -322,6 +353,10 @@ func (j *pollProxiesJob) getVirtualHostURLs(ctx context.Context) context.Context
 }
 
 func (j *pollProxiesJob) getSpecFromVirtualHosts(ctx context.Context) string {
+	if !j.matchOnURL {
+		return ""
+	}
+
 	logger := getLoggerFromContext(ctx)
 	revision := ctx.Value(revNameField).(*models.ApiProxyRevision)
 
@@ -360,12 +395,7 @@ func (j *pollProxiesJob) getSpecFromResourceFile(ctx context.Context, resourceTy
 		logger.WithError(err).Debug("could not read resource file content")
 	}
 
-	// get the association.json file content
-	_, err = j.cache.GetSpecWithPath(associationFile.URL)
-	if err != nil {
-		logger.WithError(err).Error("spec path not found in cache")
-		return ""
-	}
+	// return the association.json file content
 	return associationFile.URL
 }
 
