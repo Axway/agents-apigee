@@ -121,6 +121,8 @@ blackduck:on-schedule:
     - git config --global http.sslVerify false
     - git config --global url."ssh://git@git.ecd.axway.org".insteadOf "https://git.ecd.axway.org"''
     - git tag -l
+    - git tag -l | xargs git tag -d
+    - git tag -l
     - git fetch
     - git tag -l
     - *get-latest-tag
