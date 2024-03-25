@@ -13,8 +13,6 @@ variables:
   # Blackduck
   BLACKDUCK_PROJECT_NAME: "Amplify - APIC Apigee Agents"
 
-  GIT_TAG_PREFIX: v
-
   # these needed for go workspace
   GOWORK: ${CI_PROJECT_DIR}/go.work
   GOFLAGS: "-mod=readonly"
@@ -86,7 +84,7 @@ twistlock-discovery:on-schedule:
   before_script:
     - apk --no-cache update && apk add git
     - *get-latest-tag
-    - export IMAGE_NAME=ghcr.io/axway/apigee_discovery_agent:${GIT_TAG_PREFIX}${LAST_TAG_VERSION}
+    - export IMAGE_NAME=ghcr.io/axway/apigee_discovery_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
 
 twistlock-traceability:on-schedule:
@@ -97,7 +95,7 @@ twistlock-traceability:on-schedule:
   before_script:
     - apk --no-cache update && apk add git
     - *get-latest-tag
-    - export IMAGE_NAME=ghcr.io/axway/apigee_traceability_agent:${GIT_TAG_PREFIX}${LAST_TAG_VERSION}
+    - export IMAGE_NAME=ghcr.io/axway/apigee_traceability_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
 
 # overridden from csrjobs.yml because mirror repos like this one don't get merge events 
@@ -121,8 +119,8 @@ blackduck:on-schedule:
     - git config --global url."ssh://git@git.ecd.axway.org".insteadOf "https://git.ecd.axway.org"''
     - git fetch
     - *get-latest-tag
-    - echo "Checking out ${GIT_TAG_PREFIX}${LAST_TAG_VERSION}"
-    - git checkout ${GIT_TAG_PREFIX}${LAST_TAG_VERSION}
+    - echo "Checking out ${LAST_TAG_VERSION}"
+    - git checkout ${LAST_TAG_VERSION}
 
 run-csr:
   rules:
