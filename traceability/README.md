@@ -58,7 +58,7 @@ go build -tags static_all \
 | APIGEE_ORGANIZATION        | The Apigee organization name                                                                                             |                                   |
 | APIGEE_DEVELOPERID         | The Apigee developer, email, that will own all apps                                                                      |                                   |
 | APIGEE_DISCOVERYMODE       | The mode in which the discovery agent operates, determines how stats are gathered, proxies (proxy) or products (product) | proxy                             |
-| APIGEE_INTERVAL_STATS      | The polling interval checking for API Proxy changes, only in proxy mode                                                  | 5m (5 minutes), >=1m, <=15m       |
+| APIGEE_INTERVAL_STATS      | The polling interval checking for API Proxy changes, only in proxy mode                                                  | 15m (15 minutes), >=15m       |
 | APIGEE_AUTH_USERNAME       | The Apigee account username/email address                                                                                |                                   |
 | APIGEE_AUTH_PASSWORD       | The Apigee account password                                                                                              |                                   |
 | APIGEE_AUTH_USEBASICAUTH   | Set this to true to have the Apigee api client use HTTP Basic Authentication                                             | false                             |

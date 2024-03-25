@@ -1,6 +1,7 @@
 package apigee
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -34,13 +35,13 @@ type metricData struct {
 	environment     string
 	baseName        string
 	name            string
-	timestamp       int64
-	count           string
-	policyErrCount  string
-	serverErrCount  string
-	avgResponseTime string
-	minResponseTime string
-	maxResponseTime string
+	timestamp       time.Time
+	count           int64
+	policyErrCount  int64
+	serverErrCount  int64
+	avgResponseTime float64
+	minResponseTime int64
+	maxResponseTime int64
 }
 
 type pollApigeeStats struct {
@@ -230,7 +231,8 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 	}
 
 	logger.WithField("value", dimensions).Trace("dimensions")
-	// wg := sync.WaitGroup{}
+
+	metricGroups := map[string][]*metricData{}
 	for _, d := range metrics.Environments[0].Dimensions {
 		serviceName := j.getBaseProduct(d.Name)
 		logger := logger.WithField("name", d.Name).WithField("serviceName", serviceName)
@@ -246,23 +248,64 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 			if d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value == "0.0" {
 				continue
 			}
+			key := fmt.Sprint(metrics.Environments[0].Name, "_", serviceName)
+			if _, ok := metricGroups[key]; !ok {
+				metricGroups[key] = make([]*metricData, 0)
+			}
 
-			j.processMetric(logger, &metricData{
+			metricGroups[key] = append(metricGroups[key], &metricData{
 				environment:     metrics.Environments[0].Name,
 				name:            serviceName,
 				baseName:        d.Name,
-				timestamp:       d.Metrics[metricsIndex[countMetric]].MetricValues[i].Timestamp,
-				count:           d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value,
-				policyErrCount:  d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value,
-				serverErrCount:  d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value,
-				avgResponseTime: d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value,
-				minResponseTime: d.Metrics[metricsIndex[minResponseMetric]].MetricValues[i].Value,
-				maxResponseTime: d.Metrics[metricsIndex[maxResponseMetric]].MetricValues[i].Value,
+				timestamp:       time.UnixMilli(d.Metrics[metricsIndex[countMetric]].MetricValues[i].Timestamp),
+				count:           parseFloatToInt64(d.Metrics[metricsIndex[countMetric]].MetricValues[i].Value),
+				policyErrCount:  parseFloatToInt64(d.Metrics[metricsIndex[policyErrMetric]].MetricValues[i].Value),
+				serverErrCount:  parseFloatToInt64(d.Metrics[metricsIndex[serverErrMetric]].MetricValues[i].Value),
+				avgResponseTime: parseFloatToFloat64(d.Metrics[metricsIndex[avgResponseMetric]].MetricValues[i].Value),
+				minResponseTime: parseFloatToInt64(d.Metrics[metricsIndex[minResponseMetric]].MetricValues[i].Value),
+				maxResponseTime: parseFloatToInt64(d.Metrics[metricsIndex[maxResponseMetric]].MetricValues[i].Value),
 			})
 		}
 	}
-	// wg.Wait()
+
+	j.createMetricEvents(logger, metricGroups)
+
 	logger.Trace("finished processing env")
+}
+func (j *pollApigeeStats) createMetricEvents(logger log.FieldLogger, metricGroups map[string][]*metricData) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(metricGroups))
+	for key := range metricGroups {
+		go func(group []*metricData) {
+			defer wg.Done()
+			m := &metricData{
+				environment:     group[0].environment,
+				name:            group[0].name,
+				baseName:        group[0].baseName,
+				timestamp:       group[0].timestamp,
+				minResponseTime: group[0].minResponseTime,
+				maxResponseTime: group[0].maxResponseTime,
+			}
+
+			for _, d := range group {
+				if d.timestamp.After(m.timestamp) {
+					m.timestamp = d.timestamp
+				}
+				if d.minResponseTime < m.minResponseTime {
+					m.minResponseTime = d.minResponseTime
+				}
+				if d.maxResponseTime > m.maxResponseTime {
+					m.maxResponseTime = d.maxResponseTime
+				}
+				m.avgResponseTime = ((m.avgResponseTime * float64(m.count)) + (d.avgResponseTime * float64(d.count))) / float64(m.count+d.count)
+				m.count += d.count
+				m.policyErrCount += d.policyErrCount
+				m.serverErrCount += d.serverErrCount
+			}
+			j.processMetric(logger, m)
+		}(metricGroups[key])
+	}
+	wg.Wait()
 }
 
 func (j *pollApigeeStats) getBaseProduct(name string) string {
@@ -289,17 +332,17 @@ func (j *pollApigeeStats) getBaseProduct(name string) string {
 }
 
 func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricData) {
-	// get the policy errors
-	policyErr := parseFloatToInt64(metData.policyErrCount)
-	// get the server errors
-	serverErr := parseFloatToInt64(metData.serverErrCount)
 	// calculate the successes
-	success := parseFloatToInt64(metData.count) - policyErr - serverErr
+	success := metData.count - metData.policyErrCount - metData.serverErrCount
 	if success < 0 {
 		success = 0
 	}
 
-	logger = logger.WithField("success", success).WithField("policyErr", policyErr).WithField("serverErr", serverErr).WithField("time", j.endTime.Format(time.RFC822))
+	logger = logger.WithField("success", success).
+		WithField("policyErr", metData.policyErrCount).
+		WithField("serverErr", metData.serverErrCount).
+		WithField("time", j.endTime.Format(time.RFC822))
+
 	logger.Debug("reporting metrics")
 
 	reportMetric := func(count int64, code string) {
@@ -314,20 +357,15 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 			},
 			StatusCode: code,
 			Count:      count,
-			Response: metric.ResponseMetrics{
-				Avg: parseFloatToFloat64(metData.avgResponseTime),
-				Max: parseFloatToInt64(metData.maxResponseTime),
-				Min: parseFloatToInt64(metData.minResponseTime),
-			},
-			StartTime: time.UnixMilli(metData.timestamp),
+			StartTime:  metData.timestamp,
 			Observation: metric.ObservationDetails{
-				Start: metData.timestamp,
+				Start: metData.timestamp.Unix(),
 				End:   time.Minute.Milliseconds(),
 			},
 		})
 	}
-	reportMetric(policyErr, "400")
-	reportMetric(serverErr, "500")
+	reportMetric(metData.policyErrCount, "400")
+	reportMetric(metData.serverErrCount, "500")
 	reportMetric(success, "200")
 
 	logger.Info("finished processing metric")
