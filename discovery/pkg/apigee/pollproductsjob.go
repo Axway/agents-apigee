@@ -302,6 +302,7 @@ func (j *pollProductsJob) buildServiceBody(ctx context.Context, product *models.
 		SetTitle(product.DisplayName).
 		SetServiceAttribute(serviceAttributes).
 		SetServiceAgentDetails(serviceDetails).
+		SetSourceDataplaneType(apic.Apigee, false).
 		Build()
 	return &sb, specHash, err
 }
