@@ -34,6 +34,8 @@ func newMockCollector() *mockCollector {
 }
 
 func (m *mockCollector) AddAPIMetric(met *metric.APIMetric) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	apiName := met.API.Name
 	if _, ok := m.apiCounts[apiName]; !ok {
 		m.apiCounts[apiName] = make([]int, 3)
