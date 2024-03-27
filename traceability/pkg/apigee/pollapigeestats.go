@@ -162,8 +162,7 @@ func (j *pollApigeeStats) Execute() error {
 	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric, minResponseMetric, maxResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
 	for _, e := range j.envs {
-		// only handle metrics that are in the specified environment, if set
-		if !(j.environment != "" && j.environment == e) {
+		if !(j.environment == "" || j.environment == e) {
 			continue
 		}
 

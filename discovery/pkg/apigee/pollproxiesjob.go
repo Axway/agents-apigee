@@ -199,9 +199,10 @@ func (j *pollProxiesJob) handleProxy(proxyName string) {
 	wg := sync.WaitGroup{}
 	for _, env := range details.Environment {
 		// only handle proxies that are in the specified environment, if set
-		if !(j.environment != "" && j.environment == env.Name) {
+		if !(j.environment == "" || j.environment == env.Name) {
 			continue
 		}
+
 		wg.Add(1)
 		go func(environment models.DeploymentDetailsEnvironment) {
 			defer wg.Done()
