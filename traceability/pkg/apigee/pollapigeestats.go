@@ -60,6 +60,7 @@ type pollApigeeStats struct {
 	cachePath           string
 	clonedProduct       map[string]string
 	dimension           string
+	environment         string
 	isProduct           bool
 	logger              log.FieldLogger
 }
@@ -77,6 +78,12 @@ func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 		o(job)
 	}
 	return job
+}
+
+func withEnvironment(env string) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.environment = env
+	}
 }
 
 func withStartTime(startTime time.Time) func(p *pollApigeeStats) {
@@ -155,6 +162,11 @@ func (j *pollApigeeStats) Execute() error {
 	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric, minResponseMetric, maxResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
 	for _, e := range j.envs {
+		// only handle metrics that are in the specified environment, if set
+		if !(j.environment != "" && j.environment == e) {
+			continue
+		}
+
 		wg.Add(1)
 		go func(logger log.FieldLogger, envName string) {
 			defer wg.Done()

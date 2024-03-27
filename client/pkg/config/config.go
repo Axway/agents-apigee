@@ -33,6 +33,7 @@ func NewApigeeConfig() *ApigeeConfig {
 type ApigeeConfig struct {
 	corecfg.IConfigValidator
 	Organization    string            `config:"organization"`
+	Environment     string            `config:"environment"`
 	URL             string            `config:"url"`
 	DataURL         string            `config:"dataURL"`
 	APIVersion      string            `config:"apiVersion"`
@@ -107,6 +108,7 @@ const (
 	pathDataURL                 = "apigee.dataURL"
 	pathAPIVersion              = "apigee.apiVersion"
 	pathOrganization            = "apigee.organization"
+	pathEnvironment             = "apigee.environment"
 	pathMode                    = "apigee.discoveryMode"
 	pathFilter                  = "apigee.filter"
 	pathCloneAttributes         = "apigee.cloneAttributes"
@@ -137,6 +139,7 @@ const (
 func AddProperties(rootProps props) {
 	rootProps.AddStringProperty(pathMode, "proxy", "APIGEE Organization")
 	rootProps.AddStringProperty(pathOrganization, "", "APIGEE Organization")
+	rootProps.AddStringProperty(pathEnvironment, "", "APIGEE Environment to discover resources from and track usages of")
 	rootProps.AddStringProperty(pathURL, "https://api.enterprise.apigee.com", "APIGEE Base URL")
 	rootProps.AddStringProperty(pathAPIVersion, "v1", "APIGEE API Version")
 	rootProps.AddStringProperty(pathFilter, "", "Filter used on discovering Apigee products")
@@ -174,6 +177,7 @@ func ParseConfig(rootProps props) *ApigeeConfig {
 	}
 	return &ApigeeConfig{
 		Organization:    rootProps.StringPropertyValue(pathOrganization),
+		Environment:     rootProps.StringPropertyValue(pathEnvironment),
 		URL:             strings.TrimSuffix(rootProps.StringPropertyValue(pathURL), "/"),
 		APIVersion:      rootProps.StringPropertyValue(pathAPIVersion),
 		DataURL:         strings.TrimSuffix(rootProps.StringPropertyValue(pathDataURL), "/"),
