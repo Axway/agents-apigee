@@ -9,7 +9,7 @@ apigee_traceability_agent:
     allTraffic: ${APIGEE_ALLTRAFFIC}
     notSetTraffic: ${APIGEE_NOTSETTRAFFIC}
     interval:
-      stats: ${APIGEE_INTERVAL_STATS:5m}
+      stats: ${APIGEE_INTERVAL_STATS:15m}
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}

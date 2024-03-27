@@ -99,6 +99,7 @@ func (a *Agent) registerJobs() error {
 			SetSpecClient(a.apigeeClient).
 			SetSpecCache(a.agentCache).
 			SetSpecsReady(startPollingJob).
+			SetEnvironment(a.cfg.ApigeeCfg.Environment).
 			SetWorkers(a.cfg.ApigeeCfg.GetWorkers().Proxy).
 			SetMatchOnURL(a.cfg.ApigeeCfg.Specs.MatchOnURL)
 
