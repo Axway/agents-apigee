@@ -489,6 +489,7 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 		SetCredentialRequestDefinitions(crds).
 		SetServiceEndpoints(endpoints).
 		SetServiceAgentDetails(serviceDetails).
+		SetSourceDataplaneType(apic.Apigee, false).
 		Build()
 	return &sb, err
 }
