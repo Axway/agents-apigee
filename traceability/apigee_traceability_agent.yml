@@ -9,6 +9,7 @@ apigee_traceability_agent:
     allTraffic: ${APIGEE_ALLTRAFFIC}
     notSetTraffic: ${APIGEE_NOTSETTRAFFIC}
     filteredAPIs: ${APIGEE_FILTERED_APIS}
+    filterAPIs: ${APIGEE_FILTER_APIS:false}
     interval:
       stats: ${APIGEE_INTERVAL_STATS:5m}
     auth:

@@ -46,6 +46,7 @@ type ApigeeConfig struct {
 	AllTraffic      bool              `config:"allTraffic"`
 	NotSetTraffic   bool              `config:"notSetTraffic"`
 	FilteredAPIs    []string          `config:"filteredAPIs"`
+	FilterAPIs      bool              `config:"filterAPIs"`
 	mode            discoveryMode
 }
 

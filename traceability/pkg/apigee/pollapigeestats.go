@@ -65,6 +65,7 @@ type pollApigeeStats struct {
 	isProduct           bool
 	logger              log.FieldLogger
 	filteredAPIs        map[string]struct{}
+	filterAPIs          bool
 }
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
@@ -138,10 +139,13 @@ func withProductMode() func(p *pollApigeeStats) {
 	}
 }
 
-func withFilteredAPIs(filteredAPIs []string) func(p *pollApigeeStats) {
+func withFilteredAPIs(filteredAPIs []string, filterAPIs bool) func(p *pollApigeeStats) {
 	return func(p *pollApigeeStats) {
-		for _, filteredAPI := range filteredAPIs {
-			p.filteredAPIs[filteredAPI] = struct{}{}
+		p.filterAPIs = filterAPIs
+		if filterAPIs {
+			for _, filteredAPI := range filteredAPIs {
+				p.filteredAPIs[filteredAPI] = struct{}{}
+			}
 		}
 	}
 }
@@ -167,7 +171,7 @@ func (j *pollApigeeStats) Execute() error {
 	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric, minResponseMetric, maxResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
 
-	if len(j.filteredAPIs) == 0 {
+	if j.filterAPIs && len(j.filteredAPIs) == 0 {
 		apiService := management.NewAPIService("", GetAgent().cfg.CentralCfg.GetEnvironmentName())
 		res, err := agent.GetCentralClient().GetResources(apiService)
 		if len(res) > 0 && err == nil {
@@ -188,8 +192,10 @@ func (j *pollApigeeStats) Execute() error {
 				return
 			}
 			// don't process metric if api not filtered/discovered
-			if _, ok := j.filteredAPIs[metrics.Environments[0].Dimensions[0].Name]; !ok {
-				return
+			if j.filterAPIs {
+				if _, ok := j.filteredAPIs[metrics.Environments[0].Dimensions[0].Name]; !ok {
+					return
+				}
 			}
 
 			j.processMetricResponse(logger, metrics)
