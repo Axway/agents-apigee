@@ -8,6 +8,7 @@ apigee_traceability_agent:
     discoveryMode: ${APIGEE_DISCOVERYMODE}
     allTraffic: ${APIGEE_ALLTRAFFIC}
     notSetTraffic: ${APIGEE_NOTSETTRAFFIC}
+    filteredAPIs: ${APIGEE_FILTERED_APIS}
     interval:
       stats: ${APIGEE_INTERVAL_STATS:5m}
     auth:

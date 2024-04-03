@@ -45,6 +45,7 @@ type ApigeeConfig struct {
 	CloneAttributes bool              `config:"cloneAttributes"`
 	AllTraffic      bool              `config:"allTraffic"`
 	NotSetTraffic   bool              `config:"notSetTraffic"`
+	FilteredAPIs    []string          `config:"filteredAPIs"`
 	mode            discoveryMode
 }
 
