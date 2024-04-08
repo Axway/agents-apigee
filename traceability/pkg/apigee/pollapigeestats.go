@@ -191,12 +191,6 @@ func (j *pollApigeeStats) Execute() error {
 			if err != nil {
 				return
 			}
-			// don't process metric if api not filtered/discovered
-			if j.filterAPIs {
-				if _, ok := j.filteredAPIs[metrics.Environments[0].Dimensions[0].Name]; !ok {
-					return
-				}
-			}
 
 			j.processMetricResponse(logger, metrics)
 		}(logger, e)
@@ -267,6 +261,11 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 	logger.WithField("value", dimensions).Trace("dimensions")
 	// wg := sync.WaitGroup{}
 	for _, d := range metrics.Environments[0].Dimensions {
+		if j.filterAPIs {
+			if _, filteredAPI := j.filteredAPIs[d.Name]; !filteredAPI {
+				continue
+			}
+		}
 		serviceName := j.getBaseProduct(d.Name)
 		logger := logger.WithField("name", d.Name).WithField("serviceName", serviceName)
 		logger.Trace("processing metric for dimension")
