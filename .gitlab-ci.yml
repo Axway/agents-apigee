@@ -22,14 +22,14 @@ include:
     ref: master
     file: "/.gitlab-ci-sonar.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_LATEST 
+    ref: $BEANO_CICD_LATEST
     # the order of these include files is important
     file:
       - "/gitlabci/variables.yml"
       - "/gitlabci/restrictions.yml"
       - "/gitlabci/jobs.yml"
   - project: "scurity/gitlabci"
-    ref: APIGOV-25848
+    ref: $SCURITY_LATEST
     file:
       - "/.gitlab-ci-fortify.yml"
       - "/.gitlab-ci-twistlock.yml"
@@ -37,7 +37,7 @@ include:
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
-    ref: APIGOV-25848
+    ref: $BEAMO_CICD_LATEST
     # the order of these include files is important
     file:
       - "/gitlabci/csrjobs.yml"
@@ -50,11 +50,9 @@ stages:
   - security-review
 
 twistlock-discovery:
-  rules:
-    - when: always
   extends: .twistlock
-  # rules:
-  #   - !reference [.mirror-branch-csr-rules, rules]
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -62,11 +60,9 @@ twistlock-discovery:
     - cd ..
 
 twistlock-traceability:
-  rules:
-    - when: always
   extends: .twistlock
-  # rules:
-  #   - !reference [.mirror-branch-csr-rules, rules]
+  rules:
+    - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
@@ -76,9 +72,7 @@ twistlock-traceability:
 twistlock-discovery:on-schedule:
   extends: .twistlock
   rules:
-    - when: always
-  # rules:
-  #   - !reference [.mirror-schedule-csr-rules, rules]
+    - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
   before_script:
     - !reference [.csr-get-last-git-tag, gettag]
@@ -88,10 +82,8 @@ twistlock-discovery:on-schedule:
 
 twistlock-traceability:on-schedule:
   extends: .twistlock
-  # rules:
-  #   - !reference [.mirror-schedule-csr-rules, rules]
   rules:
-    - when: always
+    - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
   before_script:
     - !reference [.csr-get-last-git-tag, gettag]
@@ -111,19 +103,12 @@ fetch-fortify:
 blackduck-rapid:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
-  before_script:
-    - !reference [.csr-get-last-git-tag, gettag]
 
 blackduck:on-schedule:
   rules:
-    - when: always
-    # - !reference [.mirror-schedule-csr-rules, rules]
+    - !reference [.mirror-schedule-csr-rules, rules]
   before_script:
     - !reference [.csr-get-last-git-tag, gettag]
-
-unit_tests:
-  script:
-    - echo "done"
 
 run-csr:
   rules:
