@@ -118,6 +118,8 @@ blackduck:on-schedule:
   rules:
     - when: always
     # - !reference [.mirror-schedule-csr-rules, rules]
+  before_script:
+    - !reference [.csr-get-last-git-tag, gettag]
 
 unit_tests:
   script:
