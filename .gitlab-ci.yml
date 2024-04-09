@@ -37,7 +37,7 @@ include:
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEAMO_CICD_LATEST
+    ref: $BEANO_CICD_LATEST
     # the order of these include files is important
     file:
       - "/gitlabci/csrjobs.yml"
