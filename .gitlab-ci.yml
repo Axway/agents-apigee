@@ -29,7 +29,7 @@ include:
       - "/gitlabci/restrictions.yml"
       - "/gitlabci/jobs.yml"
   - project: "scurity/gitlabci"
-    ref: $SCURITY_LATEST
+    ref: APIGOV-25848
     file:
       - "/.gitlab-ci-fortify.yml"
       - "/.gitlab-ci-twistlock.yml"
@@ -49,17 +49,12 @@ stages:
   - security-scans
   - security-review
 
-.get-latest-tag: &get-latest-tag |
-  if [ $(git --version | grep -Eo '2.*') ]; then 
-    export LAST_TAG_VERSION=$(git tag -l --sort="version:refname" | grep -Eo '^v?[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1)
-  else 
-    export LAST_TAG_VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
-  fi
-
 twistlock-discovery:
-  extends: .twistlock
   rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+    - when: always
+  extends: .twistlock
+  # rules:
+  #   - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -67,9 +62,11 @@ twistlock-discovery:
     - cd ..
 
 twistlock-traceability:
-  extends: .twistlock
   rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+    - when: always
+  extends: .twistlock
+  # rules:
+  #   - !reference [.mirror-branch-csr-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
@@ -79,22 +76,26 @@ twistlock-traceability:
 twistlock-discovery:on-schedule:
   extends: .twistlock
   rules:
-    - !reference [.mirror-schedule-csr-rules, rules]
+    - when: always
+  # rules:
+  #   - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
   before_script:
-    - apk --no-cache update && apk add git
-    - *get-latest-tag
+    - !reference [.tl-get-last-git-tag, gettag]
+    - echo "Using the last tagged version ${LAST_TAG_VERSION}"
     - export IMAGE_NAME=ghcr.io/axway/apigee_discovery_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
 
 twistlock-traceability:on-schedule:
   extends: .twistlock
+  # rules:
+  #   - !reference [.mirror-schedule-csr-rules, rules]
   rules:
-    - !reference [.mirror-schedule-csr-rules, rules]
+    - when: always
   dependencies: []
   before_script:
-    - apk --no-cache update && apk add git
-    - *get-latest-tag
+    - !reference [.tl-get-last-git-tag, gettag]
+    - echo "Using the last tagged version ${LAST_TAG_VERSION}"
     - export IMAGE_NAME=ghcr.io/axway/apigee_traceability_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
 
@@ -114,13 +115,6 @@ blackduck-rapid:
 blackduck:on-schedule:
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
-  before_script:
-    - git config --global http.sslVerify false
-    - git config --global url."ssh://git@git.ecd.axway.org".insteadOf "https://git.ecd.axway.org"''
-    - git fetch
-    - *get-latest-tag
-    - echo "Checking out ${LAST_TAG_VERSION}"
-    - git checkout ${LAST_TAG_VERSION}
 
 run-csr:
   rules:
