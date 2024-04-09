@@ -81,7 +81,7 @@ twistlock-discovery:on-schedule:
   #   - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
   before_script:
-    - !reference [.tl-get-last-git-tag, gettag]
+    - !reference [.csr-get-last-git-tag, gettag]
     - echo "Using the last tagged version ${LAST_TAG_VERSION}"
     - export IMAGE_NAME=ghcr.io/axway/apigee_discovery_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
@@ -94,7 +94,7 @@ twistlock-traceability:on-schedule:
     - when: always
   dependencies: []
   before_script:
-    - !reference [.tl-get-last-git-tag, gettag]
+    - !reference [.csr-get-last-git-tag, gettag]
     - echo "Using the last tagged version ${LAST_TAG_VERSION}"
     - export IMAGE_NAME=ghcr.io/axway/apigee_traceability_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
@@ -111,11 +111,17 @@ fetch-fortify:
 blackduck-rapid:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
+  before_script:
+    - !reference [.csr-get-last-git-tag, gettag]
 
 blackduck:on-schedule:
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
 
+unit_tests:
+  script:
+    - echo "done"
+    
 run-csr:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
