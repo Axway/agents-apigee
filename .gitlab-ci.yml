@@ -116,7 +116,8 @@ blackduck-rapid:
 
 blackduck:on-schedule:
   rules:
-    - !reference [.mirror-schedule-csr-rules, rules]
+    - when: always
+    # - !reference [.mirror-schedule-csr-rules, rules]
 
 unit_tests:
   script:
