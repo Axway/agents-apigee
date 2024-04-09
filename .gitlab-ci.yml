@@ -37,7 +37,7 @@ include:
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_LATEST
+    ref: APIGOV-25848
     # the order of these include files is important
     file:
       - "/gitlabci/csrjobs.yml"
@@ -121,7 +121,7 @@ blackduck:on-schedule:
 unit_tests:
   script:
     - echo "done"
-    
+
 run-csr:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
