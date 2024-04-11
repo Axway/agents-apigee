@@ -65,4 +65,6 @@ go build -tags static_all \
 | APIGEE_AUTH_URL            | The IDP URL                                                                                                              | https://login.apigee.com          |
 | APIGEE_AUTH_SERVERUSERNAME | The IDP username for requesting tokens                                                                                   | edgecli                           |
 | APIGEE_AUTH_SERVERPASSWORD | The IDP password for requesting tokens                                                                                   | edgeclisecret                     |
+| APIGEE_FILTERED_APIS       | List that should contain apis for which metrics are wanted. Leave empty to use all the discovered apis instead           |                                   |
+| APIGEE_FILTER_APIS         | Set to true if api metrics filtering is wanted                                                                           | false                             |
 
