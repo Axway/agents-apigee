@@ -93,7 +93,7 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 		withCachePath(a.cacheFilePath),
 		withAllTraffic(a.cfg.ApigeeCfg.ShouldReportAllTraffic()),
 		withNotSetTraffic(a.cfg.ApigeeCfg.ShouldReportNotSetTraffic()),
-		withFilteredAPIs(a.cfg.ApigeeCfg.FilteredAPIs, a.cfg.ApigeeCfg.FilterAPIs),
+		withFilteredAPIs(a.cfg.ApigeeCfg.FilteredAPIs, a.cfg.ApigeeCfg.FilterMetrics),
 	}
 	if a.cfg.ApigeeCfg.IsProductMode() {
 		baseOpts = append(baseOpts, withProductMode())
