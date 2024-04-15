@@ -9,6 +9,7 @@ import (
 
 	"github.com/Axway/agent-sdk/pkg/agent"
 	"github.com/Axway/agent-sdk/pkg/apic"
+	"github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/apic/provisioning"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	coreutil "github.com/Axway/agent-sdk/pkg/util"
@@ -463,7 +464,8 @@ func (j *pollProxiesJob) buildServiceBody(ctx context.Context) (*apic.ServiceBod
 
 	// create the agent details with the modification dates
 	serviceDetails := map[string]interface{}{
-		"specContentHash": specHashString,
+		"specContentHash":             specHashString,
+		definitions.AttrExternalAPIID: revision.Name,
 	}
 
 	crds := []string{}

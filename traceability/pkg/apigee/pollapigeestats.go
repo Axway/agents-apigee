@@ -6,11 +6,14 @@ import (
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/agent"
+	management "github.com/Axway/agent-sdk/pkg/apic/apiserver/models/management/v1alpha1"
+	sdkDef "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
 	metricModels "github.com/Axway/agent-sdk/pkg/transaction/models"
 	"github.com/Axway/agent-sdk/pkg/transaction/util"
+	sdkUtil "github.com/Axway/agent-sdk/pkg/util"
 	"github.com/Axway/agent-sdk/pkg/util/log"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
@@ -61,6 +64,8 @@ type pollApigeeStats struct {
 	dimension           string
 	isProduct           bool
 	logger              log.FieldLogger
+	filteredAPIs        map[string]struct{}
+	filterMetrics       bool
 }
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
@@ -70,6 +75,7 @@ func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 		clonedProduct: make(map[string]string),
 		dimension:     "apiproxy",
 		logger:        log.NewFieldLogger().WithComponent("pollStatsJob").WithPackage("apigee"),
+		filteredAPIs:  make(map[string]struct{}),
 	}
 
 	for _, o := range options {
@@ -133,6 +139,17 @@ func withProductMode() func(p *pollApigeeStats) {
 	}
 }
 
+func withFilteredAPIs(filteredAPIs []string, filterMetrics bool) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.filterMetrics = filterMetrics
+		if filterMetrics {
+			for _, filteredAPI := range filteredAPIs {
+				p.filteredAPIs[filteredAPI] = struct{}{}
+			}
+		}
+	}
+}
+
 func (j *pollApigeeStats) Ready() bool {
 	return j.ready()
 }
@@ -153,6 +170,18 @@ func (j *pollApigeeStats) Execute() error {
 
 	metricSelect := strings.Join([]string{countMetric, policyErrMetric, serverErrMetric, avgResponseMetric, minResponseMetric, maxResponseMetric}, ",")
 	wg := &sync.WaitGroup{}
+
+	if j.filterMetrics && len(j.filteredAPIs) == 0 {
+		apiService := management.NewAPIService("", GetAgent().cfg.CentralCfg.GetEnvironmentName())
+		res, err := agent.GetCentralClient().GetResources(apiService)
+		if len(res) > 0 && err == nil {
+			for _, apiSvc := range res {
+				ri, _ := apiSvc.AsInstance()
+				apiID, _ := sdkUtil.GetAgentDetailsValue(ri, sdkDef.AttrExternalAPIID)
+				j.filteredAPIs[apiID] = struct{}{}
+			}
+		}
+	}
 	for _, e := range j.envs {
 		wg.Add(1)
 		go func(logger log.FieldLogger, envName string) {
@@ -232,6 +261,11 @@ func (j *pollApigeeStats) processMetricResponse(logger log.FieldLogger, metrics 
 	logger.WithField("value", dimensions).Trace("dimensions")
 	// wg := sync.WaitGroup{}
 	for _, d := range metrics.Environments[0].Dimensions {
+		if j.filterMetrics {
+			if _, filteredAPI := j.filteredAPIs[d.Name]; !filteredAPI {
+				continue
+			}
+		}
 		serviceName := j.getBaseProduct(d.Name)
 		logger := logger.WithField("name", d.Name).WithField("serviceName", serviceName)
 		logger.Trace("processing metric for dimension")
