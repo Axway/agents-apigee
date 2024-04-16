@@ -65,6 +65,7 @@ type pollProxiesJob struct {
 	specsReady  jobFirstRunDone
 	pubLock     sync.Mutex
 	publishFunc agent.PublishAPIFunc
+	environment string
 	workers     int
 	running     bool
 	matchOnURL  bool
@@ -90,6 +91,11 @@ func (j *pollProxiesJob) SetSpecClient(client proxyClient) *pollProxiesJob {
 
 func (j *pollProxiesJob) SetSpecCache(cache proxyCache) *pollProxiesJob {
 	j.cache = cache
+	return j
+}
+
+func (j *pollProxiesJob) SetEnvironment(env string) *pollProxiesJob {
+	j.environment = env
 	return j
 }
 
@@ -193,6 +199,11 @@ func (j *pollProxiesJob) handleProxy(proxyName string) {
 
 	wg := sync.WaitGroup{}
 	for _, env := range details.Environment {
+		// only handle proxies that are in the specified environment, if set
+		if !(j.environment == "" || j.environment == env.Name) {
+			continue
+		}
+
 		wg.Add(1)
 		go func(environment models.DeploymentDetailsEnvironment) {
 			defer wg.Done()

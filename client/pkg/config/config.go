@@ -33,6 +33,7 @@ func NewApigeeConfig() *ApigeeConfig {
 type ApigeeConfig struct {
 	corecfg.IConfigValidator
 	Organization    string            `config:"organization"`
+	Environment     string            `config:"environment"`
 	URL             string            `config:"url"`
 	DataURL         string            `config:"dataURL"`
 	APIVersion      string            `config:"apiVersion"`
@@ -109,6 +110,7 @@ const (
 	pathDataURL                 = "apigee.dataURL"
 	pathAPIVersion              = "apigee.apiVersion"
 	pathOrganization            = "apigee.organization"
+	pathEnvironment             = "apigee.environment"
 	pathMode                    = "apigee.discoveryMode"
 	pathFilter                  = "apigee.filter"
 	pathCloneAttributes         = "apigee.cloneAttributes"
@@ -139,6 +141,7 @@ const (
 func AddProperties(rootProps props) {
 	rootProps.AddStringProperty(pathMode, "proxy", "APIGEE Organization")
 	rootProps.AddStringProperty(pathOrganization, "", "APIGEE Organization")
+	rootProps.AddStringProperty(pathEnvironment, "", "APIGEE Environment to discover resources from and track usages of")
 	rootProps.AddStringProperty(pathURL, "https://api.enterprise.apigee.com", "APIGEE Base URL")
 	rootProps.AddStringProperty(pathAPIVersion, "v1", "APIGEE API Version")
 	rootProps.AddStringProperty(pathFilter, "", "Filter used on discovering Apigee products")
@@ -155,7 +158,7 @@ func AddProperties(rootProps props) {
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs", properties.WithLowerLimit(1*time.Minute))
 	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies", properties.WithUpperLimit(5*time.Minute))
 	rootProps.AddDurationProperty(pathProductInterval, 30*time.Second, "The time interval between checking for updated products", properties.WithUpperLimit(5*time.Minute))
-	rootProps.AddDurationProperty(pathStatsInterval, 5*time.Minute, "The time interval between checking for updated stats", properties.WithLowerLimit(1*time.Minute), properties.WithUpperLimit(15*time.Minute))
+	rootProps.AddDurationProperty(pathStatsInterval, 15*time.Minute, "The time interval between checking for updated stats", properties.WithLowerLimit(15*time.Minute))
 	rootProps.AddStringProperty(pathDeveloper, "", "Developer ID used to create applications")
 	rootProps.AddIntProperty(pathProxyWorkers, 10, "Max number of workers discovering proxies")
 	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
@@ -176,6 +179,7 @@ func ParseConfig(rootProps props) *ApigeeConfig {
 	}
 	return &ApigeeConfig{
 		Organization:    rootProps.StringPropertyValue(pathOrganization),
+		Environment:     rootProps.StringPropertyValue(pathEnvironment),
 		URL:             strings.TrimSuffix(rootProps.StringPropertyValue(pathURL), "/"),
 		APIVersion:      rootProps.StringPropertyValue(pathAPIVersion),
 		DataURL:         strings.TrimSuffix(rootProps.StringPropertyValue(pathDataURL), "/"),
