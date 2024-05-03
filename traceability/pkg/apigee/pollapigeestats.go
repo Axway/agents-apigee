@@ -171,6 +171,7 @@ func (j *pollApigeeStats) Execute() error {
 	logger := j.logger.WithField("executionID", id)
 
 	logger.Trace("starting execution")
+	j.collector.InitializeBatch()
 	j.envs = j.client.GetEnvironments()
 
 	// when start time is 0 we are in our regular execution loop
