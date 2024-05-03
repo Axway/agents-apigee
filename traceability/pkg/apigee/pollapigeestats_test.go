@@ -60,6 +60,8 @@ func (m *mockCollector) AddMetricDetail(metricData metric.Detail) {}
 func (m *mockCollector) AddMetric(apiDetails metricModels.APIDetails, statusCode string, duration, bytes int64, appName string) {
 }
 
+func (m *mockCollector) InitializeBatch() {}
+
 func (m *mockCollector) Publish() {}
 
 type mockClient struct {
