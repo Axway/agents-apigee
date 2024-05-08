@@ -74,6 +74,9 @@ twistlock-discovery:on-schedule:
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
+  variables:
+    # need to override this variable for github agents because the tag will need the 'v' if it exists
+    NO_V_RELEASE_TAG_REGEX: "^v?[0-9]{1,}\\.[0-9]{1,}\\.[0-9]{1,}$"
   before_script:
     - !reference [.get-last-tag, script]
     - echo "Using the last tagged version ${LAST_TAG_VERSION}"
@@ -85,6 +88,9 @@ twistlock-traceability:on-schedule:
   rules:
     - !reference [.mirror-schedule-csr-rules, rules]
   dependencies: []
+  variables:
+    # need to override this variable for github agents because the tag will need the 'v' if it exists
+    NO_V_RELEASE_TAG_REGEX: "^v?[0-9]{1,}\\.[0-9]{1,}\\.[0-9]{1,}$"
   before_script:
     - !reference [.get-last-tag, script]
     - echo "Using the last tagged version ${LAST_TAG_VERSION}"

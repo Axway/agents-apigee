@@ -43,6 +43,13 @@ get_sdk_version()
 }
 
 post_to_teams() {
+    # don't post if this is a pre-release tag
+    pat='[0-9]+\.[0-9]+\.[0-9]+-'
+    if [[ ${TAG} =~ $pat ]]; then
+      echo "This is an interim release... skipping the post to Teams"
+      return 0
+    fi
+
     rel_date=$(date +'%m/%d/%Y')
     JSON="{
         \"@type\": \"MessageCard\",
