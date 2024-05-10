@@ -47,11 +47,9 @@ USER ${APP_USER}
 FROM docker.io/alpine@sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd
 
 ENV BASEPATH /go/src/github.com/Axway/agents-apigee
-ENV AGENT ${BASEPATH}/discovery
+ENV AGENT ${BASEPATH}/traceability
 ENV APP_USER axway
 
-RUN pwd
-RUN ls -laR
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder ${AGENT}/bin/apigee_traceability_agent /apigee_traceability_agent
