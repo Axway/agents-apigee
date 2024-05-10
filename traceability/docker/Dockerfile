@@ -23,17 +23,6 @@ COPY . .
 
 WORKDIR ${AGENT}
 
-RUN export time=`date +%Y%m%d%H%M%S` && \
-  export GOOS=linux && \
-  export GOARCH=amd64 && \
-  go build -tags static_all \
-  -ldflags="-X 'github.com/Axway/agent-sdk/pkg/cmd.BuildTime=${time}' \
-  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=${version}' \
-  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=${commit_id}' \
-  -X 'github.com/Axway/agent-sdk/pkg/cmd.SDKBuildVersion=${sdk_version}' \
-  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeTraceabilityAgent'" \
-  -a -o ${AGENT}/bin/apigee_traceability_agent ${BASEPATH}/traceability/main.go
-
 # Copy necessary files
 COPY . .
 
@@ -51,7 +40,7 @@ RUN export GOOS=linux && \
 
 # Create non-root user
 RUN addgroup -g 2500 ${APP_USER} && adduser -u 2500 -D -G ${APP_USER} ${APP_USER}
-RUN chown -R ${APP_USER}:${APP_USER} /go/src/github.com/Axway/agents-apigee/traceability/bin/apigee_traceability_agent
+RUN chown -R ${APP_USER}:${APP_USER} ${AGENT}/bin/apigee_traceability_agent
 USER ${APP_USER}
 
 # alpine 3.18 linux/amd64
@@ -61,10 +50,12 @@ ENV BASEPATH /go/src/github.com/Axway/agents-apigee
 ENV AGENT ${BASEPATH}/discovery
 ENV APP_USER axway
 
+RUN pwd
+RUN ls -laR
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder ${AGENT}/apigee_traceability_agent.yml /apigee_traceability_agent.yml
 COPY --from=builder ${AGENT}/bin/apigee_traceability_agent /apigee_traceability_agent
+COPY --from=builder ${AGENT}/apigee_traceability_agent.yml /apigee_traceability_agent.yml
 
 RUN apk --no-cache add openssl libssl3 libcrypto3 musl musl-utils libc6-compat busybox curl && \
   mkdir /keys /data && \

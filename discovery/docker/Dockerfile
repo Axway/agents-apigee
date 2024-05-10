@@ -35,7 +35,7 @@ RUN export GOOS=linux && \
 
 # Create non-root user
 RUN addgroup -g 2500 ${APP_USER} && adduser -u 2500 -D -G ${APP_USER} ${APP_USER}
-RUN chown -R ${APP_USER}:${APP_USER} ${BASEPATH}/bin/apigee_discovery_agent
+RUN chown -R ${APP_USER}:${APP_USER} ${AGENT}/bin/apigee_discovery_agent
 USER ${APP_USER}
 
 # alpine 3.19 linux/amd64
