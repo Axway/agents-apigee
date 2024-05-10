@@ -1,0 +1,120 @@
+name: Discovery Agent Docker
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  testDiscoveryAgent:
+    uses: ./.github/workflows/run-da-tests.yml
+
+  testTraceabilityAgent:
+        uses: ./.github/workflows/run-ta-tests.yml
+
+  buildDiscoveryAgentDocker:
+    needs: testDiscoveryAgent
+    env:
+      GOFLAGS: "-mod=mod"
+      GOWORK: "off"
+      IMAGE_NAME: apigee_discovery_agent
+      ORG_NAME: Axway
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set outputs
+        id: vars
+        run: |
+          echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+          echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "sdkversion=$(grep github.com/Axway/agent-sdk go.mod |  awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          flavor: latest=false
+          images: ghcr.io/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: discovery/docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            time=${{ steps.vars.outputs.date }}
+            CGO_ENABLED=0
+            version=${{ steps.vars.outputs.tag }}
+            sdk_version=${{ steps.vars.outputs.sdkversion }}
+            commit_id=${{ steps.vars.outputs.commit }}
+
+  buildTraceabilityAgentDocker:
+    needs: testTraceabilityAgent
+    env:
+      GOFLAGS: "-mod=mod"
+      GOWORK: "off"
+      IMAGE_NAME: apigee_traceability_agent
+      ORG_NAME: Axway
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set outputs
+        id: vars
+        run: |
+          echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+          echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "sdkversion=$(grep github.com/Axway/agent-sdk go.mod |  awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          flavor: latest=false
+          images: ghcr.io/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: traceability/docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            time=${{ steps.vars.outputs.date }}
+            CGO_ENABLED=0
+            version=${{ steps.vars.outputs.tag }}
+            sdk_version=${{ steps.vars.outputs.sdkversion }}
+            commit_id=${{ steps.vars.outputs.commit }}
+
+  notifyTeamsChannel:
+    needs: [buildDiscoveryAgentDocker, buildTraceabilityAgentDocker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify Teams channel
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG: ${{ github.ref_name }}
+        run: ./release.sh
