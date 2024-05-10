@@ -31,7 +31,7 @@ RUN export GOOS=linux && \
   -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=${commit_id}' \
   -X 'github.com/Axway/agent-sdk/pkg/cmd.SDKBuildVersion=${sdk_version}' \
   -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeDiscoveryAgent'" \
-  -a -o ${AGENT}/bin/apigee_discovery_agent ${BASEPATH}/discovery/main.go
+  -a -o ${AGENT}/bin/apigee_discovery_agent ${AGENT}/main.go
 
 # Create non-root user
 RUN addgroup -g 2500 ${APP_USER} && adduser -u 2500 -D -G ${APP_USER} ${APP_USER}
