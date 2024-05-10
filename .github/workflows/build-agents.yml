@@ -64,13 +64,3 @@ jobs:
           git branch --show-current > commit_id
           git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1 > version
           make build
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apigee_traceability_agent
-          path: traceability/bin/apigee_traceability_agent
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apigee_traceability_agent.yml
-          path: traceability/apigee_traceability_agent.yml
