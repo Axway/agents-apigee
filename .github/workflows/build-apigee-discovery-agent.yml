@@ -2,9 +2,9 @@ name: Build Apigee Discovery Agent
 
 on:
   push:
-    branches: [main, "*"]
+    # branches: [main, "*"]
     tags:
-      - "*"
+      - "*xxx"
 
 jobs:
   testDiscoveryAgent:
@@ -56,4 +56,3 @@ jobs:
         with:
           name: apigee_discovery_agent
           path: discovery/bin/apigee_discovery_agent
-        

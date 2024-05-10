@@ -3,7 +3,7 @@ name: Traceability Agent Docker
 on:
   push:
     tags:
-      - "*"
+      - "*xxx"
 
 jobs:
   buildtraceabilityAgentDocker:
