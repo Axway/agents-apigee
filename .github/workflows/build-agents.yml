@@ -35,11 +35,6 @@ jobs:
           git tag -l --sort='version:refname' | grep -Eo '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,3}$' | tail -1 > version
           make build
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apigee_discovery_agent
-          path: discovery/bin/apigee_discovery_agent
-
   buildTraceabilityAgent:
     needs: testTraceabilityAgent
     env:

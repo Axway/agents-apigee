@@ -23,11 +23,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create commit_id & version files
-        working-directory: discovery
+      - name: Set outputs
+        id: vars
         run: |
-          git branch --show-current > commit_id
-          echo "${{ github.ref_name }}" > version
+          echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+          echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "sdkversion=$(grep github.com/Axway/agent-sdk go.mod |  awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -51,7 +53,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
+          build-args: |
+            time=${{ steps.vars.outputs.date }}
+            CGO_ENABLED=0
+            version=${{ steps.vars.outputs.tag }}
+            sdk_version=${{ steps.vars.outputs.sdkversion }}
+            commit_id=${{ steps.vars.outputs.commit }}
 
   buildtraceabilityAgentDocker:
     needs: testTraceabilityAgent
@@ -64,11 +71,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create commit_id & version files
-        working-directory: traceability
+      - name: Set outputs
+        id: vars
         run: |
-          git branch --show-current > commit_id
-          echo "${{ github.ref_name }}" > version
+          echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+          echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "sdkversion=$(grep github.com/Axway/agent-sdk go.mod |  awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -92,3 +101,19 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            time=${{ steps.vars.outputs.date }}
+            CGO_ENABLED=0
+            version=${{ steps.vars.outputs.tag }}
+            sdk_version=${{ steps.vars.outputs.sdkversion }}
+            commit_id=${{ steps.vars.outputs.commit }}
+
+  notifyTeamsChannel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify Teams channel
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG: ${{ github.ref_name }}
+        run: ./release.sh
