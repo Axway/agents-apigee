@@ -23,11 +23,6 @@ COPY . .
 
 WORKDIR ${AGENT}
 
-# Copy necessary files
-COPY . .
-
-WORKDIR ${AGENT}
-
 RUN export GOOS=linux && \
   export GOARCH=amd64 && \
   go build -tags static_all \
