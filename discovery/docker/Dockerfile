@@ -39,7 +39,7 @@ RUN chown -R ${APP_USER}:${APP_USER} ${AGENT}/bin/apigee_discovery_agent
 USER ${APP_USER}
 
 # alpine 3.20.0 linux/amd64
-FROM docker.io/alpine@sha256:sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd
+FROM docker.io/alpine@sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd
 
 ENV BASEPATH /go/src/github.com/Axway/agents-apigee
 ENV AGENT ${BASEPATH}/discovery
