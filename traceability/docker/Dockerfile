@@ -1,6 +1,6 @@
 # Build image
-# golang:1.21.6-alpine3.19 linux/amd64
-FROM docker.io/golang@sha256:2523a6f68a0f515fe251aad40b18545155135ca6a5b2e61da8254df9153e3648 AS builder
+# golang:1.22.3-alpine3.20 linux/amd64
+FROM docker.io/golang@sha256:421bc7f4b90d042c56282bb894451108f8ab886687e1b73abaefad31ab10a14d AS builder
 
 ARG commit_id
 ARG version
@@ -38,8 +38,8 @@ RUN addgroup -g 2500 ${APP_USER} && adduser -u 2500 -D -G ${APP_USER} ${APP_USER
 RUN chown -R ${APP_USER}:${APP_USER} ${AGENT}/bin/apigee_traceability_agent
 USER ${APP_USER}
 
-# alpine 3.18 linux/amd64
-FROM docker.io/alpine@sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd
+# alpine 3.20 linux/amd64
+FROM docker.io/alpine@sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd
 
 ENV BASEPATH /go/src/github.com/Axway/agents-apigee
 ENV AGENT ${BASEPATH}/traceability
@@ -50,8 +50,7 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder ${AGENT}/bin/apigee_traceability_agent /apigee_traceability_agent
 COPY --from=builder ${AGENT}/apigee_traceability_agent.yml /apigee_traceability_agent.yml
 
-RUN apk --no-cache add openssl libssl3 libcrypto3 musl musl-utils libc6-compat busybox curl && \
-  mkdir /keys /data && \
+RUN mkdir /keys /data && \
   chown -R ${APP_USER} /keys /data /apigee_traceability_agent.yml && \
   chmod go-w /apigee_traceability_agent.yml
 
