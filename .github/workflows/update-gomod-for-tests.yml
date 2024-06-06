@@ -32,6 +32,8 @@ jobs:
         working-directory: .
         run: |
           make dep-version sdk=main
+          git config --global user.email builder-lphxmjtnt11@axway.com
+          git config --global user.name builder-lphxmjtnt11
           git commit --allow-empty -m "Updating SDK in go.mod"
 
       - name: Create Pull Request
