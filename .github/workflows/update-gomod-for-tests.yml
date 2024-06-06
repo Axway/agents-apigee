@@ -1,4 +1,3 @@
-# this action is triggered by selecting the action in the github UI and then clicking "run workflow"
 name: Update go.mod for testing
 
 on:
