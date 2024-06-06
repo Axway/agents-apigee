@@ -32,6 +32,7 @@ jobs:
         working-directory: .
         run: |
           make dep-version sdk=main
+          git commit --allow-empty -m "Updating SDK in go.mod"
 
       - name: Create Pull Request
         id: cpr
