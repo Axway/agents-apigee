@@ -2,9 +2,9 @@ name: Update go.mod for testing
 
 on:
   schedule:
-    -cron "59 11 * * *"
+    - cron: "10 11 * * *"
 
- jobs:
+jobs:
   updateAndCreatePR:
     env:
       GOFLAGS: "-mod=mod"
