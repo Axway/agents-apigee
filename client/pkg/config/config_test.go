@@ -165,7 +165,7 @@ func TestApigeeProperties(t *testing.T) {
 	assert.Equal(t, 30*time.Minute, cfg.GetIntervals().Spec)
 	assert.Equal(t, 30*time.Second, cfg.GetIntervals().Proxy)
 	assert.Equal(t, 30*time.Second, cfg.GetIntervals().Product)
-	assert.Equal(t, 5*time.Minute, cfg.GetIntervals().Stats)
+	assert.Equal(t, 15*time.Minute, cfg.GetIntervals().Stats)
 	assert.Equal(t, "", cfg.DeveloperID)
 	assert.Equal(t, 10, cfg.GetWorkers().Proxy)
 	assert.Equal(t, 20, cfg.GetWorkers().Spec)
