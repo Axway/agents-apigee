@@ -2,7 +2,7 @@ name: Update go.mod for testing
 
 on:
   schedule:
-    - cron: "20 18 * * *"   # time is in UTC
+    - cron: "15 19 * * *"   # time is in UTC
 
 jobs:
   updateAndCreatePR:
@@ -37,13 +37,13 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
-          branch: APIGOV-UpdateSDK
+          branch: APIGOV-UpdateSDKForTesting
           commit-message: 'Update to SDK for testing'
-          title: 'APIGOV-UpdateSDK - Update SDK for testing'
+          title: 'APIGOV-UpdateSDKForTesting - Update SDK for testing'
           delete-branch: true
           reviewers: dfeldick
 
       - name: Enable Pull Request Automerge
-        run: gh pr merge APIGOV-UpdateSDK --admin --merge --subject "Merge branch APIGOV-UpdateSDK"
+        run: gh pr merge APIGOV-UpdateSDKForTesting --admin --merge --subject "Merge branch APIGOV-UpdateSDKForTesting"
         env:
           GH_TOKEN: ${{ secrets.ACTION_ACCESS_TOKEN }}
