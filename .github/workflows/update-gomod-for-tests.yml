@@ -2,7 +2,7 @@ name: Update go.mod for testing
 
 on:
   schedule:
-    - cron: "* * * * *"   # time is in UTC
+    - cron: "0 22 * * *"   # time is in UTC
 
 jobs:
   updateAndCreatePR:
