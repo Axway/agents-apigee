@@ -21,13 +21,6 @@ jobs:
         with:
           go-version: 1.21
 
-    #   - name: Update go.mod
-    #     run: |
-        #   export LATEST_REMOTE_TAG_CMD="git ls-remote --tags --refs --sort='version:refname' REMOTE_REPO | grep -Eo 'v?[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}$' | tail -1"
-        #   REMOTE_REPO_PATH="https://github.com/Axway/agent-sdk"
-        #   CMD=${LATEST_REMOTE_TAG_CMD/"REMOTE_REPO"/${REMOTE_REPO_PATH}}
-        #   export SDK_VERSION=$(eval $CMD)
-        #   echo "SDK_VERSION=${SDK_VERSION}" >> $GITHUB_ENV
       - name: Update SDK version in go.mod
         working-directory: .
         run: |
