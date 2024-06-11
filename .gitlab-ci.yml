@@ -17,6 +17,22 @@ variables:
   GOWORK: ${CI_PROJECT_DIR}/go.work
   GOFLAGS: "-mod=readonly"
 
+########################################
+# set up custom names for the pipelines of releases and nightly schedules
+########################################
+  PIPELINE_NAME: "$CI_COMMIT_MESSAGE"
+
+workflow:
+  name: "$PIPELINE_NAME"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $COMPONENT_TESTS_ONLY == "y"
+      variables:
+        PIPELINE_NAME: "Scheduled nightly tests"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      variables:
+        PIPELINE_NAME: "Scheduled nightly CSR"
+    - when: always
+
 include:
   - project: "apigov/gitlabci"
     ref: master
