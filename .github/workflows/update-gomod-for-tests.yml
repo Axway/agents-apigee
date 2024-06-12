@@ -29,18 +29,13 @@ jobs:
           git status | grep modified
           if [ $? -eq 0 ]
           then
-              set -e
-              echo -e "Committing dependency changes"
-              git config --global user.email builder-lphxmjtnt11@axway.com
-              git config --global user.name builder-lphxmjtnt11
-              git commit --allow-empty -m "Updating SDK in go.mod"
-              git push origin ${BRANCH_REF}
+              echo -e "Dependency changes have occurred"
               echo "gomodChanged=y" >> $GITHUB_OUTPUT
           else
-              set -e
               echo -e "No dependency changes since last run"
               echo "gomodChanged=n" >> $GITHUB_OUTPUT
           fi
+          set -e
 
       - name: Create Pull Request
         if: ${{ steps.updatesdk.outputs.gomodChanged == 'y' }}
