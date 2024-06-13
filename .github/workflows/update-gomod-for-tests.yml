@@ -29,8 +29,9 @@ jobs:
           git status | grep modified
           if [ $? -eq 0 ]
           then
-              echo -e "Dependency changes have occurred"
-              echo "gomodChanged=y" >> $GITHUB_OUTPUT
+            echo -e "Committing dependency changes"
+            git commit --allow-empty -m "Updating SDK in go.mod"
+            echo "gomodChanged=y" >> $GITHUB_OUTPUT
           else
               echo -e "No dependency changes since last run"
               echo "gomodChanged=n" >> $GITHUB_OUTPUT
