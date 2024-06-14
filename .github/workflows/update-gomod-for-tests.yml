@@ -30,6 +30,8 @@ jobs:
           if [ $? -eq 0 ]
           then
             echo -e "Committing dependency changes"
+            git config --global user.email builder-lphxmjtnt11@axway.com
+            git config --global user.name builder-lphxmjtnt11
             git commit --allow-empty -m "Updating SDK in go.mod"
             echo "gomodChanged=y" >> $GITHUB_OUTPUT
           else
