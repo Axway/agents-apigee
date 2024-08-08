@@ -30,12 +30,12 @@ apigee_traceability_agent:
     platformURL: ${CENTRAL_PLATFORMURL:https://platform.axway.com}
     reportActivityFrequency: ${CENTRAL_REPORTACTIVITYFREQUENCY:5m}
     versionChecker: ${CENTRAL_VERSIONCHECKER:true}
+    metricReporting:
+      publish: ${CENTRAL_METRICREPORTING_PUBLISH}
+      schedule: ${CENTRAL_METRICREPORTING_SCHEDULE}
     usageReporting:
       publish: ${CENTRAL_USAGEREPORTING_PUBLISH}
-      publishMetric: ${CENTRAL_USAGEREPORTING_PUBLISHMETRIC}
-      interval: ${CENTRAL_USAGEREPORTING_INTERVAL}
-      reportInterval: ${CENTRAL_USAGEREPORTING_REPORTINTERVAL}
-      usageSchedule: ${CENTRAL_USAGEREPORTING_USAGESCHEDULE}
+      schedule: ${CENTRAL_USAGEREPORTING_SCHEDULE}
       offline: ${CENTRAL_USAGEREPORTING_OFFLINE}
       offlineSchedule: ${CENTRAL_USAGEREPORTING_OFFLINESCHEDULE}
     auth:
@@ -113,10 +113,10 @@ output.traceability:
       sanitize: ${TRACEABILITY_REDACTION_JMSPROPERTIES_SANITIZE:[]}
     maskingCharacters: ${TRACEABILITY_REDACTION_MASKING_CHARACTERS:"\u007B*\u007D"} # unicode for {*}
   sampling:
-    percentage: ${TRACEABILITY_SAMPLING_PERCENTAGE:10}
+    percentage: ${TRACEABILITY_SAMPLING_PERCENTAGE:0}
     per_api: ${TRACEABILITY_SAMPLING_PER_API:true}
     per_subscription: ${TRACEABILITY_SAMPLING_PER_SUBSCRIPTION:true}
-    reportAllErrors: ${TRACEABILITY_SAMPLING_REPORTALLERRORS:true}
+    onlyErrors: ${TRACEABILITY_SAMPLING_ONLYERRORS:false}
   apiExceptionsList: ${TRACEABILITY_EXCEPTION_LIST:[]}
 
 queue:
