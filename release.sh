@@ -1,10 +1,11 @@
 #!/bin/bash
 shopt -s nocasematch
 
-# you can add variables like this to test locally. Just run ./release.sh. Note that to run on MAC, you must install bash 5.x. 
+# you can add variables like this to test locally. Just run ./release.sh. Note that to run on MAC, you must install bash 5.x.
 # Then, to run the script you must do: /usr/local/bin/bash ./release.sh
-# TEAMS_WEBHOOK_URL="foo.bar"
 # TAG="1.2.3"
+
+TEAMS_WEBHOOK_URL="https://prod-34.westeurope.logic.azure.com:443/workflows/31b656992447483d9697ba3ab594f23c/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OdGkZRZvMUJjiy7Ex6K2CCgeG5LUsYXTxXo-7CKAJTw"
 
 # Would like to use this, but can't get it to work in curl command
 #export COMMON_CURL_HEADER=`printf -- '-H "PRIVATE-TOKEN:${GIT_API_TOKEN}" -H "Accept:application/json" -H "Content-Type:application/json"'`
@@ -50,24 +51,10 @@ post_to_teams() {
       return 0
     fi
 
-    rel_date=$(date +'%m/%d/%Y')
     JSON="{
-        \"@type\": \"MessageCard\",
-        \"@context\": \"http://schema.org/extensions\",
-        \"summary\": \"Agent Release Info\",
-         \"sections\": [{
-             \"facts\": [{
-                 \"name\": \"Date:\",
-                 \"value\": \"${rel_date}\"
-                 }, {
-                 \"name\": \"Info:\",
-                 \"value\": \"${1}\"
-             }]
-         }]
-        }"
-    curl -v ${TEAMS_WEBHOOK_URL} \
-    -H 'Content-Type: application/json' \
-    -d "${JSON}" &> /dev/null
+        \"info\": \"${1}\"
+    }"
+    curl -v ${TEAMS_WEBHOOK_URL} -H 'Content-Type: application/json' -d "${JSON}" &> /dev/null
 }
 
 main() {
