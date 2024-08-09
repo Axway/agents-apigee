@@ -11,7 +11,7 @@ import (
 
 type props interface {
 	AddStringProperty(name string, defaultVal string, description string)
-	AddIntProperty(name string, defaultVal int, description string)
+	AddIntProperty(name string, defaultVal int, description string, opts ...properties.IntOpt)
 	AddBoolProperty(name string, defaultVal bool, description string)
 	AddDurationProperty(name string, defaultVal time.Duration, description string, opts ...properties.DurationOpt)
 	StringPropertyValue(name string) string

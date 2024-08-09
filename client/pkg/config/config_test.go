@@ -75,7 +75,7 @@ func (f *fakeProps) AddStringProperty(name string, defaultVal string, descriptio
 	f.props[name] = propData{"string", description, defaultVal, []properties.DurationOpt{}}
 }
 
-func (f *fakeProps) AddIntProperty(name string, defaultVal int, description string) {
+func (f *fakeProps) AddIntProperty(name string, defaultVal int, description string, opts ...properties.IntOpt) {
 	f.props[name] = propData{"int", description, defaultVal, []properties.DurationOpt{}}
 }
 
