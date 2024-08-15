@@ -1,9 +1,33 @@
 # this action is triggered by selecting the action in the github UI and then clicking "run workflow"
 name: Fully automated release
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      promotiontype:
+        description: Promotion type (major, minor, patch)
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
 
 jobs:
+  archiveInput:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ github.event.inputs.promotiontype }} >> promotiontype.txt
+
+      - name: Archive type
+        uses: actions/upload-artifact@v4
+        with:
+          name: promotiontype
+          retention-days: 1
+          path: |
+            ./promotiontype.txt
+
   updateAndCreatePR:
     env:
       GOFLAGS: "-mod=mod"
