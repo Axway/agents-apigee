@@ -9,7 +9,7 @@ toolchain go1.21.3
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.95-0.20240816181125-ca7d81d63c0d
+	github.com/Axway/agent-sdk v1.1.95-0.20240819223214-2be313c7d85c
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/elastic/beats/v7 v7.17.23
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -52,7 +52,6 @@ require (
 	github.com/emicklei/proto v1.9.2 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/getkin/kin-openapi v0.127.0 // indirect
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -133,9 +132,6 @@ require (
 	github.com/spf13/viper v1.12.0 // indirect
 	github.com/subosito/gotenv v1.4.0 // indirect
 	github.com/swaggest/go-asyncapi v0.8.0 // indirect
-	github.com/tidwall/gjson v1.14.0 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/urso/diag v0.0.0-20200210123136-21b3cc8eb797 // indirect
 	github.com/urso/go-bin v0.0.0-20180220135811-781c575c9f0e // indirect
 	github.com/urso/magetools v0.0.0-20200106130147-61080ed7b22b // indirect
