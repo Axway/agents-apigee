@@ -4,7 +4,6 @@ import (
 	corecmd "github.com/Axway/agent-sdk/pkg/cmd"
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/migrate"
-	"github.com/Axway/agent-sdk/pkg/notify"
 
 	"github.com/Axway/agents-apigee/client/pkg/config"
 
@@ -47,7 +46,6 @@ func initConfig(centralConfig corecfg.CentralConfig) (interface{}, error) {
 		CentralCfg: centralConfig,
 		ApigeeCfg:  config.ParseConfig(rootProps),
 	}
-	notify.SetSubscriptionConfig(centralConfig.GetSubscriptionConfig())
 
 	var err error
 	apigeeClient, err = apigee.NewAgent(agentConfig)
