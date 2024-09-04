@@ -53,10 +53,11 @@ include:
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-csr.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_LATEST
+    ref: APIGOV-28133
     # the order of these include files is important
     file:
       - "/gitlabci/csrjobs.yml"
+      - "/gitlabci/csrjobsformirror.yml"
 
 stages:
   - test
@@ -114,46 +115,46 @@ twistlock-traceability:on-schedule:
     - export IMAGE_NAME=ghcr.io/axway/apigee_traceability_agent:${LAST_TAG_VERSION}
     - docker pull ${IMAGE_NAME}
 
-# overridden from csrjobs.yml because mirror repos like this one don't get merge events
-fortify:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+# # overridden from csrjobs.yml because mirror repos like this one don't get merge events
+# fortify:
+#   rules:
+#     - !reference [.mirror-branch-csr-rules, rules]
 
-fetch-fortify:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+# fetch-fortify:
+#   rules:
+#     - !reference [.mirror-branch-csr-rules, rules]
 
-blackduck-rapid:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+# blackduck-rapid:
+#   rules:
+#     - !reference [.mirror-branch-csr-rules, rules]
 
-blackduck:on-schedule:
-  rules:
-    - !reference [.mirror-schedule-csr-rules, rules]
-  before_script:
-    - !reference [.get-agent-last-tag, script]
+# blackduck:on-schedule:
+#   rules:
+#     - !reference [.mirror-schedule-csr-rules, rules]
+#   before_script:
+#     - !reference [.get-agent-last-tag, script]
 
-run-csr:
-  rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+# run-csr:
+#   rules:
+#     - !reference [.mirror-branch-csr-rules, rules]
 
-####################
-# CSR - overridden from csrjobs.yml to effectively not see these jobs ever. For some reason, probably multi-level
-# extends and overrides, using only-never for these csr jobs doesn't work. Had to do it like this.
-####################
-fetch-iriusrisk:
-  rules:
-    - !reference [.only-never-rule, rules]
+# ####################
+# # CSR - overridden from csrjobs.yml to effectively not see these jobs ever. For some reason, probably multi-level
+# # extends and overrides, using only-never for these csr jobs doesn't work. Had to do it like this.
+# ####################
+# fetch-iriusrisk:
+#   rules:
+#     - !reference [.only-never-rule, rules]
 
-fetch-iriusrisk:on-schedule:
-  rules:
-    - !reference [.only-never-rule, rules]
+# fetch-iriusrisk:on-schedule:
+#   rules:
+#     - !reference [.only-never-rule, rules]
 
-twistlock:
-  rules:
-    - !reference [.only-never-rule, rules]
-  dependencies:
+# twistlock:
+#   rules:
+#     - !reference [.only-never-rule, rules]
+#   dependencies:
 
-twistlock:on-schedule:
-  rules:
-    - !reference [.only-never-rule, rules]
+# twistlock:on-schedule:
+#   rules:
+#     - !reference [.only-never-rule, rules]
