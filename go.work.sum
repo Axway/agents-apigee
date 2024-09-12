@@ -28,6 +28,8 @@ github.com/Axway/agent-sdk v1.1.43 h1:19OtA+uL1W926v7Qij29TfqBnA1hxOcz/oJEZZN0Gp
 github.com/Axway/agent-sdk v1.1.43/go.mod h1:Ktgg4H7Y8FigvURTmHNhDdPFJgsITJ5XzB9++sMiOqw=
 github.com/Axway/agent-sdk v1.1.60 h1:an2Gr98pltPbFuKBdPOk92TBQPokyuqzZrftiTJQ8Tc=
 github.com/Axway/agent-sdk v1.1.60/go.mod h1:xe6dIpQxE0LcSR+ssGKL4mfyLFbrLohdrB9iMYFUCdU=
+github.com/Axway/agent-sdk v1.1.98-0.20240912171714-a1fae3b46b43 h1:OS8GacpibZkb6pskJy+WRjXztB0+ZhnqbZ+p+ZICBAc=
+github.com/Axway/agent-sdk v1.1.98-0.20240912171714-a1fae3b46b43/go.mod h1:NhERCib3ua60r5kiw64988w+MzOnjUAGZSmj8nRETjY=
 github.com/Azure/azure-amqp-common-go/v3 v3.2.1/go.mod h1:O6X1iYHP7s2x7NjUKsXVhkwWrQhxrd+d8/3rRadj4CI=
 github.com/Azure/azure-event-hubs-go/v3 v3.3.15/go.mod h1:xgDvUi1+8/bb11WTEaU7VwZREYufzKzjWE4YiPZixb0=
 github.com/Azure/azure-pipeline-go v0.2.1/go.mod h1:UGSo8XybXnIGZ3epmeBw7Jdz+HiUVpqIlpz/HKHylF4=
