@@ -101,6 +101,7 @@ func Test_pollProxiesJob(t *testing.T) {
 				hasAPIKey:        tc.hasAPIKey,
 				hasOauth:         tc.hasOauth,
 			}
+			allowedOAuthMethods := make([]string, 0)
 			proxyJob := newPollProxiesJob().
 				SetSpecClient(client).
 				SetSpecCache(mockProxyCache{pathSpec: tc.specPath, nameSpec: tc.specName}).
@@ -119,11 +120,13 @@ func Test_pollProxiesJob(t *testing.T) {
 				crds := []string{}
 				if tc.hasAPIKey {
 					crds = append(crds, provisioning.APIKeyCRD)
+					allowedOAuthMethods = append(allowedOAuthMethods, provisioning.APIKey)
 				}
 				if tc.hasOauth {
 					crds = append(crds, provisioning.OAuthSecretCRD)
+					allowedOAuthMethods = append(allowedOAuthMethods, provisioning.OAuthSecretCRD)
 				}
-				assert.Equal(t, crds, sb.GetCredentialRequestDefinitions())
+				assert.Equal(t, crds, sb.GetCredentialRequestDefinitions(allowedOAuthMethods))
 
 				if tc.specFound {
 					assert.NotEmpty(t, sb.SpecDefinition)
