@@ -216,9 +216,29 @@ func (m mockProductClient) GetProduct(productName string) (*models.ApiProduct, e
 	return products[productName], nil
 }
 
+const oasSpec = `{
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "http://svr/api/v1"
+    }
+  ],
+  "info": {
+    "version": "1.0.0",
+    "title": "Swagger Petstore"
+  },
+  "paths": {
+    "/pet": {
+      "get": {
+        "summary": "Finds Pets by status"
+      }
+    }
+  }
+}`
+
 func (m mockProductClient) GetSpecFile(path string) ([]byte, error) {
 	assert.Equal(m.t, specPath, path)
-	return []byte("spec"), nil
+	return []byte(oasSpec), nil
 }
 
 func (m mockProductClient) IsReady() bool { return false }
