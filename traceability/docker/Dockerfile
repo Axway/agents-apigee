@@ -63,6 +63,6 @@ USER ${APP_USER}
 
 VOLUME ["/keys", "/data"]
 
-HEALTHCHECK --retries=1 CMD /apigee_traceability_agent --status || exit 1
+HEALTHCHECK --retries=10 --start-period=30s --start-interval=30s CMD /apigee_traceability_agent --status || exit 1
 
 ENTRYPOINT ["/apigee_traceability_agent"]
