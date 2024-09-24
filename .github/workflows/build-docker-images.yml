@@ -25,6 +25,7 @@ jobs:
 
       - name: Set outputs
         id: vars
+        working-directory: discovery
         run: |
           echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
           echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
@@ -73,6 +74,7 @@ jobs:
 
       - name: Set outputs
         id: vars
+        working-directory: discovery
         run: |
           echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
           echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
