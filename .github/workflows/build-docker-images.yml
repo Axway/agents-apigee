@@ -29,7 +29,7 @@ jobs:
         run: |
           echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
           echo "tag=${{github.ref_name }}" >> $GITHUB_OUTPUT
-          echo "sdkversion=$(grep -Eo "^\s]+github.com/Axway/agent-sdk go.mod |  awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "sdkversion=$(grep -Eo "^[\s]+github.com/Axway/agent-sdk go.mod |  awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "commit=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
 
       - name: Log in to the Container registry
