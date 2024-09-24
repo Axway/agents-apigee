@@ -72,6 +72,7 @@ twistlock-discovery:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
+    - pwd
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
     - export IMAGE_NAME=apigee-discovery-agent:latest
@@ -82,6 +83,7 @@ twistlock-traceability:
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
+    - pwd
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
     - export IMAGE_NAME=apigee-traceability-agent:latest
