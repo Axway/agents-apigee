@@ -4,7 +4,7 @@ variables:
   PROJECT: "agents-apigee"
   CSR_SUPPRESSION_LIST: "/tmp/csr-suppressions/amplify-central/golang-agents-common.json"
 
-  # Fortifyd
+  # Fortifyde
   FORTIFY_PROJECT: "10716"
   FORTIFY_BUILD_ID: "agents-apigee"
   FORTIFY_INCLUDE: "**/*.go"
