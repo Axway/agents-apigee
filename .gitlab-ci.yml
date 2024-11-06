@@ -13,7 +13,7 @@ variables:
   # Blackduck
   BLACKDUCK_PROJECT_NAME: "Amplify - APIC Apigee Agents"
 
-  #  SRM
+  # SRM
   SRM_PROJECT_NAME: "${BLACKDUCK_PROJECT_NAME}"
   SRM_PROJECT_ID: "228"
 
@@ -72,7 +72,6 @@ stages:
   - security-review
 
 twistlock-discovery:
-  extends: .twistlock
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
@@ -80,9 +79,9 @@ twistlock-discovery:
     - cd discovery && make docker-build
     - export IMAGE_NAME=apigee-discovery-agent:latest
     - cd ..
+    - echo "TL_DA=true" >> build.env
 
 twistlock-traceability:
-  extends: .twistlock
   rules:
     - !reference [.mirror-branch-csr-rules, rules]
   before_script:
@@ -90,6 +89,7 @@ twistlock-traceability:
     - cd traceability && make docker-build
     - export IMAGE_NAME=apigee-traceability-agent:latest
     - cd ..
+    - echo "TL_TA=true" >> build.env
 
 twistlock-discovery:on-schedule:
   variables:
