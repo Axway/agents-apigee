@@ -6,8 +6,8 @@
       "fortify": true,
       "irius-risk": false,
       "pentest": false,
-      "twistlock": true,
-      "blackduck": true,
+      "twistlock": false,
+      "blackduck": false,
       "third-party-policy-violation": false,
       "appspider": false,
       "insightvm": false
@@ -15,4 +15,3 @@
     "suppressions": [
   ]
 }
-  
