@@ -13,7 +13,7 @@ variables:
   # Blackduck
   BLACKDUCK_PROJECT_NAME: "Amplify - APIC Apigee Agents"
 
-  #  SRM
+  # SRM
   SRM_PROJECT_NAME: "${BLACKDUCK_PROJECT_NAME}"
   SRM_PROJECT_ID: "228"
 
