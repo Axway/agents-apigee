@@ -2,7 +2,6 @@ image: docker:dind
 
 variables:
   PROJECT: "agents-apigee"
-  CSR_SUPPRESSION_LIST: "/tmp/csr-suppressions/amplify-central/golang-agents-common.json"
 
   # Fortify
   FORTIFY_PROJECT: "10716"
