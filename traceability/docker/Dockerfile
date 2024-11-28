@@ -30,7 +30,7 @@ RUN export GOOS=linux && \
   -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildVersion=${version}' \
   -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildCommitSha=${commit_id}' \
   -X 'github.com/Axway/agent-sdk/pkg/cmd.SDKBuildVersion=${sdk_version}' \
-  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeTraceabilityAgent'" \
+  -X 'github.com/Axway/agent-sdk/pkg/cmd.BuildAgentName=ApigeeTraceabilityAgent'" \
   -a -o ${AGENT}/bin/apigee_traceability_agent ${AGENT}/main.go
 
 # Create non-root user
