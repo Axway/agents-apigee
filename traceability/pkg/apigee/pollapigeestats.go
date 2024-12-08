@@ -404,7 +404,7 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 			StatusCode: code,
 			Count:      count,
 			StartTime:  metData.timestamp,
-			Observation: metric.ObservationDetails{
+			Observation: metricModels.ObservationDetails{
 				Start: metData.timestamp.Unix(),
 				End:   time.Minute.Milliseconds(),
 			},
