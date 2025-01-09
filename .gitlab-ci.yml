@@ -33,7 +33,7 @@ workflow:
         PIPELINE_NAME: "Scheduled nightly tests"
     - if: $CI_PIPELINE_SOURCE == "schedule"
       variables:
-        PIPELINE_NAME: "Scheduled nightly CSR"
+        PIPELINE_NAME: "Scheduled nightly SecurityCI"
     - when: always
 
 include:
@@ -41,26 +41,26 @@ include:
     ref: master
     file: "/.gitlab-ci-sonar.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_LATEST
+    ref: $BEANO_CICD_BLUE
     # the order of these include files is important
     file:
       - "/gitlabci/variables.yml"
       - "/gitlabci/restrictions.yml"
       - "/gitlabci/jobs.yml"
   - project: "scurity/gitlabci"
-    ref: $SCURITY_LATEST
+    ref: $SCURITY_BLUE
     file:
       - "/.gitlab-ci-fortify.yml"
       - "/.gitlab-ci-twistlock.yml"
       - "/.gitlab-ci-iriusrisk.yml"
       - "/.gitlab-ci-blackduck.yml"
-      - "/.gitlab-ci-csr.yml"
+      - "/.gitlab-ci-security.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_LATEST
+    ref: $BEANO_CICD_BLUE
     # the order of these include files is important
     file:
-      - "/gitlabci/csrjobs.yml"
-      - "/gitlabci/csrjobsformirror.yml"
+      - "/gitlabci/securityjobs.yml"
+      - "/gitlabci/securityjobsformirror.yml"
 
 stages:
   - test
@@ -72,7 +72,7 @@ stages:
 
 twistlock-discovery:
   rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+    - !reference [.mirror-branch-security-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -82,7 +82,7 @@ twistlock-discovery:
 
 twistlock-traceability:
   rules:
-    - !reference [.mirror-branch-csr-rules, rules]
+    - !reference [.mirror-branch-security-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
