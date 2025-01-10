@@ -65,7 +65,7 @@ jobs:
           commit-message: 'Update to SDK ${{ env.SDK_VERSION }}'
           title: 'APIGOV-UpdateSDKForRelease - Update to SDK ${{ env.SDK_VERSION }}'
           delete-branch: true
-          reviewers: dfeldick
+          reviewers: dfeldickgit
 
       - name: Enable Pull Request Automerge
         run: gh pr merge APIGOV-UpdateSDKForRelease --admin --merge --subject "Merge branch APIGOV-UpdateSDKForRelease"

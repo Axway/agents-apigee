@@ -50,7 +50,7 @@ jobs:
           commit-message: 'Update to SDK for testing'
           title: 'APIGOV-UpdateSDKForTesting - Update SDK for testing'
           delete-branch: true
-          reviewers: dfeldick
+          reviewers: dfeldickgit
 
       - name: Enable Pull Request Automerge
         if: ${{ steps.updatesdk.outputs.gomodChanged == 'y' }}
