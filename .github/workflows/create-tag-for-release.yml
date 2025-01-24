@@ -18,7 +18,7 @@ jobs:
         with:
           name: promotiontype
           workflow: fully-automated-release.yml
-          github_token: ${{ secrets.ACTION_ACCESS_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get promotion type from artifact
         id: promotype
@@ -31,7 +31,7 @@ jobs:
         with:
           # by default, this action creates a tag with a 'v' prefix, and bumps the patch version.
           # See https://github.com/mathieudutour/github-tag-action to customize these rules.
-          github_token: ${{ secrets.ACTION_ACCESS_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ steps.promotype.outputs.promotype }}
 
       - name: Show the new tag
