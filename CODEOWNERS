@@ -2,7 +2,7 @@
 
 * @jcollins-axway @dfeldickgit @sbolosan @vivekschauhan
 
-#[SEcURITY]
+#[SECURITY]
  # .security-profile.json requires SPOC approval for any modifications
 .security-profile.json @dfeldickgit @jcollins-axway @vivekschauhan
 renovate.json @dfeldickgit
@@ -15,6 +15,6 @@ build/scripts/ @dfeldickgit @jcollins-axway @vivekschauhan
 .github/** @dfeldickgit @jcollins-axway @vivekschauhan
 
 #[EXPERT]
-/client/** @jcollins-axway @vivekschauhan
-/discovery/** @jcollins-axway @vivekschauhan
-/traceability/** @jcollins-axway @vivekschauhan
+/client/pkg/** @jcollins-axway @vivekschauhan @dfeldickgit
+/discovery/pkg/** @jcollins-axway @vivekschauhan @dfeldickgit
+/traceability/pkg/** @jcollins-axway @vivekschauhan @dfeldickgit
