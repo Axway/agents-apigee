@@ -31,9 +31,12 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $COMPONENT_TESTS_ONLY == "y"
       variables:
         PIPELINE_NAME: "Scheduled nightly tests"
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $VERSION == "SNAPSHOT"
       variables:
-        PIPELINE_NAME: "Scheduled nightly SecurityCI"
+        PIPELINE_NAME: "Scheduled nightly SecurityCI default branch"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $VERSION == "LATEST"
+      variables:
+        PIPELINE_NAME: "Scheduled nightly SecurityCI on LATEST"
     - when: always
 
 include:
