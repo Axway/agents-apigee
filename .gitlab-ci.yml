@@ -72,7 +72,7 @@ stages:
 
 twistlock-discovery:
   rules:
-    - !reference [.mirror-branch-security-rules, rules]
+    - !reference [.beano-security-snapshot-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -82,7 +82,7 @@ twistlock-discovery:
 
 twistlock-traceability:
   rules:
-    - !reference [.mirror-branch-security-rules, rules]
+    - !reference [.beano-security-snapshot-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
