@@ -41,14 +41,14 @@ include:
     ref: master
     file: "/.gitlab-ci-sonar.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_BLUE
+    ref: $BEANO_CICD_GREEN
     # the order of these include files is important
     file:
       - "/gitlabci/variables.yml"
       - "/gitlabci/restrictions.yml"
       - "/gitlabci/jobs.yml"
   - project: "scurity/gitlabci"
-    ref: $SCURITY_BLUE
+    ref: $SCURITY_GREEN
     file:
       - "/.gitlab-ci-fortify.yml"
       - "/.gitlab-ci-twistlock.yml"
@@ -56,7 +56,7 @@ include:
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-security.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_BLUE
+    ref: $BEANO_CICD_GREEN
     # the order of these include files is important
     file:
       - "/gitlabci/securityjobs.yml"
@@ -72,7 +72,7 @@ stages:
 
 twistlock-discovery:
   rules:
-    - !reference [.mirror-branch-security-rules, rules]
+    - !reference [.beano-security-snapshot-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd discovery && make docker-build
@@ -82,7 +82,7 @@ twistlock-discovery:
 
 twistlock-traceability:
   rules:
-    - !reference [.mirror-branch-security-rules, rules]
+    - !reference [.beano-security-snapshot-rules, rules]
   before_script:
     - apk --no-cache update && apk add make
     - cd traceability && make docker-build
