@@ -6,7 +6,7 @@
       "fortify": false,
       "irius-risk": false,
       "pentest": false,
-      "twistlock": false,
+      "twistlock": true,
       "blackduck": true,
       "third-party-policy-violation": false,
       "appspider": false,
