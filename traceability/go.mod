@@ -4,8 +4,6 @@ go 1.21
 
 toolchain go1.21.3
 
-// replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
-
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
