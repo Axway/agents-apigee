@@ -56,4 +56,4 @@ jobs:
         if: ${{ steps.updatesdk.outputs.gomodChanged == 'y' }}
         run: gh pr merge APIGOV-UpdateSDKForTesting --admin --merge --subject "Merge branch APIGOV-UpdateSDKForTesting"
         env:
-          GH_TOKEN: ${{ secrets.ACTION_ACCESS_TOKEN1 }}
+          GH_TOKEN: ${{ secrets.ACTION_ACCESS_TOKEN }}
