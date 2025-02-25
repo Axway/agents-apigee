@@ -70,4 +70,4 @@ jobs:
       - name: Enable Pull Request Automerge
         run: gh pr merge APIGOV-UpdateSDKForRelease --admin --merge --subject "Merge branch APIGOV-UpdateSDKForRelease"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACTION_ACCESS_TOKEN }}
