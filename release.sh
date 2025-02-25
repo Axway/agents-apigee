@@ -68,7 +68,7 @@ main() {
     fi
 
     # gather stats
-    releaseStats="- Apigee agents version: ${TAG}\n"
+    releaseStats="- Apigee Edge agents version: ${TAG}\n"
     releaseStats+="- SDK version: ${SDK}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
