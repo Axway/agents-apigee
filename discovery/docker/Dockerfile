@@ -1,6 +1,6 @@
 # Build image
-# golang:1.23.3-alpine3.20 linux/amd64
-FROM docker.io/golang@sha256:c694a4d291a13a9f9d94933395673494fc2cc9d4777b85df3a7e70b3492d3574 AS builder
+# golang:1.23.6-alpine3.21 linux/amd64
+FROM docker.io/golang@sha256:f8113c4b13e2a8b3a168dceaee88ac27743cc84e959f43b9dbd2291e9c3f57a0 AS builder
 
 ARG commit_id
 ARG version
@@ -38,8 +38,8 @@ RUN addgroup -g 2500 ${APP_USER} && adduser -u 2500 -D -G ${APP_USER} ${APP_USER
 RUN chown -R ${APP_USER}:${APP_USER} ${AGENT}/bin/apigee_discovery_agent
 USER ${APP_USER}
 
-# alpine 3.20.3 linux/amd64
-FROM docker.io/alpine@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
+# alpine 3.21.3 linux/amd64
+FROM docker.io/alpine@sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c
 
 ENV BASEPATH /go/src/github.com/Axway/agents-apigee
 ENV AGENT ${BASEPATH}/discovery
