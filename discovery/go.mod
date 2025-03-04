@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.6
 
 require (
-	github.com/Axway/agent-sdk v1.1.110-0.20250228152343-37644f21dffb
+	github.com/Axway/agent-sdk v1.1.110-0.20250303162137-5c3bb2fd4246
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.9.0
 )
