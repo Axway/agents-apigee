@@ -7,7 +7,7 @@ toolchain go1.23.6
 replace github.com/Axway/agents-apigee/client => ../client
 
 require (
-	github.com/Axway/agent-sdk v1.1.110-0.20250304222335-71113d495ee0
+	github.com/Axway/agent-sdk v1.1.110
 	github.com/Axway/agents-apigee/client v0.0.0-00010101000000-000000000000
 	github.com/elastic/beats/v7 v7.17.23
 	github.com/gofrs/uuid v4.4.0+incompatible
