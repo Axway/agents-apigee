@@ -1,13 +1,13 @@
 module github.com/Axway/agents-apigee/client
 
-go 1.23.0
+go 1.23.3
 
-toolchain go1.23.6
+toolchain go1.23.8
 
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.116-0.20250505152050-d12a3d7820cb
+	github.com/Axway/agent-sdk v1.1.116-0.20250506163038-263ac63c0bb4
 	github.com/stretchr/testify v1.9.0
 )
 
@@ -68,7 +68,7 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowzach/rotatefilehook v0.0.0-20220211133110-53752135082d // indirect
-	github.com/spf13/afero v1.8.2 // indirect
+	github.com/spf13/afero v1.10.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
