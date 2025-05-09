@@ -11,6 +11,7 @@ import (
 	sdkDef "github.com/Axway/agent-sdk/pkg/apic/definitions"
 	"github.com/Axway/agent-sdk/pkg/cache"
 	"github.com/Axway/agent-sdk/pkg/jobs"
+	"github.com/Axway/agent-sdk/pkg/transaction"
 	"github.com/Axway/agent-sdk/pkg/transaction/metric"
 	metricModels "github.com/Axway/agent-sdk/pkg/transaction/models"
 	"github.com/Axway/agent-sdk/pkg/transaction/util"
@@ -56,7 +57,8 @@ type pollApigeeStats struct {
 	cacheClean          bool
 	reportAllTraffic    bool
 	reportNotSetTraffic bool
-	collector           metric.Collector
+	eventReport         transaction.EventReport
+	eventGenerator      transaction.EventGenerator
 	ready               isReady
 	client              definitions.StatsClient
 	statCache           cache.Cache
@@ -72,12 +74,12 @@ type pollApigeeStats struct {
 
 func newPollStatsJob(options ...func(*pollApigeeStats)) *pollApigeeStats {
 	job := &pollApigeeStats{
-		collector:     metric.GetMetricCollector(),
-		mutex:         &sync.Mutex{},
-		clonedProduct: make(map[string]string),
-		dimension:     "apiproxy",
-		logger:        log.NewFieldLogger().WithComponent("pollStatsJob").WithPackage("apigee"),
-		filteredAPIs:  make(map[string]struct{}),
+		mutex:          &sync.Mutex{},
+		clonedProduct:  make(map[string]string),
+		dimension:      "apiproxy",
+		logger:         log.NewFieldLogger().WithComponent("pollStatsJob").WithPackage("apigee"),
+		filteredAPIs:   make(map[string]struct{}),
+		eventGenerator: transaction.NewEventGenerator(),
 	}
 
 	for _, o := range options {
@@ -158,6 +160,12 @@ func withFilteredAPIs(filteredAPIs []string, filterMetrics bool) func(p *pollApi
 	}
 }
 
+func withEventReport(eventReport transaction.EventReport) func(p *pollApigeeStats) {
+	return func(p *pollApigeeStats) {
+		p.eventReport = eventReport
+	}
+}
+
 func (j *pollApigeeStats) Ready() bool {
 	return j.ready()
 }
@@ -171,7 +179,6 @@ func (j *pollApigeeStats) Execute() error {
 	logger := j.logger.WithField("executionID", id)
 
 	logger.Trace("starting execution")
-	j.collector.InitializeBatch()
 	j.envs = j.client.GetEnvironments()
 
 	// when start time is 0 we are in our regular execution loop
@@ -223,7 +230,12 @@ func (j *pollApigeeStats) Execute() error {
 		j.statCache.Set(lastStartTimeKey, j.startTime.String())
 		j.statCache.Save(j.cachePath)
 	}
-	j.collector.Publish()
+
+	err := j.eventGenerator.AddMetricDetailsFromEventReport(j.eventReport)
+	if err != nil {
+		j.logger.WithError(err).Error("failed to add metrics through event generator")
+		return err
+	}
 
 	return nil
 }
@@ -395,15 +407,14 @@ func (j *pollApigeeStats) processMetric(logger log.FieldLogger, metData *metricD
 		if count == 0 {
 			return
 		}
-		j.collector.AddAPIMetric(&metric.APIMetric{
-			API: metricModels.APIDetails{
+		j.eventReport.AddMetricDetail(&metric.MetricDetail{
+			APIDetails: metricModels.APIDetails{
 				ID:       util.FormatProxyID(metData.name),
 				Name:     metData.name,
 				Revision: 1,
 			},
 			StatusCode: code,
 			Count:      count,
-			StartTime:  metData.timestamp,
 			Observation: metricModels.ObservationDetails{
 				Start: metData.timestamp.Unix(),
 				End:   time.Minute.Milliseconds(),

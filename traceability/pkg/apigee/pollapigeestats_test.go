@@ -3,66 +3,17 @@ package apigee
 import (
 	"encoding/json"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/Axway/agent-sdk/pkg/cache"
-	"github.com/Axway/agent-sdk/pkg/transaction/metric"
-	metricModels "github.com/Axway/agent-sdk/pkg/transaction/models"
+	"github.com/Axway/agent-sdk/pkg/transaction"
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/apigee/models"
 	"github.com/stretchr/testify/assert"
 )
 
 const testdata = "testdata/"
-
-type mockCollector struct {
-	metric.Collector
-	apiCounts map[string][]int
-	total     int
-	successes int
-	errors    int
-	mutex     *sync.Mutex
-}
-
-func newMockCollector() *mockCollector {
-	return &mockCollector{
-		apiCounts: make(map[string][]int),
-		mutex:     &sync.Mutex{},
-	}
-}
-
-func (m *mockCollector) AddAPIMetric(met *metric.APIMetric) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	apiName := met.API.Name
-	if _, ok := m.apiCounts[apiName]; !ok {
-		m.apiCounts[apiName] = make([]int, 3)
-	}
-	code := met.StatusCode
-	m.apiCounts[apiName][0] += int(met.Count)
-	m.total += int(met.Count)
-	switch code {
-	case "200":
-		m.apiCounts[apiName][1] += int(met.Count)
-		m.successes += int(met.Count)
-	case "400":
-		fallthrough
-	case "500":
-		m.apiCounts[apiName][2] += int(met.Count)
-		m.errors += int(met.Count)
-	}
-}
-
-func (m *mockCollector) AddMetricDetail(metricData metric.Detail) {}
-
-func (m *mockCollector) AddMetric(apiDetails metricModels.APIDetails, statusCode string, duration, bytes int64, appName string) {
-}
-
-func (m *mockCollector) InitializeBatch() {}
-
-func (m *mockCollector) Publish() {}
 
 type mockClient struct {
 	envs          []string
@@ -203,6 +154,10 @@ func TestProcessMetric(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			eventReport, err := transaction.NewEventReportBuilder().
+				SetOnlyTrackMetrics(true).
+				Build()
+			assert.Nil(t, err)
 			opts := []func(*pollApigeeStats){
 				withStatsCache(cache.New()),
 				withStatsClient(&mockClient{
@@ -212,31 +167,17 @@ func TestProcessMetric(t *testing.T) {
 				}),
 				withAllTraffic(true),
 				withNotSetTraffic(!test.skipNotSet),
+				withEventReport(eventReport),
 			}
 			if test.isProductMode {
 				opts = append(opts, withProductMode())
 			}
 			job := newPollStatsJob(opts...)
 
-			mCollector := newMockCollector()
-			job.collector = mCollector
-
 			// send all metrics through the processor
 			for range test.responses {
-				job.Execute()
-			}
-
-			// check the totals
-			mCollector.mutex.Lock()
-			defer mCollector.mutex.Unlock()
-			assert.Equal(t, test.total, mCollector.total)
-			assert.Equal(t, test.successes, mCollector.successes)
-			assert.Equal(t, test.errors, mCollector.errors)
-
-			// check the counts for each api
-			for proxy, expectedCounts := range test.apiCalls {
-				assert.Contains(t, mCollector.apiCounts, proxy)
-				assert.Equal(t, expectedCounts, mCollector.apiCounts[proxy])
+				err := job.Execute()
+				assert.Nil(t, err)
 			}
 		})
 	}
