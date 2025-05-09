@@ -10,6 +10,7 @@ import (
 	corecfg "github.com/Axway/agent-sdk/pkg/config"
 	"github.com/Axway/agent-sdk/pkg/jobs"
 	"github.com/Axway/agent-sdk/pkg/traceability"
+	"github.com/Axway/agent-sdk/pkg/transaction"
 
 	"github.com/Axway/agents-apigee/client/pkg/apigee"
 	"github.com/Axway/agents-apigee/client/pkg/config"
@@ -106,6 +107,13 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 		lastStartTime, _ = time.Parse(time.RFC3339Nano, lastStatTimeIface.(string))
 	}
 
+	eventReport, err := transaction.NewEventReportBuilder().
+		SetOnlyTrackMetrics(true).
+		Build()
+	if err != nil {
+		return "", err
+	}
+
 	if !lastStartTime.IsZero() {
 		// last start time not zero
 
@@ -113,6 +121,7 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 		catchUpJob := newPollStatsJob(
 			append(baseOpts,
 				withStartTime(lastStartTime),
+				withEventReport(eventReport),
 			)...,
 		)
 		catchUpJob.Execute()
@@ -120,12 +129,12 @@ func (a *Agent) registerPollStatsJob() (string, error) {
 		// register the regular running job after one interval has passed
 		go func() {
 			time.Sleep(a.cfg.ApigeeCfg.Intervals.Stats)
-			job := newPollStatsJob(append(baseOpts, withCacheClean(), withStartTime(catchUpJob.startTime))...)
+			job := newPollStatsJob(append(baseOpts, withCacheClean(), withStartTime(catchUpJob.startTime), withEventReport(eventReport))...)
 			jobs.RegisterIntervalJobWithName(job, a.cfg.ApigeeCfg.Intervals.Stats, "Apigee Stats")
 		}()
 	} else {
 		// register a regular running job, only grabbing hte last hour of stats
-		job := newPollStatsJob(append(baseOpts, withCacheClean(), withStartTime(time.Now().Add(time.Hour*-1).Truncate(time.Minute)))...)
+		job := newPollStatsJob(append(baseOpts, withCacheClean(), withStartTime(time.Now().Add(time.Hour*-1).Truncate(time.Minute)), withEventReport(eventReport))...)
 		jobs.RegisterIntervalJobWithName(job, a.cfg.ApigeeCfg.Intervals.Stats, "Apigee Stats")
 	}
 
