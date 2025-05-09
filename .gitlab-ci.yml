@@ -41,7 +41,7 @@ workflow:
 
 include:
   - project: "apigov/gitlabci"
-    ref: master
+    ref: $GITLAB_CICD_GREEN
     file: "/.gitlab-ci-sonar.yml"
   - project: "apigov/beano_cicd"
     ref: $BEANO_CICD_BLUE
