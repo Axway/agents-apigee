@@ -59,7 +59,7 @@ include:
       - "/.gitlab-ci-blackduck.yml"
       - "/.gitlab-ci-security.yml"
   - project: "apigov/beano_cicd"
-    ref: $BEANO_CICD_GREEEN
+    ref: $BEANO_CICD_GREEN
     # the order of these include files is important
     file:
       - "/gitlabci/securityjobs.yml"
