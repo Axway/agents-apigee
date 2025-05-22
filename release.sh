@@ -52,6 +52,7 @@ post_to_teams() {
     JSON="{
         \"info\": \"${1}\"
     }"
+    echo "webhook url is ${TEAMS_WEBHOOK_URL} plus ${JSON}"
     curl -v "${TEAMS_WEBHOOK_URL}" -H 'Content-Type: application/json' -d "${JSON}" &> /dev/null
 }
 
@@ -70,7 +71,10 @@ main() {
     releaseStats+="- SDK version: ${SDK}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
+    set -x
+    echo "calling post_to_teams ${releaseStats}"
     post_to_teams "${releaseStats}"
+    echo "done with post_to_teams"
     exit 0
 }
 
