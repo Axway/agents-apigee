@@ -11,7 +11,7 @@ apigee_traceability_agent:
     filteredAPIs: ${APIGEE_FILTERED_APIS}
     filterMetrics: ${APIGEE_FILTER_METRICS:true}
     interval:
-      stats: ${APIGEE_INTERVAL_STATS:15m}
+      stats: ${APIGEE_INTERVAL_STATS:5m}
     auth:
       username: ${APIGEE_AUTH_USERNAME}
       password: ${APIGEE_AUTH_PASSWORD}
