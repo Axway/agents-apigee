@@ -158,7 +158,7 @@ func AddProperties(rootProps props) {
 	rootProps.AddDurationProperty(pathSpecInterval, 30*time.Minute, "The time interval between checking for updated specs", properties.WithLowerLimit(1*time.Minute))
 	rootProps.AddDurationProperty(pathProxyInterval, 30*time.Second, "The time interval between checking for updated proxies", properties.WithUpperLimit(5*time.Minute))
 	rootProps.AddDurationProperty(pathProductInterval, 30*time.Second, "The time interval between checking for updated products", properties.WithUpperLimit(5*time.Minute))
-	rootProps.AddDurationProperty(pathStatsInterval, 15*time.Minute, "The time interval between checking for updated stats", properties.WithLowerLimit(15*time.Minute))
+	rootProps.AddDurationProperty(pathStatsInterval, 5*time.Minute, "The time interval between checking for updated stats", properties.WithLowerLimit(15*time.Minute))
 	rootProps.AddStringProperty(pathDeveloper, "", "Developer ID used to create applications")
 	rootProps.AddIntProperty(pathProxyWorkers, 10, "Max number of workers discovering proxies")
 	rootProps.AddIntProperty(pathSpecWorkers, 20, "Max number of workers discovering specs")
