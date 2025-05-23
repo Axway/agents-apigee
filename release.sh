@@ -58,8 +58,8 @@ post_to_teams() {
 
 main() {
     # validate required variables
-    # get_sdk_version
-    # check_required_variables
+    get_sdk_version
+    check_required_variables
 
     if [ $? -eq 1 ]; then
         echo "No release info being generated."
@@ -67,9 +67,8 @@ main() {
     fi
 
     # gather stats
-    # releaseStats="- Apigee Edge agents version: ${TAG}\n"
-    # releaseStats+="- SDK version: ${SDK}\n"
-    releaseStats="testing"
+    releaseStats="- Apigee Edge agents version: ${TAG}\n"
+    releaseStats+="- SDK version: ${SDK}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
     echo "calling post_to_teams ${releaseStats}"
