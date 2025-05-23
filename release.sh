@@ -71,7 +71,6 @@ main() {
     releaseStats+="- SDK version: ${SDK}\n"
 
     echo -e "Full Release Info:\n"${releaseStats}
-    set -x
     echo "calling post_to_teams ${releaseStats}"
     post_to_teams "${releaseStats}"
     echo "done with post_to_teams"
