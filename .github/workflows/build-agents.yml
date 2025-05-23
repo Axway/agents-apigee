@@ -4,6 +4,16 @@ on:
     branches: [main, "*"]
 
 jobs:
+  notifyTeamsChannel:
+    needs: [buildDiscoveryAgentDocker, buildTraceabilityAgentDocker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify Teams channel
+        env:
+          TEAMS_WEBHOOK_URL: ${{ vars.TEAMS_WEBHOOK_URL }}
+          TAG: ${{ github.ref_name }}
+        run: ./release.sh
   testDiscoveryAgent:
     uses: ./.github/workflows/run-da-tests.yml
 
