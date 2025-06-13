@@ -7,7 +7,7 @@ toolchain go1.23.8
 // replace github.com/Axway/agent-sdk => /home/ubuntu/go/src/github.com/Axway/agent-sdk
 
 require (
-	github.com/Axway/agent-sdk v1.1.119
+	github.com/Axway/agent-sdk v1.1.120-0.20250612152112-6bedc880de89
 	github.com/stretchr/testify v1.9.0
 )
 
